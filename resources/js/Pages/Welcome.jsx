@@ -1,18 +1,22 @@
 import { Head, Link } from '@inertiajs/react';
+import ApplicationLogo from '@/Components/ApplicationLogo';
 
 export default function Welcome({ auth, laravelVersion, phpVersion }) {
     return (
         <>
             <Head title="Reservas" />
             <div className="flex flex-col min-h-screen bg-gray-50 text-white">
-                <header className="bg-gray-800 w-full py-4">
-                    <nav className="flex justify-end space-x-4 px-6">
+                <header className="bg-gray-800 w-full flex items-center justify-between px-6">
+                    <div className="flex items-center">
+                        <ApplicationLogo className="h-20 w-20 fill-current text-gray-500" />
+                    </div>
+                    <nav className="flex space-x-4">
                         {auth.user ? (
                             <Link
                                 href={route('dashboard')}
                                 className="text-white hover:text-gray-300"
                             >
-                                Tablero
+                                Dashboard
                             </Link>
                         ) : (
                             <>

@@ -27,6 +27,8 @@ Route::get('/dashboard', function () {
     return Inertia::render('Dashboard');
 })->middleware(['auth', 'verified'])->name('dashboard');
 
+//------------------------------- PERFIL DE USUARIO ----------------------------------//
+
 // Prefijo de versión para las rutas de autenticación
 Route::prefix('v1')->middleware('auth')->group(function () {
     // Ruta para editar el perfil del usuario
@@ -36,6 +38,8 @@ Route::prefix('v1')->middleware('auth')->group(function () {
     // Ruta para eliminar el perfil del usuario
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
+
+//------------------------------- SUPER ADMIN ----------------------------------//
 
 // Prefijo de versión para las rutas del superadministrador
 Route::prefix('v1')->middleware(['auth', 'superadmin'])->group(function () {
@@ -51,12 +55,38 @@ Route::prefix('v1')->middleware(['auth', 'superadmin'])->group(function () {
     Route::delete('/admin/users/{id}', [SuperAdminRegisterController::class, 'destroy'])->name('admin.users.destroy');
 });
 
+//------------------------------- ADMINISTRADOR ----------------------------------//
+
+// Prefijo de versión para las rutas del administrador
+Route::prefix('admin')->middleware(['auth', 'admin'])->group(function () {
+    // Rutas para gestionar reservas
+    Route::get('/reservas', [ReservaController::class, 'index'])->name('admin.reservas.index');
+    Route::get('/reservas/create', [ReservaController::class, 'create'])->name('admin.reservas.create');
+    Route::post('/reservas', [ReservaController::class, 'store'])->name('admin.reservas.store');
+    Route::get('/reservas/{id}/edit', [ReservaController::class, 'edit'])->name('admin.reservas.edit');
+    Route::patch('/reservas/{id}', [ReservaController::class, 'update'])->name('admin.reservas.update');
+    Route::delete('/reservas/{id}', [ReservaController::class, 'destroy'])->name('admin.reservas.destroy');
+});
+
+//------------------------------- USUARIOS ----------------------------------//
+
+// Prefijo de versión para las rutas de usuarios
+Route::prefix('v1')->middleware(['auth'])->group(function () {
+    // Rutas para mostrar y listar las reservas
+    Route::get('/reservas', [ReservaController::class, 'index'])->name('reservas.index');
+    Route::get('/reservas/{id}', [ReservaController::class, 'show'])->name('reservas.show');
+});
+
+//------------------------------- ESPACIOS ----------------------------------//
+
 // Prefijo de versión para las rutas de espacios
 Route::prefix('v1')->group(function () {
     // Rutas para mostrar y listar los espacios
     Route::get('/espacios', [EspacioController::class, 'index'])->name('espacios.index');
     Route::get('/espacios/{id}', [EspacioController::class, 'show'])->name('espacios.show');
 });
+
+//------------------------------- ESCRITORIOS ----------------------------------//
 
 // Prefijo de versión para las rutas de escritorios
 Route::prefix('v1')->group(function () {
@@ -65,16 +95,7 @@ Route::prefix('v1')->group(function () {
     Route::get('/escritorios/{id}', [EscritorioController::class, 'show'])->name('escritorios.show');
 });
 
-// Prefijo de versión para las rutas de reservas
-Route::prefix('v1')->group(function () {
-    // Rutas para mostrar y listar las reservas
-    Route::get('/reservas', [ReservaController::class, 'index'])->name('reservas.index');
-    Route::get('/reservas/{id}', [ReservaController::class, 'show'])->name('reservas.show');
-
-    // Rutas para crear y almacenar reservas, protegidas por middleware de usuario
-    Route::get('/reservas/create', [ReservaController::class, 'create'])->name('reservas.create')->middleware('user');
-    Route::post('/reservas', [ReservaController::class, 'store'])->name('reservas.store')->middleware('user');
-});
+//------------------------------- BLOQUEOS ----------------------------------//
 
 // Prefijo de versión para las rutas de bloqueos
 Route::prefix('v1')->middleware('admin')->group(function () {
@@ -86,6 +107,8 @@ Route::prefix('v1')->middleware('admin')->group(function () {
     Route::get('/bloqueos/create', [BloqueoController::class, 'create'])->name('bloqueos.create');
     Route::post('/bloqueos', [BloqueoController::class, 'store'])->name('bloqueos.store');
 });
+
+//------------------------------- RESERVAS RECURRENTES ----------------------------------//
 
 // Prefijo de versión para las rutas de reservas recurrentes
 Route::prefix('v1')->middleware('admin')->group(function () {

@@ -1,6 +1,6 @@
 export default function ApplicationLogo(props) {
     return (
-        <div {...props} className="flex items-center justify-center my-4">
+        <div {...props} className="flex items-center justify-center">
             <img
                 src="/images/HUB-Blanco.png"
                 alt="Logo startidea"
