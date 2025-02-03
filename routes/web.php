@@ -52,7 +52,7 @@ Route::prefix('v1')->middleware('auth')->group(function () {
 //------------------------------- ADMINISTRADOR ----------------------------------//
 
 // Prefijo de versión para las rutas del administrador
-Route::prefix('v1/admin')->middleware(['auth', 'admin'])->group(function () {
+Route::prefix('v1/admin')->middleware(['auth'])->group(function () {
     // Rutas para gestionar reservas
     Route::get('/reservas', [ReservaController::class, 'index'])->name('admin.reservas.index');
     Route::get('/reservas/create', [ReservaController::class, 'create'])->name('admin.reservas.create');
@@ -92,7 +92,8 @@ Route::prefix('v1')->middleware('admin')->group(function () {
 //------------------------------- SUPER ADMIN ----------------------------------//
 
 // Prefijo de versión para las rutas del superadministrador
-Route::prefix('v1/superadmin')->middleware(['auth', 'superadmin'])->group(function () {
+Route::prefix('v1/superadmin')->middleware(['auth'])->group(function () {
+
     // Ruta para mostrar el formulario de creación de usuarios
     Route::get('/users/create', [SuperAdminRegisterController::class, 'create'])->name('superadmin.users.create');
     // Ruta para manejar la creación de usuarios
@@ -103,6 +104,9 @@ Route::prefix('v1/superadmin')->middleware(['auth', 'superadmin'])->group(functi
     Route::patch('/users/{id}', [SuperAdminRegisterController::class, 'update'])->name('superadmin.users.update');
     // Ruta para manejar la eliminación de usuarios
     Route::delete('/users/{id}', [SuperAdminRegisterController::class, 'destroy'])->name('superadmin.users.destroy');
+
+
+
     // Rutas para gestionar reservas
     Route::get('/reservas', [ReservaController::class, 'index'])->name('superadmin.reservas.index');
     Route::get('/reservas/create', [ReservaController::class, 'create'])->name('superadmin.reservas.create');
@@ -110,6 +114,17 @@ Route::prefix('v1/superadmin')->middleware(['auth', 'superadmin'])->group(functi
     Route::get('/reservas/{id}/edit', [ReservaController::class, 'edit'])->name('superadmin.reservas.edit');
     Route::patch('/reservas/{id}', [ReservaController::class, 'update'])->name('superadmin.reservas.update');
     Route::delete('/reservas/{id}', [ReservaController::class, 'destroy'])->name('superadmin.reservas.destroy');
+    
+     // Rutas para mostrar y listar los espacios
+     Route::get('/espacios', [EspacioController::class, 'index'])->name('espacios.index');
+     Route::get('/espacios/{id}', [EspacioController::class, 'show'])->name('espacios.show');
+     
+     // Rutas para crear, almacenar, editar, actualizar y eliminar espacios
+     Route::get('/espacios/create', [EspacioController::class, 'create'])->name('espacios.create');
+     Route::post('/espacios', [EspacioController::class, 'store'])->name('espacios.store');
+     Route::get('/espacios/{id}/edit', [EspacioController::class, 'edit'])->name('espacios.edit');
+     Route::put('/espacios/{id}', [EspacioController::class, 'update'])->name('espacios.update');
+     Route::delete('/espacios/{id}', [EspacioController::class, 'destroy'])->name('espacios.destroy');
 });
 
 
@@ -122,6 +137,13 @@ Route::prefix('v1')->group(function () {
     // Rutas para mostrar y listar los espacios
     Route::get('/espacios', [EspacioController::class, 'index'])->name('espacios.index');
     Route::get('/espacios/{id}', [EspacioController::class, 'show'])->name('espacios.show');
+    
+    // Rutas para crear, almacenar, editar, actualizar y eliminar espacios
+    Route::get('/espacios/create', [EspacioController::class, 'create'])->name('espacios.create');
+    Route::post('/espacios', [EspacioController::class, 'store'])->name('espacios.store');
+    Route::get('/espacios/{id}/edit', [EspacioController::class, 'edit'])->name('espacios.edit');
+    Route::put('/espacios/{id}', [EspacioController::class, 'update'])->name('espacios.update');
+    Route::delete('/espacios/{id}', [EspacioController::class, 'destroy'])->name('espacios.destroy');
 });
 
 //------------------------------- ESCRITORIOS ----------------------------------//
