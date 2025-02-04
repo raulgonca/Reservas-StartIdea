@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\Reserva;
 use App\Models\Bloqueo;
+use App\Models\User;
+use App\Models\Espacio;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -27,7 +29,18 @@ class ReservaController extends Controller
 
     public function create()
     {
-        return Inertia::render('Reservas/Create');
+        $users = User::all();
+        $espacios = Espacio::all();
+        $reservas = Reserva::all();
+
+        dd($users, $espacios, $reservas);
+
+
+        return Inertia::render('ReservasCrud/CreateReserva', [
+            'users' => $users,
+            'espacios' => $espacios,
+            'reservas' => $reservas,
+        ]);
     }
 
     public function store(Request $request)
@@ -36,7 +49,8 @@ class ReservaController extends Controller
             'user_id' => 'required|exists:users,id',
             'espacio_id' => 'required|exists:espacios,id',
             'escritorio_id' => 'nullable|exists:escritorios,id',
-            'fecha' => 'required|date',
+            'fecha_inicio' => 'required|date|after_or_equal:today',
+            'fecha_fin' => 'required|date|after_or_equal:fecha_inicio',
             'hora_inicio' => 'required|date_format:H:i',
             'hora_fin' => 'required|date_format:H:i|after:hora_inicio',
             'tipo_reserva' => 'required|in:hora,medio_dia,dia_completo,semana,mes',
@@ -45,11 +59,8 @@ class ReservaController extends Controller
 
         // Validar que no haya solapamientos con otras reservas
         $solapamiento = Reserva::where('espacio_id', $request->espacio_id)
-            ->where('fecha', $request->fecha)
-            ->where(function ($query) use ($request) {
-                $query->whereBetween('hora_inicio', [$request->hora_inicio, $request->hora_fin])
-                    ->orWhereBetween('hora_fin', [$request->hora_inicio, $request->hora_fin]);
-            })
+            ->whereBetween('fecha_inicio', [$request->fecha_inicio, $request->fecha_fin])
+            ->orWhereBetween('fecha_fin', [$request->fecha_inicio, $request->fecha_fin])
             ->exists();
 
         if ($solapamiento) {
@@ -58,11 +69,8 @@ class ReservaController extends Controller
 
         // Validar que no haya bloqueos en el horario solicitado
         $bloqueo = Bloqueo::where('espacio_id', $request->espacio_id)
-            ->where('fecha', $request->fecha)
-            ->where(function ($query) use ($request) {
-                $query->whereBetween('hora_inicio', [$request->hora_inicio, $request->hora_fin])
-                    ->orWhereBetween('hora_fin', [$request->hora_inicio, $request->hora_fin]);
-            })
+            ->whereBetween('fecha_inicio', [$request->fecha_inicio, $request->fecha_fin])
+            ->orWhereBetween('fecha_fin', [$request->fecha_inicio, $request->fecha_fin])
             ->exists();
 
         if ($bloqueo) {
