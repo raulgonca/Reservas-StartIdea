@@ -10,6 +10,7 @@ import InputLabel from '@/Components/InputLabel';
 import PrimaryButton from '@/Components/PrimaryButton';
 import SecondaryButton from '@/Components/SecondaryButton';
 import UserSearch from '@/Components/UserSerch';
+import FlashMessage from '@/Components/FlashMessage';
 
 export default function CreateReserva() {
     // Inicializar el formulario con los campos necesarios
@@ -26,13 +27,11 @@ export default function CreateReserva() {
     });
 
     // Obtener los datos necesarios desde las props de la página
-    const { users = [], espacios = [], escritorios = [], flash } = usePage().props;
+    const { users = [], espacios = [], escritorios = [], flash = {} } = usePage().props;
 
     // Estados para manejar la visibilidad del selector de escritorios y los escritorios libres
     const [showEscritorio, setShowEscritorio] = useState(false);
     const [escritoriosLibres, setEscritoriosLibres] = useState([]);
-    const [showSuccessMessage, setShowSuccessMessage] = useState(false);
-    const [showErrorMessage, setShowErrorMessage] = useState(false);
 
     // useEffect para manejar el renderizado condicional del selector de escritorios
     useEffect(() => {
@@ -46,22 +45,6 @@ export default function CreateReserva() {
             setData('escritorio_id', '');
         }
     }, [data.espacio_id, escritorios, espacios]);
-
-    // useEffect para manejar el mensaje de éxito
-    useEffect(() => {
-        if (flash?.success) {
-            setShowSuccessMessage(true);
-            setTimeout(() => {
-                setShowSuccessMessage(false);
-            }, 5000); // Ocultar el mensaje de éxito después de 5 segundos
-        }
-        if (flash?.error) {
-            setShowErrorMessage(true);
-            setTimeout(() => {
-                setShowErrorMessage(false);
-            }, 5000); // Ocultar el mensaje de error después de 5 segundos
-        }
-    }, [flash?.success, flash?.error]);
 
     // Función para manejar el envío del formulario
     const submit = (e) => {
@@ -78,16 +61,8 @@ export default function CreateReserva() {
             <div className="max-w-2xl mx-auto py-12">
                 <h1 className="text-2xl font-bold mb-6 text-center">Crear Reserva</h1>
 
-                {showSuccessMessage && (
-                    <div className="mb-4 text-sm font-medium text-green-600">
-                        {flash.success}
-                    </div>
-                )}
-                {showErrorMessage && (
-                    <div className="mb-4 text-sm font-medium text-red-600">
-                        {flash.error}
-                    </div>
-                )}
+                <FlashMessage message={flash.success} type="success" className="mb-4" />
+                <FlashMessage message={flash.error} type="error" className="mb-4" />
 
                 <ApplicationLogo />
                 <form onSubmit={submit}>
