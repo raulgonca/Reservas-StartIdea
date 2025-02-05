@@ -16,7 +16,8 @@ class CreateBloqueosTable extends Migration
             $table->id();
             $table->foreignId('espacio_id')->constrained('espacios')->onDelete('cascade');
             $table->foreignId('escritorio_id')->nullable()->constrained('escritorios')->onDelete('cascade');
-            $table->date('fecha');
+            $table->date('fecha_inicio'); // Nueva columna
+            $table->date('fecha_fin')->nullable(); // Nueva columna
             $table->time('hora_inicio');
             $table->time('hora_fin');
             $table->text('motivo')->nullable();

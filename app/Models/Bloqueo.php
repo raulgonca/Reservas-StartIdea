@@ -11,7 +11,8 @@ class Bloqueo extends Model
     protected $fillable = [
         'espacio_id',
         'escritorio_id',
-        'fecha',
+        'fecha_inicio',
+        'fecha_fin',
         'hora_inicio',
         'hora_fin',
         'motivo',

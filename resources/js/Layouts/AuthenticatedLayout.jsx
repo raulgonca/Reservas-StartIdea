@@ -2,6 +2,7 @@ import ApplicationLogo from '@/Components/ApplicationLogo';
 import Dropdown from '@/Components/Dropdown';
 import NavLink from '@/Components/NavLink';
 import ResponsiveNavLink from '@/Components/ResponsiveNavLink';
+import DropdownMenu from '@/Components/DropdownMenu';
 import { Link, usePage } from '@inertiajs/react';
 import { useState } from 'react';
 
@@ -24,7 +25,7 @@ export default function AuthenticatedLayout({ header, children }) {
                         </div>
 
                         {/* Enlaces en el centro */}
-                        <div className="hidden space-x-8 sm:flex sm:justify-center sm:flex-1">
+                        <div className="hidden space-x-8 lg:flex lg:justify-center lg:flex-1">
                             <NavLink
                                 href={route('dashboard')}
                                 active={route().current('dashboard')}
@@ -33,62 +34,68 @@ export default function AuthenticatedLayout({ header, children }) {
                             </NavLink>
                             {user.role === 'admin' && (
                                 <>
-                                    <NavLink
-                                        href={route('admin.reservas.index')}
-                                        active={route().current('admin.reservas.index')}
-                                    >
-                                        Reservas
-                                    </NavLink>
-
-                                    <NavLink
-                                        href={route('admin.reservas.index')}
-                                        active={route().current('admin.reservas.index')}
-                                    >
-                                        Espacios
-                                    </NavLink>
-                                    {/* Otros enlaces específicos para administradores */}
+                                    <DropdownMenu
+                                        title="Reservas"
+                                        links={[
+                                            { href: route('admin.reservas.create'), label: 'Crear Reserva', active: route().current('admin.reservas.create') },
+                                            { href: route('admin.reservas.index'), label: 'Listar Reservas', active: route().current('admin.reservas.index') },
+                                            // Otros enlaces relacionados con reservas
+                                        ]}
+                                    />
+                                    <DropdownMenu
+                                        title="Espacios"
+                                        links={[
+                                            { href: route('admin.espacios.create'), label: 'Crear Espacio', active: route().current('admin.espacios.create') },
+                                            { href: route('admin.espacios.index'), label: 'Listar Espacios', active: route().current('admin.espacios.index') },
+                                            // Otros enlaces relacionados con espacios
+                                        ]}
+                                    />
+                                    {/* Otros menús específicos para administradores */}
                                 </>
                             )}
                             {user.role === 'superadmin' && (
                                 <>
-                                    <NavLink
-                                        href={route('superadmin.reservas.index')}
-                                        active={route().current('superadmin.reservas.index')}
-                                    >
-                                        Reservas
-                                    </NavLink>
-
-                                    <NavLink
-                                        href={route('superadmin.reservas.index')}
-                                        active={route().current('superadmin.reservas.index')}
-                                    >
-                                        Usuarios
-                                    </NavLink>
-
-                                    <NavLink
-                                        href={route('superadmin.reservas.index')}
-                                        active={route().current('superadmin.reservas.index')}
-                                    >
-                                        Espacios
-                                    </NavLink>
-                                    {/* Otros enlaces específicos para superadministradores */}
+                                    <DropdownMenu
+                                        title="Reservas"
+                                        links={[
+                                            { href: route('superadmin.reservas.create'), label: 'Crear Reserva', active: route().current('superadmin.reservas.create') },
+                                            { href: route('superadmin.reservas.index'), label: 'Listar Reservas', active: route().current('superadmin.reservas.index') },
+                                            // Otros enlaces relacionados con reservas
+                                        ]}
+                                    />
+                                    <DropdownMenu
+                                        title="Usuarios"
+                                        links={[
+                                            { href: route('superadmin.users.create'), label: 'Crear Usuario', active: route().current('superadmin.users.create') },
+                                            { href: route('superadmin.users.index'), label: 'Listar Usuarios', active: route().current('superadmin.users.index') },
+                                            // Otros enlaces relacionados con usuarios
+                                        ]}
+                                    />
+                                    <DropdownMenu
+                                        title="Espacios"
+                                        links={[
+                                            { href: route('superadmin.espacios.create'), label: 'Crear Espacio', active: route().current('superadmin.espacios.create') },
+                                            { href: route('superadmin.espacios.index'), label: 'Listar Espacios', active: route().current('superadmin.espacios.index') },
+                                            // Otros enlaces relacionados con espacios
+                                        ]}
+                                    />
+                                    {/* Otros menús específicos para superadministradores */}
                                 </>
                             )}
                             {user.role === 'user' && (
-                                <>
-                                    <NavLink
-                                        href={route('user.reservas.index')}
-                                        active={route().current('user.reservas.index')}
-                                    >
-                                        Mis Reservas
-                                    </NavLink>
-                                    {/* Otros enlaces específicos para usuarios */}
-                                </>
+                                <DropdownMenu
+                                    title="Mis Reservas"
+                                    links={[
+                                        { href: route('user.reservas.create'), label: 'Crear Reserva', active: route().current('user.reservas.create') },
+                                        { href: route('user.reservas.index'), label: 'Listar Mis Reservas', active: route().current('user.reservas.index') },
+                                        // Otros enlaces relacionados con reservas
+                                    ]}
+                                />
                             )}
                         </div>
 
                         {/* Menú a la derecha */}
-                        <div className="hidden sm:flex sm:items-center">
+                        <div className="hidden lg:flex lg:items-center">
                             <div className="relative">
                                 <Dropdown>
                                     <Dropdown.Trigger>
@@ -134,7 +141,7 @@ export default function AuthenticatedLayout({ header, children }) {
                         </div>
 
                         {/* Botón de menú para móviles */}
-                        <div className="-me-2 flex items-center sm:hidden">
+                        <div className="-me-2 flex items-center lg:hidden">
                             <button
                                 onClick={() =>
                                     setShowingNavigationDropdown(
@@ -168,7 +175,7 @@ export default function AuthenticatedLayout({ header, children }) {
                 <div
                     className={
                         (showingNavigationDropdown ? 'block' : 'hidden') +
-                        ' sm:hidden'
+                        ' lg:hidden'
                     }
                 >
                     <div className="space-y-1 pb-3 pt-2">
@@ -180,57 +187,63 @@ export default function AuthenticatedLayout({ header, children }) {
                         </ResponsiveNavLink>
                         {user.role === 'admin' && (
                             <>
-                                <ResponsiveNavLink
-                                    href={route('admin.reservas.index')}
-                                    active={route().current('admin.reservas.index')}
-                                >
-                                    Reservas
-                                </ResponsiveNavLink>
-
-                                <ResponsiveNavLink
-                                    href={route('admin.reservas.index')}
-                                    active={route().current('admin.reservas.index')}
-                                >
-                                    Espacios
-                                </ResponsiveNavLink>
-                                {/* Otros enlaces específicos para administradores */}
+                                <DropdownMenu
+                                    title="Reservas"
+                                    links={[
+                                        { href: route('admin.reservas.create'), label: 'Crear Reserva', active: route().current('admin.reservas.create') },
+                                        { href: route('admin.reservas.index'), label: 'Listar Reservas', active: route().current('admin.reservas.index') },
+                                        // Otros enlaces relacionados con reservas
+                                    ]}
+                                />
+                                <DropdownMenu
+                                    title="Espacios"
+                                    links={[
+                                        { href: route('admin.espacios.create'), label: 'Crear Espacio', active: route().current('admin.espacios.create') },
+                                        { href: route('admin.espacios.index'), label: 'Listar Espacios', active: route().current('admin.espacios.index') },
+                                        // Otros enlaces relacionados con espacios
+                                    ]}
+                                />
+                                {/* Otros menús específicos para administradores */}
                             </>
                         )}
                         {user.role === 'superadmin' && (
                             <>
-                                <ResponsiveNavLink
-                                    href={route('superadmin.reservas.index')}
-                                    active={route().current('superadmin.reservas.index')}
-                                >
-                                    Reservas
-                                </ResponsiveNavLink>
-
-                                <ResponsiveNavLink
-                                    href={route('superadmin.reservas.index')}
-                                    active={route().current('superadmin.reservas.index')}
-                                >
-                                    Usuarios
-                                </ResponsiveNavLink>
-
-                                <ResponsiveNavLink
-                                    href={route('superadmin.reservas.index')}
-                                    active={route().current('superadmin.reservas.index')}
-                                >
-                                    Espacios
-                                </ResponsiveNavLink>
-                                {/* Otros enlaces específicos para superadministradores */}
+                                <DropdownMenu
+                                    title="Reservas"
+                                    links={[
+                                        { href: route('superadmin.reservas.create'), label: 'Crear Reserva', active: route().current('superadmin.reservas.create') },
+                                        { href: route('superadmin.reservas.index'), label: 'Listar Reservas', active: route().current('superadmin.reservas.index') },
+                                        // Otros enlaces relacionados con reservas
+                                    ]}
+                                />
+                                <DropdownMenu
+                                    title="Usuarios"
+                                    links={[
+                                        { href: route('superadmin.users.create'), label: 'Crear Usuario', active: route().current('superadmin.users.create') },
+                                        { href: route('superadmin.users.index'), label: 'Listar Usuarios', active: route().current('superadmin.users.index') },
+                                        // Otros enlaces relacionados con usuarios
+                                    ]}
+                                />
+                                <DropdownMenu
+                                    title="Espacios"
+                                    links={[
+                                        { href: route('superadmin.espacios.create'), label: 'Crear Espacio', active: route().current('superadmin.espacios.create') },
+                                        { href: route('superadmin.espacios.index'), label: 'Listar Espacios', active: route().current('superadmin.espacios.index') },
+                                        // Otros enlaces relacionados con espacios
+                                    ]}
+                                />
+                                {/* Otros menús específicos para superadministradores */}
                             </>
                         )}
                         {user.role === 'user' && (
-                            <>
-                                <ResponsiveNavLink
-                                    href={route('user.reservas.index')}
-                                    active={route().current('user.reservas.index')}
-                                >
-                                    Mis Reservas
-                                </ResponsiveNavLink>
-                                {/* Otros enlaces específicos para usuarios */}
-                            </>
+                            <DropdownMenu
+                                title="Mis Reservas"
+                                links={[
+                                    { href: route('user.reservas.create'), label: 'Crear Reserva', active: route().current('user.reservas.create') },
+                                    { href: route('user.reservas.index'), label: 'Listar Mis Reservas', active: route().current('user.reservas.index') },
+                                    // Otros enlaces relacionados con reservas
+                                ]}
+                            />
                         )}
                     </div>
 

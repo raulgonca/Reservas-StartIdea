@@ -18,7 +18,8 @@ export default function ReservasList() {
                             <th className="py-2">Usuario</th>
                             <th className="py-2">Espacio</th>
                             <th className="py-2">Escritorio</th>
-                            <th className="py-2">Fecha</th>
+                            <th className="py-2">Fecha Inicio</th>
+                            <th className="py-2">Fecha Fin</th>
                             <th className="py-2">Hora Inicio</th>
                             <th className="py-2">Hora Fin</th>
                             <th className="py-2">Tipo de Reserva</th>
@@ -32,11 +33,12 @@ export default function ReservasList() {
                                 <td className="py-2">{reserva.user.name}</td>
                                 <td className="py-2">{reserva.espacio.nombre}</td>
                                 <td className="py-2">{reserva.escritorio ? reserva.escritorio.nombre : 'N/A'}</td>
-                                <td className="py-2">{reserva.fecha}</td>
-                                <td className="py-2">{reserva.hora_inicio}</td>
-                                <td className="py-2">{reserva.hora_fin}</td>
+                                <td className="py-2">{reserva.fecha_inicio}</td>
+                                <td className="py-2">{reserva.fecha_fin || 'N/A'}</td>
+                                <td className="py-2">{reserva.hora_inicio || 'N/A'}</td>
+                                <td className="py-2">{reserva.hora_fin || 'N/A'}</td>
                                 <td className="py-2">{reserva.tipo_reserva}</td>
-                                <td className="py-2">{reserva.motivo}</td>
+                                <td className="py-2">{reserva.motivo || 'N/A'}</td>
                                 <td className="py-2">
                                     <Link href={route('superadmin.reservas.edit', reserva.id)} className="px-4 py-2 bg-yellow-500 text-white">
                                         Editar

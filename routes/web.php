@@ -104,7 +104,8 @@ Route::prefix('v1/superadmin')->middleware(['auth'])->group(function () {
     Route::patch('/users/{id}', [SuperAdminRegisterController::class, 'update'])->name('superadmin.users.update');
     // Ruta para manejar la eliminación de usuarios
     Route::delete('/users/{id}', [SuperAdminRegisterController::class, 'destroy'])->name('superadmin.users.destroy');
-
+    // Ruta para listar usuarios
+    Route::get('/users', [SuperAdminRegisterController::class, 'index'])->name('superadmin.users.index');
 
 
     // Rutas para gestionar reservas
@@ -114,17 +115,17 @@ Route::prefix('v1/superadmin')->middleware(['auth'])->group(function () {
     Route::get('/reservas/{id}/edit', [ReservaController::class, 'edit'])->name('superadmin.reservas.edit');
     Route::patch('/reservas/{id}', [ReservaController::class, 'update'])->name('superadmin.reservas.update');
     Route::delete('/reservas/{id}', [ReservaController::class, 'destroy'])->name('superadmin.reservas.destroy');
-    
-     // Rutas para mostrar y listar los espacios
-     Route::get('/espacios', [EspacioController::class, 'index'])->name('espacios.index');
-     Route::get('/espacios/{id}', [EspacioController::class, 'show'])->name('espacios.show');
-     
-     // Rutas para crear, almacenar, editar, actualizar y eliminar espacios
-     Route::get('/espacios/create', [EspacioController::class, 'create'])->name('espacios.create');
-     Route::post('/espacios', [EspacioController::class, 'store'])->name('espacios.store');
-     Route::get('/espacios/{id}/edit', [EspacioController::class, 'edit'])->name('espacios.edit');
-     Route::put('/espacios/{id}', [EspacioController::class, 'update'])->name('espacios.update');
-     Route::delete('/espacios/{id}', [EspacioController::class, 'destroy'])->name('espacios.destroy');
+
+    // Rutas para mostrar y listar los espacios
+    Route::get('/espacios', [EspacioController::class, 'index'])->name('superadmin.espacios.index');
+    Route::get('/espacios/{id}', [EspacioController::class, 'show'])->name('superadmin.espacios.show');
+
+    // Rutas para crear, almacenar, editar, actualizar y eliminar espacios
+    Route::get('/espacios/create', [EspacioController::class, 'create'])->name('superadmin.espacios.create');
+    Route::post('/espacios', [EspacioController::class, 'store'])->name('superadmin.espacios.store');
+    Route::get('/espacios/{id}/edit', [EspacioController::class, 'edit'])->name('superadmin.espacios.edit');
+    Route::put('/espacios/{id}', [EspacioController::class, 'update'])->name('superadmin.espacios.update');
+    Route::delete('/espacios/{id}', [EspacioController::class, 'destroy'])->name('superadmin.espacios.destroy');
 });
 
 
@@ -137,7 +138,7 @@ Route::prefix('v1')->group(function () {
     // Rutas para mostrar y listar los espacios
     Route::get('/espacios', [EspacioController::class, 'index'])->name('espacios.index');
     Route::get('/espacios/{id}', [EspacioController::class, 'show'])->name('espacios.show');
-    
+
     // Rutas para crear, almacenar, editar, actualizar y eliminar espacios
     Route::get('/espacios/create', [EspacioController::class, 'create'])->name('espacios.create');
     Route::post('/espacios', [EspacioController::class, 'store'])->name('espacios.store');
@@ -157,4 +158,4 @@ Route::prefix('v1')->group(function () {
 
 
 // Incluir las rutas de autenticación
-require __DIR__.'/auth.php';
+require __DIR__ . '/auth.php';

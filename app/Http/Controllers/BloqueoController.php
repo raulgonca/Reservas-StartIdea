@@ -34,7 +34,8 @@ class BloqueoController extends Controller
         $request->validate([
             'espacio_id' => 'required|exists:espacios,id',
             'escritorio_id' => 'nullable|exists:escritorios,id',
-            'fecha' => 'required|date',
+            'fecha_inicio' => 'required|date',
+            'fecha_fin' => 'nullable|date|after_or_equal:fecha_inicio',
             'hora_inicio' => 'required|date_format:H:i',
             'hora_fin' => 'required|date_format:H:i|after:hora_inicio',
             'motivo' => 'nullable|string',
