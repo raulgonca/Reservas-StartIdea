@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Head, useForm, usePage } from '@inertiajs/react';
+import { toast, ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import ApplicationLogo from '@/Components/ApplicationLogo';
 import TextInput from '@/Components/TextInput';
@@ -10,10 +12,9 @@ import InputLabel from '@/Components/InputLabel';
 import PrimaryButton from '@/Components/PrimaryButton';
 import SecondaryButton from '@/Components/SecondaryButton';
 import UserSearch from '@/Components/UserSerch';
-import FlashMessage from '@/Components/FlashMessage';
+import HourSelectInput from '@/Components/HourSelectInput';
 
 export default function CreateReserva() {
-    // Inicializar el formulario con los campos necesarios
     const { data, setData, post, processing, errors, reset } = useForm({
         user_id: '',
         espacio_id: '',
@@ -26,14 +27,14 @@ export default function CreateReserva() {
         motivo: '',
     });
 
-    // Obtener los datos necesarios desde las props de la página
-    const { users = [], espacios = [], escritorios = [], flash = {} } = usePage().props;
+    const { users, espacios, escritorios, flash = {} } = usePage().props;
 
-    // Estados para manejar la visibilidad del selector de escritorios y los escritorios libres
+    console.log('Flash messages:', flash);
+    console.log('Errors:', errors);
+
     const [showEscritorio, setShowEscritorio] = useState(false);
     const [escritoriosLibres, setEscritoriosLibres] = useState([]);
 
-    // useEffect para manejar el renderizado condicional del selector de escritorios
     useEffect(() => {
         const selectedEspacio = espacios.find(espacio => espacio.id === Number(data.espacio_id));
         if (selectedEspacio && selectedEspacio.tipo === 'coworking') {
@@ -46,13 +47,20 @@ export default function CreateReserva() {
         }
     }, [data.espacio_id, escritorios, espacios]);
 
-    // Función para manejar el envío del formulario
+    useEffect(() => {
+        if (flash.success) {
+            toast.success(flash.success);
+        }
+        if (flash.error) {
+            toast.error(flash.error);
+        }
+    }, [flash]);
+
     const submit = (e) => {
         e.preventDefault();
         post(route('superadmin.reservas.store'));
     };
 
-    // Obtener la fecha de hoy en formato ISO
     const today = new Date().toISOString().split('T')[0];
 
     return (
@@ -60,9 +68,6 @@ export default function CreateReserva() {
             <Head title="Crear Reserva" />
             <div className="max-w-2xl mx-auto py-12">
                 <h1 className="text-2xl font-bold mb-6 text-center">Crear Reserva</h1>
-
-                <FlashMessage message={flash.success} type="success" className="mb-4" />
-                <FlashMessage message={flash.error} type="error" className="mb-4" />
 
                 <ApplicationLogo />
                 <form onSubmit={submit}>
@@ -83,7 +88,7 @@ export default function CreateReserva() {
                             <option value="" disabled hidden>
                                 Seleccione un espacio
                             </option>
-                            {espacios.map(espacio => (
+                            {espacios.map((espacio) => (
                                 <option key={espacio.id} value={espacio.id}>
                                     {espacio.nombre}
                                 </option>
@@ -145,24 +150,18 @@ export default function CreateReserva() {
                             </div>
                             <div className="mb-4">
                                 <InputLabel htmlFor="hora_inicio" value="Hora Inicio" />
-                                <TextInput
-                                    type="time"
+                                <HourSelectInput
                                     name="hora_inicio"
                                     value={data.hora_inicio}
-                                    className="mt-1 block w-full"
-                                    autoComplete="off"
                                     onChange={(e) => setData('hora_inicio', e.target.value)}
                                 />
                                 <InputError message={errors.hora_inicio} className="mt-2" />
                             </div>
                             <div className="mb-4">
                                 <InputLabel htmlFor="hora_fin" value="Hora Fin" />
-                                <TextInput
-                                    type="time"
+                                <HourSelectInput
                                     name="hora_fin"
                                     value={data.hora_fin}
-                                    className="mt-1 block w-full"
-                                    autoComplete="off"
                                     onChange={(e) => setData('hora_fin', e.target.value)}
                                 />
                                 <InputError message={errors.hora_fin} className="mt-2" />
@@ -188,24 +187,18 @@ export default function CreateReserva() {
                                 <>
                                     <div className="mb-4">
                                         <InputLabel htmlFor="hora_inicio" value="Hora Inicio" />
-                                        <TextInput
-                                            type="time"
+                                        <HourSelectInput
                                             name="hora_inicio"
                                             value={data.hora_inicio}
-                                            className="mt-1 block w-full"
-                                            autoComplete="off"
                                             onChange={(e) => setData('hora_inicio', e.target.value)}
                                         />
                                         <InputError message={errors.hora_inicio} className="mt-2" />
                                     </div>
                                     <div className="mb-4">
                                         <InputLabel htmlFor="hora_fin" value="Hora Fin" />
-                                        <TextInput
-                                            type="time"
+                                        <HourSelectInput
                                             name="hora_fin"
                                             value={data.hora_fin}
-                                            className="mt-1 block w-full"
-                                            autoComplete="off"
                                             onChange={(e) => setData('hora_fin', e.target.value)}
                                         />
                                         <InputError message={errors.hora_fin} className="mt-2" />
@@ -293,6 +286,7 @@ export default function CreateReserva() {
                         </PrimaryButton>
                     </div>
                 </form>
+                <ToastContainer />
             </div>
         </AuthenticatedLayout>
     );
