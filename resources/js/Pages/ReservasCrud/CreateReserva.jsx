@@ -48,13 +48,15 @@ export default function CreateReserva() {
     }, [data.espacio_id, escritorios, espacios]);
 
     useEffect(() => {
+        console.log('Flash updated:', flash);
         if (flash.success) {
             toast.success(flash.success);
         }
-        if (flash.error) {
-            toast.error(flash.error);
+        if (errors.error) {
+            // Mostrar el mensaje de error directamente
+            toast.error(errors.error);
         }
-    }, [flash]);
+    }, [flash, errors]);
 
     const submit = (e) => {
         e.preventDefault();
