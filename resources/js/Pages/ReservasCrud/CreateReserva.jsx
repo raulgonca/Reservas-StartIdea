@@ -14,6 +14,7 @@ import SecondaryButton from '@/Components/SecondaryButton';
 import UserSearch from '@/Components/UserSerch';
 import HourSelectInput from '@/Components/HourSelectInput';
 import { format, addDays, addMonths } from 'date-fns';
+import FlashMessage from '@/Components/FlashMessage'; // Importa FlashMessage
 
 export default function CreateReserva() {
     const { data, setData, post, processing, errors, reset } = useForm({
@@ -30,12 +31,10 @@ export default function CreateReserva() {
 
     const { users, espacios, escritorios, flash = {} } = usePage().props;
 
-    console.log('Flash messages:', flash);
-    console.log('Errors:', errors);
-
     const [showEscritorio, setShowEscritorio] = useState(false);
     const [escritoriosLibres, setEscritoriosLibres] = useState([]);
 
+    // Efecto para mostrar/ocultar escritorios según el espacio seleccionado
     useEffect(() => {
         const selectedEspacio = espacios.find(espacio => espacio.id === Number(data.espacio_id));
         if (selectedEspacio && selectedEspacio.tipo === 'coworking') {
@@ -48,20 +47,19 @@ export default function CreateReserva() {
         }
     }, [data.espacio_id, escritorios, espacios]);
 
+    // Efecto para mostrar toasts de éxito o error
     useEffect(() => {
-        console.log('Flash updated:', flash);
         if (flash.success) {
             toast.success(flash.success);
         }
         if (Object.keys(errors).length > 0) {
-            // Mostrar el mensaje de error directamente
             Object.values(errors).forEach(error => {
                 toast.error(error);
             });
         }
     }, [flash, errors]);
 
-
+    // Efecto para calcular fecha_fin según el tipo de reserva
     useEffect(() => {
         if (data.tipo_reserva === 'semana' && data.fecha_inicio) {
             const fechaFin = format(addDays(new Date(data.fecha_inicio), 7), 'yyyy-MM-dd');
@@ -71,8 +69,13 @@ export default function CreateReserva() {
             const fechaFin = format(addMonths(new Date(data.fecha_inicio), 1), 'yyyy-MM-dd');
             setData('fecha_fin', fechaFin);
         }
+        if ((data.tipo_reserva === 'hora' || data.tipo_reserva === 'medio_dia' || data.tipo_reserva === 'dia_completo') && data.fecha_inicio) {
+            const fechaFin = data.fecha_inicio;
+            setData('fecha_fin', fechaFin);
+        }
     }, [data.tipo_reserva, data.fecha_inicio]);
 
+    // Función para enviar el formulario
     const submit = (e) => {
         e.preventDefault();
         post(route('superadmin.reservas.store'));
@@ -128,7 +131,7 @@ export default function CreateReserva() {
                                 {escritoriosLibres.map(escritorio => (
                                     <option key={escritorio.id} value={escritorio.id}>
                                         {escritorio.nombre}
-                                </option>
+                                    </option>
                                 ))}
                             </SelectInput>
                             <InputError message={errors.escritorio_id} className="mt-2" />
@@ -287,7 +290,7 @@ export default function CreateReserva() {
                         </PrimaryButton>
                     </div>
                 </form>
-                <ToastContainer />
+                <FlashMessage /> {/* Renderiza FlashMessage aquí */}
             </div>
         </AuthenticatedLayout>
     );
