@@ -1,38 +1,34 @@
 <?php
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Carbon;
 
 class Reserva extends Model
 {
-    use HasFactory;
-
     protected $fillable = [
         'user_id',
         'espacio_id',
         'escritorio_id',
         'fecha_inicio',
         'fecha_fin',
-        'hora_inicio',
-        'hora_fin',
         'tipo_reserva',
         'estado',
         'motivo',
     ];
 
-    public function user()
+    protected $dates = [
+        'fecha_inicio',
+        'fecha_fin',
+    ];
+
+    public function getFechaInicioAttribute($value)
     {
-        return $this->belongsTo(User::class);
+        return Carbon::parse($value);
     }
 
-    public function espacio()
+    public function getFechaFinAttribute($value)
     {
-        return $this->belongsTo(Espacio::class);
-    }
-
-    public function escritorio()
-    {
-        return $this->belongsTo(Escritorio::class);
+        return Carbon::parse($value);
     }
 }

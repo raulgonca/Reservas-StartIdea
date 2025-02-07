@@ -13,6 +13,7 @@ import PrimaryButton from '@/Components/PrimaryButton';
 import SecondaryButton from '@/Components/SecondaryButton';
 import UserSearch from '@/Components/UserSerch';
 import HourSelectInput from '@/Components/HourSelectInput';
+import { format, addDays, addMonths } from 'date-fns';
 
 export default function CreateReserva() {
     const { data, setData, post, processing, errors, reset } = useForm({
@@ -52,11 +53,25 @@ export default function CreateReserva() {
         if (flash.success) {
             toast.success(flash.success);
         }
-        if (errors.error) {
+        if (Object.keys(errors).length > 0) {
             // Mostrar el mensaje de error directamente
-            toast.error(errors.error);
+            Object.values(errors).forEach(error => {
+                toast.error(error);
+            });
         }
     }, [flash, errors]);
+
+
+    useEffect(() => {
+        if (data.tipo_reserva === 'semana' && data.fecha_inicio) {
+            const fechaFin = format(addDays(new Date(data.fecha_inicio), 7), 'yyyy-MM-dd');
+            setData('fecha_fin', fechaFin);
+        }
+        if (data.tipo_reserva === 'mes' && data.fecha_inicio) {
+            const fechaFin = format(addMonths(new Date(data.fecha_inicio), 1), 'yyyy-MM-dd');
+            setData('fecha_fin', fechaFin);
+        }
+    }, [data.tipo_reserva, data.fecha_inicio]);
 
     const submit = (e) => {
         e.preventDefault();
@@ -113,7 +128,7 @@ export default function CreateReserva() {
                                 {escritoriosLibres.map(escritorio => (
                                     <option key={escritorio.id} value={escritorio.id}>
                                         {escritorio.nombre}
-                                    </option>
+                                </option>
                                 ))}
                             </SelectInput>
                             <InputError message={errors.escritorio_id} className="mt-2" />
@@ -224,19 +239,11 @@ export default function CreateReserva() {
                                 />
                                 <InputError message={errors.fecha_inicio} className="mt-2" />
                             </div>
-                            <div className="mb-4">
-                                <InputLabel htmlFor="fecha_fin" value="Fecha de Fin" />
-                                <TextInput
-                                    type="date"
-                                    name="fecha_fin"
-                                    value={data.fecha_fin}
-                                    className="mt-1 block w-full"
-                                    autoComplete="off"
-                                    min={data.fecha_inicio || today}
-                                    onChange={(e) => setData('fecha_fin', e.target.value)}
-                                />
-                                <InputError message={errors.fecha_fin} className="mt-2" />
-                            </div>
+                            {data.fecha_inicio && (
+                                <div className="mb-4">
+                                    <p>Duración: {data.fecha_inicio} al {data.fecha_fin}</p>
+                                </div>
+                            )}
                         </>
                     )}
                     {data.tipo_reserva === 'mes' && (
@@ -254,19 +261,11 @@ export default function CreateReserva() {
                                 />
                                 <InputError message={errors.fecha_inicio} className="mt-2" />
                             </div>
-                            <div className="mb-4">
-                                <InputLabel htmlFor="fecha_fin" value="Fecha de Fin" />
-                                <TextInput
-                                    type="date"
-                                    name="fecha_fin"
-                                    value={data.fecha_fin}
-                                    className="mt-1 block w-full"
-                                    autoComplete="off"
-                                    min={data.fecha_inicio || today}
-                                    onChange={(e) => setData('fecha_fin', e.target.value)}
-                                />
-                                <InputError message={errors.fecha_fin} className="mt-2" />
-                            </div>
+                            {data.fecha_inicio && (
+                                <div className="mb-4">
+                                    <p>Duración: {data.fecha_inicio} al {data.fecha_fin}</p>
+                                </div>
+                            )}
                         </>
                     )}
                     <div className="mb-4">
