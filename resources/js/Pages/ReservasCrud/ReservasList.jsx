@@ -86,7 +86,7 @@ export default function ReservasList() {
         <AuthenticatedLayout>
             <Head title="Listado de Reservas" />
             <div className="max-w-7xl mx-auto py-12">
-                <h1 className="text-2xl font-bold mb-6 text-center">Listado de Reservas</h1>
+                <h1 className="text-4xl font-bold mb-6 text-indigo-700 text-center">Listado de Reservas</h1>
                 <div className="mb-10 mt-10 flex flex-wrap justify-around gap-4">
                     <div className="flex items-center space-x-2">
                         <InputLabel htmlFor="filter" value="Filtrar por:" />
