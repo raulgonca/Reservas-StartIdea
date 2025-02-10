@@ -14,7 +14,13 @@ const FlashMessage = ({ messages }) => {
             }
 
             if (messages.error && lastMessageRef.current.error !== messages.error) {
-                toast.error(messages.error);
+                if (typeof messages.error === 'object' && Object.keys(messages.error).length > 0) {
+                    Object.values(messages.error).forEach(error => {
+                        toast.error(error);
+                    });
+                } else {
+                    toast.error(messages.error);
+                }
                 lastMessageRef.current.error = messages.error;
             }
 
@@ -30,7 +36,6 @@ const FlashMessage = ({ messages }) => {
         }
     }, [messages]);
 
-   
 };
 
 export default FlashMessage;

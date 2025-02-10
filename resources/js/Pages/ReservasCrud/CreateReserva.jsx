@@ -1,5 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Head, useForm, usePage } from '@inertiajs/react';
+import { toast, ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import ApplicationLogo from '@/Components/ApplicationLogo';
 import TextInput from '@/Components/TextInput';
@@ -31,6 +33,7 @@ export default function CreateReserva() {
 
     const [showEscritorio, setShowEscritorio] = useState(false);
     const [escritoriosLibres, setEscritoriosLibres] = useState([]);
+    const lastMessageRef = useRef({}); // Define lastMessageRef
 
     // Efecto para mostrar/ocultar escritorios según el espacio seleccionado
     useEffect(() => {
@@ -44,6 +47,20 @@ export default function CreateReserva() {
             setData('escritorio_id', '');
         }
     }, [data.espacio_id, escritorios, espacios]);
+
+    // Efecto para mostrar toasts de éxito o error
+    useEffect(() => {
+        if (flash.success && lastMessageRef.current.success !== flash.success) {
+            toast.success(flash.success, { autoClose: 5000 });
+            lastMessageRef.current.success = flash.success;
+            reset(); // Limpiar el formulario después de una reserva exitosa
+        }
+        if (Object.keys(errors).length > 0) {
+            Object.values(errors).forEach(error => {
+                toast.error(error);
+            });
+        }
+    }, [flash, errors]);
 
     // Efecto para calcular fecha_fin según el tipo de reserva
     useEffect(() => {
@@ -64,9 +81,8 @@ export default function CreateReserva() {
     // Función para enviar el formulario
     const submit = (e) => {
         e.preventDefault();
-        post(route('superadmin.reservas.store'), {
-            onSuccess: () => reset(), // Resetea el formulario después de enviarlo
-        });    };
+        post(route('superadmin.reservas.store'));
+    };
 
     const today = new Date().toISOString().split('T')[0];
 
@@ -277,7 +293,6 @@ export default function CreateReserva() {
                         </PrimaryButton>
                     </div>
                 </form>
-                <FlashMessage messages={flash} /> {/* Renderiza FlashMessage */}
             </div>
         </AuthenticatedLayout>
     );
