@@ -56,7 +56,7 @@ export default function ReservasList() {
     };
 
     const confirmDelete = () => {
-        router.delete(route('reservas.destroy', selectedReserva.id), {
+        router.delete(route('admin.reservas.destroy', selectedReserva.id), {
             onSuccess: () => {
                 toast.success('Reserva eliminada correctamente');
                 setShowConfirmDelete(false);

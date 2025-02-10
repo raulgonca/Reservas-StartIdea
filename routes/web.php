@@ -27,7 +27,6 @@ Route::get('/dashboard', function () {
     return Inertia::render('Dashboard');
 })->middleware(['auth', 'verified'])->name('dashboard');
 
-
 //------------------------------- USUARIOS ----------------------------------//
 
 // Prefijo de versión para las rutas de usuarios
@@ -88,12 +87,10 @@ Route::prefix('v1')->middleware('admin')->group(function () {
     Route::post('/reservas_recurrentes', [ReservaRecurrenteController::class, 'store'])->name('reservas_recurrentes.store');
 });
 
-
 //------------------------------- SUPER ADMIN ----------------------------------//
 
 // Prefijo de versión para las rutas del superadministrador
 Route::prefix('v1/superadmin')->middleware(['auth'])->group(function () {
-
     // Ruta para mostrar el formulario de creación de usuarios
     Route::get('/users/create', [SuperAdminRegisterController::class, 'create'])->name('superadmin.users.create');
     // Ruta para manejar la creación de usuarios
@@ -127,9 +124,6 @@ Route::prefix('v1/superadmin')->middleware(['auth'])->group(function () {
     Route::delete('/espacios/{id}', [EspacioController::class, 'destroy'])->name('superadmin.espacios.destroy');
 });
 
-
-
-
 //------------------------------- ESPACIOS ----------------------------------//
 
 // Prefijo de versión para las rutas de espacios
@@ -154,7 +148,6 @@ Route::prefix('v1')->group(function () {
     Route::get('/escritorios', [EscritorioController::class, 'index'])->name('escritorios.index');
     Route::get('/escritorios/{id}', [EscritorioController::class, 'show'])->name('escritorios.show');
 });
-
 
 // Incluir las rutas de autenticación
 require __DIR__ . '/auth.php';
