@@ -31,4 +31,22 @@ class Reserva extends Model
     {
         return Carbon::parse($value);
     }
+
+    // Definir la relación con el modelo User
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
+
+    // Definir la relación con el modelo Espacio
+    public function espacio()
+    {
+        return $this->belongsTo(Espacio::class);
+    }
+
+    // Definir la relación con el modelo Escritorio
+    public function escritorio()
+    {
+        return $this->belongsTo(Escritorio::class);
+    }
 }

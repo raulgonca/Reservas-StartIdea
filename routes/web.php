@@ -107,7 +107,6 @@ Route::prefix('v1/superadmin')->middleware(['auth'])->group(function () {
     // Ruta para listar usuarios
     Route::get('/users', [SuperAdminRegisterController::class, 'index'])->name('superadmin.users.index');
 
-
     // Rutas para gestionar reservas
     Route::get('/reservas', [ReservaController::class, 'index'])->name('superadmin.reservas.index');
     Route::get('/reservas/create', [ReservaController::class, 'create'])->name('superadmin.reservas.create');

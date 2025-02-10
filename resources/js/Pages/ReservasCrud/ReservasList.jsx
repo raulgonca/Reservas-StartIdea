@@ -1,57 +1,155 @@
-import React from 'react';
-import { Head, Link, usePage } from '@inertiajs/react';
+import React, { useState } from 'react';
+import { Head, usePage, router } from '@inertiajs/react';
+import { toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import ReservaModal from '@/Components/ReservaModal';
+import ConfirmDelete from '@/Components/ConfirmDelete';
+import SelectInput from '@/Components/SelectInput';
+import TextInput from '@/Components/TextInput';
+import InputLabel from '@/Components/InputLabel';
+import ReservasTable from '@/Components/ReservasTable';
 
 export default function ReservasList() {
-    const { reservas } = usePage().props;
+    const { reservas, users, espacios } = usePage().props;
+    const [filter, setFilter] = useState('user');
+    const [search, setSearch] = useState('');
+    const [startDate, setStartDate] = useState('');
+    const [endDate, setEndDate] = useState('');
+    const [status, setStatus] = useState('');
+    const [selectedReserva, setSelectedReserva] = useState(null);
+    const [showModal, setShowModal] = useState(false);
+    const [showConfirmDelete, setShowConfirmDelete] = useState(false);
+
+    const handleFilterChange = (e) => {
+        setFilter(e.target.value);
+        setSearch('');
+        setStartDate('');
+        setEndDate('');
+        setStatus('');
+    };
+
+    const handleSearchChange = (e) => {
+        setSearch(e.target.value);
+    };
+
+    const handleStartDateChange = (e) => {
+        setStartDate(e.target.value);
+    };
+
+    const handleEndDateChange = (e) => {
+        setEndDate(e.target.value);
+    };
+
+    const handleStatusChange = (e) => {
+        setStatus(e.target.value);
+    };
+
+    const handleEdit = (reserva) => {
+        setSelectedReserva(reserva);
+        setShowModal(true);
+    };
+
+    const handleDelete = (reserva) => {
+        setSelectedReserva(reserva);
+        setShowConfirmDelete(true);
+    };
+
+    const confirmDelete = () => {
+        router.delete(route('reservas.destroy', selectedReserva.id), {
+            onSuccess: () => {
+                toast.success('Reserva eliminada correctamente');
+                setShowConfirmDelete(false);
+            },
+            onError: () => {
+                toast.error('Error al eliminar la reserva');
+            }
+        });
+    };
+
+    const filteredReservas = reservas.filter((reserva) => {
+        if (filter === 'user') {
+            return reserva.user.name.toLowerCase().includes(search.toLowerCase());
+        } else if (filter === 'espacio') {
+            return reserva.espacio.nombre.toLowerCase().includes(search.toLowerCase());
+        } else if (filter === 'fecha') {
+            const matchesDateRange = (!startDate || new Date(reserva.fecha_inicio) >= new Date(startDate)) &&
+                                     (!endDate || new Date(reserva.fecha_fin) <= new Date(endDate));
+            return matchesDateRange;
+        } else if (filter === 'estado') {
+            return reserva.estado === status;
+        }
+        return true;
+    });
 
     return (
-        <>
-            <Head title="Lista de Reservas" />
+        <AuthenticatedLayout>
+            <Head title="Listado de Reservas" />
             <div className="max-w-7xl mx-auto py-12">
-                <h1 className="text-2xl font-bold mb-6">Lista de Reservas</h1>
-                <Link href={route('superadmin.reservas.create')} className="mb-4 inline-block px-4 py-2 bg-blue-600 text-white">
-                    Crear Reserva
-                </Link>
-                <table className="min-w-full bg-white">
-                    <thead>
-                        <tr>
-                            <th className="py-2">Usuario</th>
-                            <th className="py-2">Espacio</th>
-                            <th className="py-2">Escritorio</th>
-                            <th className="py-2">Fecha Inicio</th>
-                            <th className="py-2">Fecha Fin</th>
-                            <th className="py-2">Hora Inicio</th>
-                            <th className="py-2">Hora Fin</th>
-                            <th className="py-2">Tipo de Reserva</th>
-                            <th className="py-2">Motivo</th>
-                            <th className="py-2">Acciones</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {reservas.map((reserva) => (
-                            <tr key={reserva.id}>
-                                <td className="py-2">{reserva.user.name}</td>
-                                <td className="py-2">{reserva.espacio.nombre}</td>
-                                <td className="py-2">{reserva.escritorio ? reserva.escritorio.nombre : 'N/A'}</td>
-                                <td className="py-2">{reserva.fecha_inicio}</td>
-                                <td className="py-2">{reserva.fecha_fin || 'N/A'}</td>
-                                <td className="py-2">{reserva.hora_inicio || 'N/A'}</td>
-                                <td className="py-2">{reserva.hora_fin || 'N/A'}</td>
-                                <td className="py-2">{reserva.tipo_reserva}</td>
-                                <td className="py-2">{reserva.motivo || 'N/A'}</td>
-                                <td className="py-2">
-                                    <Link href={route('superadmin.reservas.edit', reserva.id)} className="px-4 py-2 bg-yellow-500 text-white">
-                                        Editar
-                                    </Link>
-                                    <Link href={route('superadmin.reservas.destroy', reserva.id)} method="delete" as="button" className="ml-2 px-4 py-2 bg-red-600 text-white">
-                                        Eliminar
-                                    </Link>
-                                </td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
+                <h1 className="text-2xl font-bold mb-6 text-center">Listado de Reservas</h1>
+                <div className="mb-10 mt-10 flex flex-wrap justify-around gap-4">
+                    <div className="flex items-center space-x-2">
+                        <InputLabel htmlFor="filter" value="Filtrar por:" />
+                        <SelectInput id="filter" value={filter} onChange={handleFilterChange} className="mt-1 block w-full">
+                            <option value="user">Usuario</option>
+                            <option value="espacio">Espacio</option>
+                            <option value="fecha">Rango de Fecha</option>
+                            <option value="estado">Estado</option>
+                        </SelectInput>
+                    </div>
+                    {filter === 'user' || filter === 'espacio' ? (
+                        <div className="flex items-center space-x-2">
+                            <InputLabel htmlFor="search" value="Buscar:" />
+                            <TextInput
+                                id="search"
+                                type="text"
+                                placeholder={`Buscar por ${filter === 'user' ? 'nombre de usuario' : 'nombre de espacio'}...`}
+                                value={search}
+                                onChange={handleSearchChange}
+                                className="mt-1 block w-full"
+                            />
+                        </div>
+                    ) : null}
+                    {filter === 'fecha' ? (
+                        <>
+                            <div className="flex items-center space-x-2">
+                                <InputLabel htmlFor="startDate" value="Fecha Inicio:" />
+                                <TextInput
+                                    id="startDate"
+                                    type="date"
+                                    value={startDate}
+                                    onChange={handleStartDateChange}
+                                    className="mt-1 block w-full"
+                                />
+                            </div>
+                            <div className="flex items-center space-x-2">
+                                <InputLabel htmlFor="endDate" value="Fecha Fin:" />
+                                <TextInput
+                                    id="endDate"
+                                    type="date"
+                                    value={endDate}
+                                    onChange={handleEndDateChange}
+                                    className="mt-1 block w-full"
+                                />
+                            </div>
+                        </>
+                    ) : null}
+                    {filter === 'estado' ? (
+                        <div className="flex items-center space-x-2">
+                            <InputLabel htmlFor="status" value="Estado:" />
+                            <SelectInput id="status" value={status} onChange={handleStatusChange} className="mt-1 block w-full">
+                                <option value="">Seleccione un estado</option>
+                                <option value="confirmada">Confirmada</option>
+                                <option value="pendiente">Pendiente</option>
+                                <option value="cancelada">Cancelada</option>
+                            </SelectInput>
+                        </div>
+                    ) : null}
+                </div>
+                <ReservasTable reservas={filteredReservas} onEdit={handleEdit} onDelete={handleDelete} />
+                {showModal && <ReservaModal reserva={selectedReserva} onClose={() => setShowModal(false)} />}
+                {showConfirmDelete && <ConfirmDelete reserva={selectedReserva} onConfirm={confirmDelete} onCancel={() => setShowConfirmDelete(false)} />}
             </div>
-        </>
+        </AuthenticatedLayout>
     );
 }
