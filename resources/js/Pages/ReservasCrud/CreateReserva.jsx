@@ -1,7 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { Head, useForm, usePage } from '@inertiajs/react';
-import { toast, ToastContainer } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import ApplicationLogo from '@/Components/ApplicationLogo';
 import TextInput from '@/Components/TextInput';
@@ -47,18 +45,6 @@ export default function CreateReserva() {
         }
     }, [data.espacio_id, escritorios, espacios]);
 
-    // Efecto para mostrar toasts de éxito o error
-    useEffect(() => {
-        if (flash.success) {
-            toast.success(flash.success);
-        }
-        if (Object.keys(errors).length > 0) {
-            Object.values(errors).forEach(error => {
-                toast.error(error);
-            });
-        }
-    }, [flash, errors]);
-
     // Efecto para calcular fecha_fin según el tipo de reserva
     useEffect(() => {
         if (data.tipo_reserva === 'semana' && data.fecha_inicio) {
@@ -78,8 +64,9 @@ export default function CreateReserva() {
     // Función para enviar el formulario
     const submit = (e) => {
         e.preventDefault();
-        post(route('superadmin.reservas.store'));
-    };
+        post(route('superadmin.reservas.store'), {
+            onSuccess: () => reset(), // Resetea el formulario después de enviarlo
+        });    };
 
     const today = new Date().toISOString().split('T')[0];
 
@@ -290,7 +277,7 @@ export default function CreateReserva() {
                         </PrimaryButton>
                     </div>
                 </form>
-                <FlashMessage /> {/* Renderiza FlashMessage aquí */}
+                <FlashMessage messages={flash} /> {/* Renderiza FlashMessage */}
             </div>
         </AuthenticatedLayout>
     );
