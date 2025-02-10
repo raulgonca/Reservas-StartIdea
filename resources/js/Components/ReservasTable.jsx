@@ -34,6 +34,7 @@ export default function ReservasTable({ reservas, onEdit, onDelete }) {
                         <th className="py-3 px-4 text-left text-sm font-medium text-gray-700 dark:text-gray-300">ID</th>
                         <th className="py-3 px-4 text-left text-sm font-medium text-gray-700 dark:text-gray-300">Usuario</th>
                         <th className="py-3 px-4 text-left text-sm font-medium text-gray-700 dark:text-gray-300">Espacio</th>
+                        <th className="py-3 px-4 text-left text-sm font-medium text-gray-700 dark:text-gray-300">Escritorio</th>
                         <th className="py-3 px-4 text-left text-sm font-medium text-gray-700 dark:text-gray-300">Fecha Inicio</th>
                         <th className="py-3 px-4 text-left text-sm font-medium text-gray-700 dark:text-gray-300">Hora Inicio</th>
                         <th className="py-3 px-4 text-left text-sm font-medium text-gray-700 dark:text-gray-300">Fecha Fin</th>
@@ -49,6 +50,7 @@ export default function ReservasTable({ reservas, onEdit, onDelete }) {
                             <td className="py-3 px-4 text-sm text-gray-700 dark:text-gray-300">{reserva.id}</td>
                             <td className="py-3 px-4 text-sm text-gray-700 dark:text-gray-300">{reserva.user.name}</td>
                             <td className="py-3 px-4 text-sm text-gray-700 dark:text-gray-300">{reserva.espacio.nombre}</td>
+                            <td className="py-3 px-4 text-sm text-gray-700 dark:text-gray-300">{reserva.espacio.tipo === 'coworking' ? reserva.escritorio.nombre : 'N/A'}</td>
                             <td className="py-3 px-4 text-sm text-gray-700 dark:text-gray-300">{formatDate(reserva.fecha_inicio)}</td>
                             <td className="py-3 px-4 text-sm text-gray-700 dark:text-gray-300">{formatTime(reserva.fecha_inicio)}</td>
                             <td className="py-3 px-4 text-sm text-gray-700 dark:text-gray-300">{formatDate(reserva.fecha_fin)}</td>
