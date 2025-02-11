@@ -26,6 +26,8 @@ export default function ReservasTable({ reservas, onEdit, onDelete }) {
         }
     };
 
+    
+
     return (
         <div className="overflow-x-auto mt-6">
             <table className="min-w-full bg-white shadow-md rounded-lg overflow-hidden">
