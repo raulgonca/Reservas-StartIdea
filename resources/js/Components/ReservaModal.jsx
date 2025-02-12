@@ -102,21 +102,32 @@ export default function ReservaModal({
     const submit = (e) => {
         e.preventDefault();
     
-        console.log('Actualizando reserva:', {
-            id: reserva.id,
-            estado: data.estado,
-            motivo: data.motivo
-        });
+        // Determinar si solo cambió el estado/motivo
+        const isStatusUpdate = 
+            data.user_id === reserva.user_id &&
+            data.espacio_id === reserva.espacio_id &&
+            data.escritorio_id === reserva.escritorio_id &&
+            data.fecha_inicio === reserva.fecha_inicio.split("T")[0] &&
+            data.tipo_reserva === reserva.tipo_reserva;
     
-        const statusUpdate = new URLSearchParams();
-        statusUpdate.append('_method', 'PATCH');
-        statusUpdate.append('is_status_update', 'true');
-        statusUpdate.append('estado', data.estado);
-        statusUpdate.append('motivo', data.motivo || '');
+        // Preparar datos según el tipo de actualización
+        const updateData = new FormData();
+        updateData.append('_method', 'PATCH');
     
-        axios.post(route('superadmin.reservas.update', reserva.id), statusUpdate)
+        if (isStatusUpdate) {
+            updateData.append('is_status_update', 'true');
+            updateData.append('estado', data.estado);
+            updateData.append('motivo', data.motivo || '');
+        } else {
+            Object.keys(data).forEach(key => {
+                if (data[key] !== null && data[key] !== undefined) {
+                    updateData.append(key, data[key]);
+                }
+            });
+        }
+    
+        axios.post(route('superadmin.reservas.update', reserva.id), updateData)
             .then(response => {
-                console.log('Respuesta:', response.data);
                 toast.success(response.data.message, {
                     position: "top-right",
                     autoClose: 3000
@@ -125,9 +136,10 @@ export default function ReservaModal({
                 window.location.reload();
             })
             .catch(error => {
-                console.error('Error completo:', error);
-                const mensaje = error.response?.data?.message 
-                    || 'Error al actualizar el estado';
+                const mensaje = error.response?.data?.errors?.general 
+                    || Object.values(error.response?.data?.errors || {})[0]
+                    || 'Error al actualizar la reserva';
+                
                 toast.error(mensaje, {
                     position: "top-right",
                     autoClose: 5000

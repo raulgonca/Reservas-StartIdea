@@ -16,17 +16,11 @@ class ReservaController extends Controller
 {
     protected $reservaService;
 
-    /**
-     * Constructor que inyecta el servicio de reservas
-     */
     public function __construct(ReservaService $reservaService)
     {
         $this->reservaService = $reservaService;
     }
 
-    /**
-     * Muestra el listado de reservas
-     */
     public function index()
     {
         $reservas = Reserva::with(['user', 'espacio', 'escritorio'])->get();
@@ -35,9 +29,6 @@ class ReservaController extends Controller
         ]);
     }
 
-    /**
-     * Muestra el formulario de creación
-     */
     public function create()
     {
         return Inertia::render('ReservasCrud/CreateReserva', [
@@ -48,9 +39,6 @@ class ReservaController extends Controller
         ]);
     }
 
-    /**
-     * Almacena una nueva reserva
-     */
     public function store(Request $request)
     {
         try {
@@ -58,33 +46,7 @@ class ReservaController extends Controller
             $this->reservaService->checkOverlap($data);
 
             $reserva = Reserva::create($data);
-
-            // Obtener información adicional para el mensaje
-            $usuario = User::find($data['user_id']);
-            $espacio = Espacio::find($data['espacio_id']);
-
-            // Construir el mensaje de éxito
-            $mensajeExito = [
-                "Reserva creada exitosamente!",
-                "Usuario: {$usuario->name}",
-                "Email: {$usuario->email}",
-                "Espacio: {$espacio->nombre}"
-            ];
-
-            if ($reserva->escritorio_id) {
-                $escritorio = Escritorio::find($reserva->escritorio_id);
-                $mensajeExito[] = "Escritorio: {$escritorio->nombre}";
-            }
-
-            $mensajeExito = array_merge($mensajeExito, [
-                "Fecha de Inicio: {$reserva->fecha_inicio->format('d/m/Y H:i')}",
-                "Fecha de Fin: {$reserva->fecha_fin->format('d/m/Y H:i')}",
-                "Tipo de Reserva: {$reserva->tipo_reserva}"
-            ]);
-
-            if ($reserva->motivo) {
-                $mensajeExito[] = "Motivo: {$reserva->motivo}";
-            }
+            $mensajeExito = $this->buildSuccessMessage($reserva);
 
             return back()->with('success', implode("\n", $mensajeExito));
         } catch (ValidationException $e) {
@@ -95,13 +57,9 @@ class ReservaController extends Controller
         }
     }
 
-    /**
-     * Muestra el formulario de edición
-     */
     public function edit($id)
     {
         $reserva = Reserva::with(['user', 'espacio', 'escritorio'])->findOrFail($id);
-
         return Inertia::render('ReservasCrud/ReservaEdit', [
             'reserva' => $reserva,
             'users' => User::all(),
@@ -110,83 +68,109 @@ class ReservaController extends Controller
         ]);
     }
 
-    /**
-     * Actualiza una reserva existente
-     */
     public function update(Request $request, $id)
-{
-    try {
-        // Buscar la reserva explícitamente
-        $reserva = Reserva::findOrFail($id);
-        
-        Log::info('Datos recibidos en update:', [
-            'request_data' => $request->all(),
-            'reserva_id' => $id,
-            'reserva_encontrada' => !is_null($reserva)
+    {
+        try {
+            $reserva = Reserva::findOrFail($id);
+            
+            Log::info('Datos recibidos en update:', [
+                'request_data' => $request->all(),
+                'reserva_id' => $id,
+                'is_status_update' => $request->boolean('is_status_update')
+            ]);
+
+            if ($request->boolean('is_status_update')) {
+                return $this->handleStatusUpdate($request, $reserva);
+            }
+
+            return $this->handleFullUpdate($request, $reserva);
+
+        } catch (ValidationException $e) {
+            Log::error('Error de validación:', ['errors' => $e->errors()]);
+            return response()->json(['errors' => $e->errors()], 422);
+        } catch (\Exception $e) {
+            Log::error('Error en actualización:', [
+                'error' => $e->getMessage(),
+                'reserva_id' => $id ?? null
+            ]);
+            return response()->json([
+                'errors' => ['general' => 'Error al actualizar la reserva: ' . $e->getMessage()]
+            ], 500);
+        }
+    }
+
+    protected function handleStatusUpdate(Request $request, Reserva $reserva)
+    {
+        $validatedData = $request->validate([
+            'estado' => 'required|in:pendiente,confirmada,cancelada',
+            'motivo' => 'nullable|string|max:255'
         ]);
 
-        if ($request->has('is_status_update')) {
-            $validatedData = $request->validate([
-                'estado' => 'required|in:pendiente,confirmada,cancelada',
-                'motivo' => 'nullable|string|max:255'
-            ]);
+        $reserva->update($validatedData);
+        
+        Log::info('Estado actualizado correctamente', [
+            'reserva_id' => $reserva->id,
+            'nuevo_estado' => $validatedData['estado']
+        ]);
 
-            Log::info('Antes de actualizar:', [
-                'reserva_id' => $id,
-                'estado_actual' => $reserva->estado,
-                'nuevo_estado' => $validatedData['estado']
-            ]);
+        return response()->json([
+            'message' => "¡Estado actualizado a '{$validatedData['estado']}' exitosamente!",
+            'reserva' => $reserva->fresh()
+        ]);
+    }
 
-            $updated = $reserva->update([
-                'estado' => $validatedData['estado'],
-                'motivo' => $validatedData['motivo'] ?? ''
-            ]);
+    protected function handleFullUpdate(Request $request, Reserva $reserva)
+{
+    Log::info('Procesando actualización completa');
 
-            Log::info('Estado actualizado:', [
-                'reserva_id' => $id,
-                'actualizado' => $updated,
-                'estado' => $reserva->fresh()->estado
-            ]);
-
-            return response()->json([
-                'message' => "¡Estado actualizado a '{$validatedData['estado']}' exitosamente!",
-                'reserva' => $reserva->fresh()
-            ]);
+    try {
+        $updateData = $request->all();
+        
+        // Verificar si el espacio es coworking
+        $espacio = Espacio::findOrFail($updateData['espacio_id']);
+        if ($espacio->tipo !== 'coworking') {
+            $updateData['escritorio_id'] = null;
         }
 
-        // ... resto del código para actualización completa ...
-
-    } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
-        Log::error('Reserva no encontrada:', ['id' => $id]);
-        return response()->json([
-            'message' => 'No se encontró la reserva especificada.'
-        ], 404);
-    } catch (\Exception $e) {
-        Log::error('Error en actualización:', [
-            'error' => $e->getMessage(),
-            'id' => $id
+        // Validar y preparar datos
+        $data = $this->reservaService->validateAndPrepareData($updateData, true, $reserva);
+        
+        // Verificar solapamiento
+        $this->reservaService->checkOverlap($data, $reserva->id);
+        
+        // Actualizar solo los campos permitidos
+        $reserva->update([
+            'user_id' => $data['user_id'],
+            'espacio_id' => $data['espacio_id'],
+            'escritorio_id' => $data['escritorio_id'],
+            'fecha_inicio' => $data['fecha_inicio'],
+            'fecha_fin' => $data['fecha_fin'],
+            'tipo_reserva' => $data['tipo_reserva'],
+            'estado' => $data['estado'],
+            'motivo' => $data['motivo']
         ]);
+
+        $mensajeExito = $this->buildSuccessMessage($reserva->fresh());
+
+        Log::info('Reserva actualizada correctamente', [
+            'reserva_id' => $reserva->id,
+            'datos_actualizados' => $data
+        ]);
+
         return response()->json([
-            'message' => 'Error al actualizar la reserva: ' . $e->getMessage()
-        ], 500);
+            'message' => implode("\n", $mensajeExito),
+            'reserva' => $reserva->fresh()
+        ]);
+
+    } catch (\Exception $e) {
+        Log::error('Error en actualización completa:', [
+            'error' => $e->getMessage(),
+            'trace' => $e->getTraceAsString()
+        ]);
+        throw $e;
     }
 }
 
-    protected function handleFullUpdate(Request $request, Reserva $reserva)
-    {
-        // Mover la lógica de actualización completa aquí
-        $data = $this->reservaService->validateAndPrepareData($request->all(), true, $reserva);
-        $this->reservaService->checkOverlap($data, $reserva->id);
-        $reserva->update($data);
-
-        return response()->json([
-            'message' => '¡Reserva actualizada exitosamente!'
-        ]);
-    }
-
-    /**
-     * Construye el mensaje de éxito para la actualización
-     */
     protected function buildSuccessMessage($reserva)
     {
         $mensajeExito = [
@@ -214,9 +198,6 @@ class ReservaController extends Controller
         return $mensajeExito;
     }
 
-    /**
-     * Elimina una reserva
-     */
     public function destroy($id)
     {
         try {

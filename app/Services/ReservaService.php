@@ -175,39 +175,47 @@ class ReservaService
      * Calcula las fechas de inicio y fin según el tipo de reserva
      */
     protected function calculateDates($data)
-    {
-        $fechaInicio = Carbon::parse($data['fecha_inicio']);
-        $tipoReserva = self::TIPOS_RESERVA[$data['tipo_reserva']];
+{
+    $fechaInicio = Carbon::parse($data['fecha_inicio']);
+    $tipoReserva = self::TIPOS_RESERVA[$data['tipo_reserva']];
 
-        if ($tipoReserva['requiere_hora']) {
-            $fechaInicio->setTimeFromTimeString($data['hora_inicio']);
-        } else {
-            $fechaInicio->startOfDay();
-        }
-
-        switch ($data['tipo_reserva']) {
-            case 'hora':
-                $fechaFin = $fechaInicio->copy()->addHour();
-                break;
-            case 'medio_dia':
-                $fechaFin = $fechaInicio->copy()->addHours(6);
-                break;
-            case 'dia_completo':
-                $fechaFin = $fechaInicio->copy()->endOfDay();
-                break;
-            case 'semana':
-                $fechaFin = $fechaInicio->copy()->addWeek()->subSecond();
-                break;
-            case 'mes':
-                $fechaFin = $fechaInicio->copy()->endOfMonth();
-                break;
-        }
-
-        return array_merge($data, [
-            'fecha_inicio' => $fechaInicio,
-            'fecha_fin' => $fechaFin
-        ]);
+    // Manejar la hora de inicio si está presente
+    if (isset($data['hora_inicio']) && $tipoReserva['requiere_hora']) {
+        $fechaInicio->setTimeFromTimeString($data['hora_inicio']);
+    } else {
+        $fechaInicio->startOfDay();
     }
+
+    switch ($data['tipo_reserva']) {
+        case 'hora':
+            $fechaFin = $fechaInicio->copy()->addHour();
+            break;
+        case 'medio_dia':
+            $fechaFin = $fechaInicio->copy()->addHours(6);
+            break;
+        case 'dia_completo':
+            $fechaFin = $fechaInicio->copy()->endOfDay();
+            break;
+        case 'semana':
+            $fechaFin = $fechaInicio->copy()->addWeek()->subSecond();
+            break;
+        case 'mes':
+            $fechaFin = $fechaInicio->copy()->endOfMonth();
+            break;
+    }
+
+    // Solo devolver los campos que existen en la tabla
+    return [
+        'user_id' => $data['user_id'],
+        'espacio_id' => $data['espacio_id'],
+        'escritorio_id' => $data['escritorio_id'],
+        'fecha_inicio' => $fechaInicio,
+        'fecha_fin' => $fechaFin,
+        'tipo_reserva' => $data['tipo_reserva'],
+        'estado' => $data['estado'],
+        'motivo' => $data['motivo'] ?? null
+    ];
+}
 
     /**
      * Verifica solapamiento con otras reservas
@@ -297,32 +305,52 @@ class ReservaService
     Log::info('Verificación de solapamiento completada sin conflictos');
 }
 
+
+
+
+
+
+
+
+
     /**
      * Verifica si los datos son solo de estado
      */
     public function isOnlyStatusData($data)
-{
-    // Solo los campos permitidos para actualización de estado
-    $allowedFields = ['estado', 'motivo', '_method', '_token'];
+    {
+        // Campos permitidos para actualización de estado
+        $allowedFields = ['estado', 'motivo', '_method', '_token', 'is_status_update'];
+        
+        // Filtrar campos reales (no del sistema) y no vacíos
+        $receivedFields = array_filter(array_keys($data), function($key) use ($data) {
+            $isSystemField = in_array($key, ['_method', '_token']);
+            $isEmpty = !isset($data[$key]) || $data[$key] === '' || $data[$key] === null;
+            
+            return !$isSystemField && !$isEmpty;
+        });
     
-    // Obtener todos los campos que no están vacíos
-    $receivedFields = array_filter($data, function($value) {
-        return !is_null($value) && $value !== '';
-    });
+        Log::info('Verificación de campos:', [
+            'campos_permitidos' => $allowedFields,
+            'campos_recibidos' => $receivedFields,
+            'diferencia' => array_diff($receivedFields, $allowedFields)
+        ]);
     
-    // Eliminar campos del sistema
-    unset($receivedFields['_method'], $receivedFields['_token']);
+        // Si tiene is_status_update, verificar que solo tenga estado y motivo
+        if (isset($data['is_status_update']) && $data['is_status_update'] === 'true') {
+            $validFields = ['estado', 'motivo'];
+            $actualFields = array_diff($receivedFields, ['is_status_update']);
+            return empty(array_diff($actualFields, $validFields));
+        }
     
-    // Verificar que solo existan los campos permitidos
-    $actualFields = array_keys($receivedFields);
-    $unexpectedFields = array_diff($actualFields, ['estado', 'motivo']);
-    
-    Log::info('Análisis de campos en isOnlyStatusData:', [
-        'campos_recibidos' => $actualFields,
-        'campos_no_esperados' => $unexpectedFields,
-        'datos_completos' => $data
-    ]);
+        return false;
+    }
 
-    return empty($unexpectedFields);
-}
+
+
+
+
+
+
+
+
 }

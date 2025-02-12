@@ -16,8 +16,6 @@ class Reserva extends Model
         'escritorio_id',
         'fecha_inicio',
         'fecha_fin',
-        'hora_inicio',
-        'hora_fin',
         'tipo_reserva',
         'estado',
         'motivo'
