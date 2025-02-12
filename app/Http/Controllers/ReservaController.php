@@ -23,13 +23,72 @@ class ReservaController extends Controller
         ]);
     }
 
+    private function verificarSolapamiento($request, $reservaId = null)
+    {
+        $fecha_inicio = $request->fecha_inicio;
+        $fecha_fin = $request->fecha_fin;
+        $hora_inicio = $request->hora_inicio;
+        $hora_fin = $request->hora_fin;
+        $espacio_id = $request->espacio_id;
+        $escritorio_id = $request->escritorio_id;
+        $tipo_reserva = $request->tipo_reserva;
+
+        // Ajustar hora_fin para reservas de medio día
+        if ($tipo_reserva === 'medio_dia') {
+            $hora_fin = $hora_inicio === '08:00' ? '14:00' : '20:00';
+        }
+
+        $query = Reserva::where('espacio_id', $espacio_id)
+            ->where('fecha_inicio', '<=', $fecha_fin)
+            ->where('fecha_fin', '>=', $fecha_inicio)
+            ->where('estado', '!=', 'cancelada');
+
+        if ($escritorio_id) {
+            $query->where('escritorio_id', $escritorio_id);
+        }
+
+        if ($reservaId) {
+            $query->where('id', '!=', $reservaId);
+        }
+
+        $reservasExistentes = $query->get();
+
+        foreach ($reservasExistentes as $reserva) {
+            // Para reservas de medio día, verificar el rango específico
+            if ($reserva->tipo_reserva === 'medio_dia') {
+                $reservaHoraFin = $reserva->hora_inicio === '08:00' ? '14:00' : '20:00';
+
+                if ($this->hayConflictoHorario($hora_inicio, $hora_fin, $reserva->hora_inicio, $reservaHoraFin)) {
+                    return true;
+                }
+            }
+            // Para otros tipos de reservas, mantener la verificación normal
+            elseif ($this->hayConflictoHorario($hora_inicio, $hora_fin, $reserva->hora_inicio, $reserva->hora_fin)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private function hayConflictoHorario($inicio1, $fin1, $inicio2, $fin2)
+    {
+        // Si alguna reserva es de día completo, hay solapamiento
+        if (empty($inicio1) || empty($fin1) || empty($inicio2) || empty($fin2)) {
+            return true;
+        }
+
+        return ($inicio1 < $fin2 && $fin1 > $inicio2);
+    }
+
     // Método para mostrar el formulario de creación de reservas
     public function create()
     {
         $users = User::all();
         $espacios = Espacio::all();
         $reservas = Reserva::all();
-        $escritorios = Escritorio::all(); // Obtener todos los escritorios
+        $escritorios = Escritorio::all();
+
 
         // Enviar los datos a Inertia
         return Inertia::render('ReservasCrud/CreateReserva', [
@@ -39,7 +98,6 @@ class ReservaController extends Controller
             'escritorios' => $escritorios,
         ]);
     }
-
 
     public function store(Request $request)
     {
@@ -193,6 +251,21 @@ class ReservaController extends Controller
 
         // Regresar con mensaje de éxito
         return back()->with('success', $mensajeFinal);
+    }
+
+    public function edit($id)
+    {
+        $reserva = Reserva::with(['user', 'espacio', 'escritorio'])->findOrFail($id);
+        $users = User::all();
+        $espacios = Espacio::all();
+        $escritorios = Escritorio::all();
+
+        return Inertia::render('ReservasCrud/ReservaEdit', [
+            'reserva' => $reserva,
+            'users' => $users,
+            'espacios' => $espacios,
+            'escritorios' => $escritorios,
+        ]);
     }
 
     // Método para eliminar una reserva

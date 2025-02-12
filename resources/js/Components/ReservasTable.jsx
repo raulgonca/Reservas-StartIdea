@@ -1,8 +1,9 @@
 import React from 'react';
+import { router } from '@inertiajs/react';
 import PrimaryButton from '@/Components/PrimaryButton';
 import DangerButton from '@/Components/DangerButton';
 
-export default function ReservasTable({ reservas, onEdit, onDelete }) {
+export default function ReservasTable({ reservas, onDelete }) {
     const formatDate = (dateString) => {
         const options = { day: '2-digit', month: '2-digit', year: 'numeric' };
         return new Date(dateString).toLocaleDateString('es-ES', options);
@@ -26,7 +27,9 @@ export default function ReservasTable({ reservas, onEdit, onDelete }) {
         }
     };
 
-    
+    const handleEdit = (reserva) => {
+        router.visit(route('superadmin.reservas.edit', reserva.id));
+    };
 
     return (
         <div className="overflow-x-auto mt-6">
@@ -60,7 +63,7 @@ export default function ReservasTable({ reservas, onEdit, onDelete }) {
                             <td className="py-3 px-4 text-sm text-gray-700 dark:text-gray-300">{reserva.tipo_reserva}</td>
                             <td className={`py-3 px-4 text-sm font-medium ${getStatusClass(reserva.estado)}`}>{reserva.estado}</td>
                             <td className="py-3 px-4 text-sm text-gray-700 dark:text-gray-300 flex space-x-2">
-                                <PrimaryButton onClick={() => onEdit(reserva)} className="mr-2">Editar</PrimaryButton>
+                                <PrimaryButton onClick={() => handleEdit(reserva)} className="mr-2">Editar</PrimaryButton>
                                 <DangerButton onClick={() => onDelete(reserva)}>Eliminar</DangerButton>
                             </td>
                         </tr>

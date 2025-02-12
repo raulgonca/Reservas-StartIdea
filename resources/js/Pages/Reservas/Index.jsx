@@ -1,21 +1,19 @@
 import React from 'react';
-import CreateReserva from '../ReservasCrud/CreateReserva';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import CreateReserva from '../ReservasCrud/CreateReserva';
 import ReservaList from '../ReservasCrud/ReservasList';
+import { Head } from '@inertiajs/react';
 
-const Index = () => {
+export default function Index() {
     return (
-    
-    <AuthenticatedLayout>
-        <div>
-            <CreateReserva />
-            <ReservaList />
-        </div>  
-    </AuthenticatedLayout>
-       
+        <AuthenticatedLayout>
+            <Head title="Reservas" />
+            <div className="py-12">
+                <div className="max-w-7xl mx-auto sm:px-6 lg:px-8">
+                    <CreateReserva />
+                    <ReservaList />
+                </div>
+            </div>
+        </AuthenticatedLayout>
     );
-};
-
-export default Index;
-
-
+}
