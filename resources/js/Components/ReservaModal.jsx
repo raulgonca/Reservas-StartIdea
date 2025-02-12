@@ -10,6 +10,7 @@ import InputLabel from "@/Components/InputLabel";
 import PrimaryButton from "@/Components/PrimaryButton";
 import SecondaryButton from "@/Components/SecondaryButton";
 import HourSelectInput from "@/Components/HourSelectInput";
+import axios from 'axios';
 
 export default function ReservaModal({
     reserva,
@@ -18,7 +19,7 @@ export default function ReservaModal({
     espacios,
     escritorios
 }) {
-    const { data, setData, patch, processing, errors } = useForm({
+    const { data, setData, errors, setError, clearErrors } = useForm({
         user_id: reserva.user_id,
         espacio_id: reserva.espacio_id,
         escritorio_id: reserva.escritorio_id,
@@ -35,6 +36,7 @@ export default function ReservaModal({
     const [escritoriosLibres, setEscritoriosLibres] = useState([]);
     const [showHoras, setShowHoras] = useState(reserva.tipo_reserva === 'hora' || reserva.tipo_reserva === 'medio_dia');
     const [fechaFinCalculada, setFechaFinCalculada] = useState('');
+    const [processing, setProcessing] = useState(false);
     const [horariosDisponibles] = useState([
         { inicio: '08:00', fin: '14:00', label: 'Mañana (08:00 - 14:00)' },
         { inicio: '14:00', fin: '20:00', label: 'Tarde (14:00 - 20:00)' }
@@ -92,67 +94,73 @@ export default function ReservaModal({
         }
     }, [data.hora_inicio, data.tipo_reserva]);
 
-    
+    const validateForm = () => {
+        clearErrors();
+        let isValid = true;
 
+        if (data.tipo_reserva === 'hora' || data.tipo_reserva === 'medio_dia') {
+            if (!data.hora_inicio || !data.hora_fin) {
+                setError('hora', 'Las horas son requeridas para reservas por hora o medio día');
+                isValid = false;
+            } else if (data.hora_inicio >= data.hora_fin) {
+                setError('hora', 'La hora de fin debe ser mayor a la hora de inicio');
+                isValid = false;
+            }
+        }
 
-
-
-
+        return isValid;
+    };
 
     const submit = (e) => {
         e.preventDefault();
-    
-        // Determinar si solo cambió el estado/motivo
-        const isStatusUpdate = 
-            data.user_id === reserva.user_id &&
-            data.espacio_id === reserva.espacio_id &&
-            data.escritorio_id === reserva.escritorio_id &&
-            data.fecha_inicio === reserva.fecha_inicio.split("T")[0] &&
-            data.tipo_reserva === reserva.tipo_reserva;
-    
-        // Preparar datos según el tipo de actualización
+        if (!validateForm()) return;
+
+        setProcessing(true);
+        toast.dismiss();
+
         const updateData = new FormData();
         updateData.append('_method', 'PATCH');
-    
-        if (isStatusUpdate) {
-            updateData.append('is_status_update', 'true');
-            updateData.append('estado', data.estado);
-            updateData.append('motivo', data.motivo || '');
-        } else {
-            Object.keys(data).forEach(key => {
-                if (data[key] !== null && data[key] !== undefined) {
-                    updateData.append(key, data[key]);
-                }
-            });
-        }
-    
+
+        Object.keys(data).forEach(key => {
+            if (data[key] !== null && data[key] !== undefined) {
+                updateData.append(key, data[key]);
+            }
+        });
+
         axios.post(route('superadmin.reservas.update', reserva.id), updateData)
             .then(response => {
-                toast.success(response.data.message, {
-                    position: "top-right",
-                    autoClose: 3000
-                });
+                toast.success(response.data.message);
+                document.dispatchEvent(new Event('reservaUpdated'));
                 onClose();
-                window.location.reload();
             })
             .catch(error => {
-                const mensaje = error.response?.data?.errors?.general 
-                    || Object.values(error.response?.data?.errors || {})[0]
-                    || 'Error al actualizar la reserva';
+                setProcessing(false);
+                const errorData = error.response?.data?.errors || {};
                 
-                toast.error(mensaje, {
-                    position: "top-right",
-                    autoClose: 5000
-                });
+                if (typeof errorData === 'object') {
+                    Object.keys(errorData).forEach(key => {
+                        setError(key, Array.isArray(errorData[key]) ? 
+                            errorData[key].join(', ') : 
+                            errorData[key]
+                        );
+                    });
+
+                    const errorMessages = Object.values(errorData)
+                        .flat()
+                        .filter(Boolean);
+
+                    if (errorMessages.length > 0) {
+                        toast.error(errorMessages.join('\n'), {
+                            autoClose: false,
+                            closeOnClick: true,
+                            className: 'whitespace-pre-line'
+                        });
+                    }
+                } else {
+                    toast.error('Error al actualizar la reserva');
+                }
             });
     };
-
-
-
-
-
-
-
 
     return (
         <Modal show={true} onClose={onClose} maxWidth="2xl">
@@ -174,6 +182,7 @@ export default function ReservaModal({
                         value={data.espacio_id}
                         onChange={e => setData('espacio_id', e.target.value)}
                         className="mt-1 block w-full"
+                        disabled={processing}
                     >
                         {espacios.map(espacio => (
                             <option key={espacio.id} value={espacio.id}>
@@ -192,6 +201,7 @@ export default function ReservaModal({
                             value={data.escritorio_id}
                             onChange={e => setData('escritorio_id', e.target.value)}
                             className="mt-1 block w-full"
+                            disabled={processing}
                         >
                             <option value="">Seleccione un escritorio</option>
                             {escritoriosLibres.map(escritorio => (
@@ -212,6 +222,7 @@ export default function ReservaModal({
                             value={data.tipo_reserva}
                             onChange={e => setData('tipo_reserva', e.target.value)}
                             className="mt-1 block w-full"
+                            disabled={processing}
                         >
                             <option value="hora">Por Hora</option>
                             <option value="medio_dia">Medio Día</option>
@@ -229,6 +240,7 @@ export default function ReservaModal({
                             value={data.estado}
                             onChange={e => setData('estado', e.target.value)}
                             className="mt-1 block w-full"
+                            disabled={processing}
                         >
                             <option value="pendiente">Pendiente</option>
                             <option value="confirmada">Confirmada</option>
@@ -246,6 +258,7 @@ export default function ReservaModal({
                         value={data.fecha_inicio}
                         onChange={e => setData('fecha_inicio', e.target.value)}
                         className="mt-1 block w-full"
+                        disabled={processing}
                     />
                     <InputError message={errors.fecha_inicio} className="mt-2" />
                     {fechaFinCalculada && (
@@ -266,6 +279,7 @@ export default function ReservaModal({
                                         value={data.hora_inicio}
                                         onChange={e => setData('hora_inicio', e.target.value)}
                                         className="mt-1 block w-full"
+                                        disabled={processing}
                                     >
                                         <option value="">Seleccione un horario</option>
                                         {horariosDisponibles.map((horario, index) => (
@@ -286,6 +300,7 @@ export default function ReservaModal({
                                     value={data.hora_inicio}
                                     onChange={e => setData('hora_inicio', e.target.value)}
                                     className="mt-1 block w-full"
+                                    disabled={processing}
                                 />
                             )}
                             <InputError message={errors.hora_inicio} className="mt-2" />
@@ -299,6 +314,7 @@ export default function ReservaModal({
                                     value={data.hora_fin}
                                     onChange={e => setData('hora_fin', e.target.value)}
                                     className="mt-1 block w-full"
+                                    disabled={processing}
                                 />
                                 <InputError message={errors.hora_fin} className="mt-2" />
                             </div>
@@ -314,18 +330,25 @@ export default function ReservaModal({
                         onChange={e => setData('motivo', e.target.value)}
                         className="mt-1 block w-full"
                         rows="3"
+                        disabled={processing}
                     />
                     <InputError message={errors.motivo} className="mt-2" />
                 </div>
 
                 <div className="mt-6 flex justify-end space-x-3">
-                    <SecondaryButton onClick={onClose}>
+                    <SecondaryButton onClick={onClose} disabled={processing}>
                         Cancelar
                     </SecondaryButton>
-                    <PrimaryButton disabled={processing}>
-                        Guardar Cambios
+                    <PrimaryButton type="submit" disabled={processing}>
+                        {processing ? 'Procesando...' : 'Guardar Cambios'}
                     </PrimaryButton>
                 </div>
+
+                {errors.hora && (
+                    <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-md">
+                        <p className="text-red-600 text-sm">{errors.hora}</p>
+                    </div>
+                )}
             </form>
         </Modal>
     );
