@@ -6,15 +6,27 @@ use App\Models\Reserva;
 use App\Models\User;
 use App\Models\Espacio;
 use App\Models\Escritorio;
+use App\Services\ReservaService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
-use Illuminate\Support\Facades\Validator;
-use Carbon\Carbon;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\ValidationException;
 
 class ReservaController extends Controller
 {
-    // Método para mostrar la lista de reservas
+    protected $reservaService;
+
+    /**
+     * Constructor que inyecta el servicio de reservas
+     */
+    public function __construct(ReservaService $reservaService)
+    {
+        $this->reservaService = $reservaService;
+    }
+
+    /**
+     * Muestra el listado de reservas
+     */
     public function index()
     {
         $reservas = Reserva::with(['user', 'espacio', 'escritorio'])->get();
@@ -23,257 +35,200 @@ class ReservaController extends Controller
         ]);
     }
 
-    private function verificarSolapamiento($request, $reservaId = null)
-    {
-        $fecha_inicio = $request->fecha_inicio;
-        $fecha_fin = $request->fecha_fin;
-        $hora_inicio = $request->hora_inicio;
-        $hora_fin = $request->hora_fin;
-        $espacio_id = $request->espacio_id;
-        $escritorio_id = $request->escritorio_id;
-        $tipo_reserva = $request->tipo_reserva;
-
-        // Ajustar hora_fin para reservas de medio día
-        if ($tipo_reserva === 'medio_dia') {
-            $hora_fin = $hora_inicio === '08:00' ? '14:00' : '20:00';
-        }
-
-        $query = Reserva::where('espacio_id', $espacio_id)
-            ->where('fecha_inicio', '<=', $fecha_fin)
-            ->where('fecha_fin', '>=', $fecha_inicio)
-            ->where('estado', '!=', 'cancelada');
-
-        if ($escritorio_id) {
-            $query->where('escritorio_id', $escritorio_id);
-        }
-
-        if ($reservaId) {
-            $query->where('id', '!=', $reservaId);
-        }
-
-        $reservasExistentes = $query->get();
-
-        foreach ($reservasExistentes as $reserva) {
-            // Para reservas de medio día, verificar el rango específico
-            if ($reserva->tipo_reserva === 'medio_dia') {
-                $reservaHoraFin = $reserva->hora_inicio === '08:00' ? '14:00' : '20:00';
-
-                if ($this->hayConflictoHorario($hora_inicio, $hora_fin, $reserva->hora_inicio, $reservaHoraFin)) {
-                    return true;
-                }
-            }
-            // Para otros tipos de reservas, mantener la verificación normal
-            elseif ($this->hayConflictoHorario($hora_inicio, $hora_fin, $reserva->hora_inicio, $reserva->hora_fin)) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    private function hayConflictoHorario($inicio1, $fin1, $inicio2, $fin2)
-    {
-        // Si alguna reserva es de día completo, hay solapamiento
-        if (empty($inicio1) || empty($fin1) || empty($inicio2) || empty($fin2)) {
-            return true;
-        }
-
-        return ($inicio1 < $fin2 && $fin1 > $inicio2);
-    }
-
-    // Método para mostrar el formulario de creación de reservas
+    /**
+     * Muestra el formulario de creación
+     */
     public function create()
     {
-        $users = User::all();
-        $espacios = Espacio::all();
-        $reservas = Reserva::all();
-        $escritorios = Escritorio::all();
-
-
-        // Enviar los datos a Inertia
         return Inertia::render('ReservasCrud/CreateReserva', [
-            'users' => $users,
-            'espacios' => $espacios,
-            'reservas' => $reservas,
-            'escritorios' => $escritorios,
+            'users' => User::all(),
+            'espacios' => Espacio::all(),
+            'reservas' => Reserva::all(),
+            'escritorios' => Escritorio::all(),
         ]);
     }
 
+    /**
+     * Almacena una nueva reserva
+     */
     public function store(Request $request)
     {
-        // Limpiar campos no necesarios según tipo de reserva
-        if (in_array($request->tipo_reserva, ['dia_completo', 'semana', 'mes'])) {
-            $request->merge([
-                'hora_inicio' => null,
-                'hora_fin' => null
-            ]);
-        }
+        try {
+            $data = $this->reservaService->validateAndPrepareData($request->all());
+            $this->reservaService->checkOverlap($data);
 
-        // Mensajes de error personalizados
-        $messages = [
-            'hora_fin.required_with' => 'La hora final es requerida cuando se especifica hora de inicio.',
-            'hora_fin.after' => 'La hora final debe ser posterior a la hora de inicio.',
-            'hora_inicio.in' => 'Para medio día debe seleccionar 08:00 o 14:00 o de 14:00 a 20:00 horas.',
-            'fecha_inicio.after_or_equal' => 'La fecha no puede ser anterior al día actual.',
-        ];
+            $reserva = Reserva::create($data);
 
-        // Validación base
-        $validator = Validator::make($request->all(), [
-            'user_id' => 'required|exists:users,id',
-            'espacio_id' => 'required|exists:espacios,id',
-            'escritorio_id' => 'nullable|exists:escritorios,id',
-            'fecha_inicio' => 'required|date|after_or_equal:today',
-            'hora_inicio' => 'nullable|date_format:H:i',
-            'hora_fin' => 'nullable|date_format:H:i|after:hora_inicio',
-            'tipo_reserva' => 'required|in:hora,medio_dia,dia_completo,semana,mes',
-            'motivo' => 'nullable|string|max:255',
-        ], $messages);
+            // Obtener información adicional para el mensaje
+            $usuario = User::find($data['user_id']);
+            $espacio = Espacio::find($data['espacio_id']);
 
-        // Reglas condicionales
-        $validator->sometimes('hora_inicio', 'required|date_format:H:i', function ($input) {
-            return in_array($input->tipo_reserva, ['hora', 'medio_dia']);
-        });
+            // Construir el mensaje de éxito
+            $mensajeExito = [
+                "Reserva creada exitosamente!",
+                "Usuario: {$usuario->name}",
+                "Email: {$usuario->email}",
+                "Espacio: {$espacio->nombre}"
+            ];
 
-        $validator->sometimes('hora_fin', 'required_with:hora_inicio|date_format:H:i|after:hora_inicio', function ($input) {
-            return $input->tipo_reserva === 'hora';
-        });
+            if ($reserva->escritorio_id) {
+                $escritorio = Escritorio::find($reserva->escritorio_id);
+                $mensajeExito[] = "Escritorio: {$escritorio->nombre}";
+            }
 
-        $validator->sometimes('hora_inicio', 'in:08:00,14:00', function ($input) {
-            return $input->tipo_reserva === 'medio_dia';
-        });
-
-        $validator->sometimes(['hora_inicio', 'hora_fin'], 'prohibited', function ($input) {
-            return in_array($input->tipo_reserva, ['dia_completo', 'semana', 'mes']);
-        });
-
-        // Si la validación falla, regresar con errores
-        if ($validator->fails()) {
-            return back()->withErrors($validator)->withInput();
-        }
-
-        // Cálculo de rangos temporales según el tipo de reserva
-        $tipoReserva = $request->tipo_reserva;
-        $fechaInicio = Carbon::parse($request->fecha_inicio);
-
-        switch ($tipoReserva) {
-            case 'hora':
-                $fechaInicio->setTimeFromTimeString($request->hora_inicio);
-                $fechaFin = $fechaInicio->copy()->addHour()->subSecond();
-                break;
-
-            case 'medio_dia':
-                $fechaInicio->setTimeFromTimeString($request->hora_inicio);
-                $fechaFin = $fechaInicio->copy()->addHours(6)->subSecond();
-                break;
-
-            case 'dia_completo':
-                $fechaInicio->startOfDay();
-                $fechaFin = $fechaInicio->copy()->endOfDay();
-                break;
-
-            case 'semana':
-                $fechaInicio->startOfDay();
-                $fechaFin = $fechaInicio->copy()->addWeek()->subSecond();
-                break;
-
-            case 'mes':
-                $fechaInicio->startOfDay();
-                $fechaFin = $fechaInicio->copy()->endOfMonth();
-                break;
-
-            default:
-                return back()->withErrors(['tipo_reserva' => 'Tipo de reserva no válido.']);
-        }
-
-        // Validación de solapamiento universal
-        $solapamiento = Reserva::where('espacio_id', $request->espacio_id)
-            ->where(function ($query) use ($fechaInicio, $fechaFin) {
-                $query->where('fecha_inicio', '<', $fechaFin)
-                    ->where('fecha_fin', '>', $fechaInicio);
-            })
-            ->when($request->escritorio_id, function ($query) use ($request) {
-                $query->where('escritorio_id', $request->escritorio_id);
-            })
-            ->first();
-
-        // Si hay solapamiento, regresar con error
-        if ($solapamiento) {
-            $mensajeError = "El espacio ya está reservado desde " .
-                $solapamiento->fecha_inicio->format('d/m/Y H:i') . " hasta " .
-                $solapamiento->fecha_fin->format('d/m/Y H:i') . ". Lo sentimos, seleccione otra hora u otro espacio.";
-
-            Log::error('Solapamiento detectado', [
-                'nueva_reserva' => $fechaInicio->format('Y-m-d H:i') . ' - ' . $fechaFin->format('Y-m-d H:i'),
-                'conflicto' => $solapamiento->only(['fecha_inicio', 'fecha_fin'])
+            $mensajeExito = array_merge($mensajeExito, [
+                "Fecha de Inicio: {$reserva->fecha_inicio->format('d/m/Y H:i')}",
+                "Fecha de Fin: {$reserva->fecha_fin->format('d/m/Y H:i')}",
+                "Tipo de Reserva: {$reserva->tipo_reserva}"
             ]);
 
-            return back()->withErrors(['solapamiento' => $mensajeError])->withInput();
-        }
+            if ($reserva->motivo) {
+                $mensajeExito[] = "Motivo: {$reserva->motivo}";
+            }
 
-        // Crear la reserva
-        $reserva = Reserva::create([
-            'user_id' => $request->user_id,
-            'espacio_id' => $request->espacio_id,
-            'escritorio_id' => $request->escritorio_id,
-            'fecha_inicio' => $fechaInicio,
-            'fecha_fin' => $fechaFin,
-            'tipo_reserva' => $tipoReserva,
-            'motivo' => $request->motivo,
-            'estado' => 'confirmada'
+            return back()->with('success', implode("\n", $mensajeExito));
+        } catch (ValidationException $e) {
+            return back()->withErrors($e->errors())->withInput();
+        } catch (\Exception $e) {
+            Log::error('Error al crear reserva:', ['error' => $e->getMessage()]);
+            return back()->withErrors(['error' => 'Error al crear la reserva.'])->withInput();
+        }
+    }
+
+    /**
+     * Muestra el formulario de edición
+     */
+    public function edit($id)
+    {
+        $reserva = Reserva::with(['user', 'espacio', 'escritorio'])->findOrFail($id);
+
+        return Inertia::render('ReservasCrud/ReservaEdit', [
+            'reserva' => $reserva,
+            'users' => User::all(),
+            'espacios' => Espacio::all(),
+            'escritorios' => Escritorio::all(),
+        ]);
+    }
+
+    /**
+     * Actualiza una reserva existente
+     */
+    public function update(Request $request, $id)
+{
+    try {
+        // Buscar la reserva explícitamente
+        $reserva = Reserva::findOrFail($id);
+        
+        Log::info('Datos recibidos en update:', [
+            'request_data' => $request->all(),
+            'reserva_id' => $id,
+            'reserva_encontrada' => !is_null($reserva)
         ]);
 
-        // Obtener información del usuario y del espacio
-        $usuario = User::find($request->user_id);
-        $espacio = Espacio::find($request->espacio_id);
+        if ($request->has('is_status_update')) {
+            $validatedData = $request->validate([
+                'estado' => 'required|in:pendiente,confirmada,cancelada',
+                'motivo' => 'nullable|string|max:255'
+            ]);
 
-        // Construir el mensaje de éxito como un array
-        $mensajeExito = [];
-        $mensajeExito[] = "Reserva creada exitosamente!";
-        $mensajeExito[] = "Usuario: {$usuario->name}";
-        $mensajeExito[] = "Email: {$usuario->email}";
-        $mensajeExito[] = "Espacio: {$espacio->nombre}";
+            Log::info('Antes de actualizar:', [
+                'reserva_id' => $id,
+                'estado_actual' => $reserva->estado,
+                'nuevo_estado' => $validatedData['estado']
+            ]);
 
-        if ($reserva->escritorio_id) {
-            $escritorio = Escritorio::find($reserva->escritorio_id);
-            $mensajeExito[] = "Escritorio: {$escritorio->nombre}";
+            $updated = $reserva->update([
+                'estado' => $validatedData['estado'],
+                'motivo' => $validatedData['motivo'] ?? ''
+            ]);
+
+            Log::info('Estado actualizado:', [
+                'reserva_id' => $id,
+                'actualizado' => $updated,
+                'estado' => $reserva->fresh()->estado
+            ]);
+
+            return response()->json([
+                'message' => "¡Estado actualizado a '{$validatedData['estado']}' exitosamente!",
+                'reserva' => $reserva->fresh()
+            ]);
         }
 
-        $mensajeExito[] = "Fecha de Inicio: {$reserva->fecha_inicio->format('d/m/Y H:i')}";
-        $mensajeExito[] = "Fecha de Fin: {$reserva->fecha_fin->format('d/m/Y H:i')}";
-        $mensajeExito[] = "Tipo de Reserva: {$reserva->tipo_reserva}";
+        // ... resto del código para actualización completa ...
+
+    } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+        Log::error('Reserva no encontrada:', ['id' => $id]);
+        return response()->json([
+            'message' => 'No se encontró la reserva especificada.'
+        ], 404);
+    } catch (\Exception $e) {
+        Log::error('Error en actualización:', [
+            'error' => $e->getMessage(),
+            'id' => $id
+        ]);
+        return response()->json([
+            'message' => 'Error al actualizar la reserva: ' . $e->getMessage()
+        ], 500);
+    }
+}
+
+    protected function handleFullUpdate(Request $request, Reserva $reserva)
+    {
+        // Mover la lógica de actualización completa aquí
+        $data = $this->reservaService->validateAndPrepareData($request->all(), true, $reserva);
+        $this->reservaService->checkOverlap($data, $reserva->id);
+        $reserva->update($data);
+
+        return response()->json([
+            'message' => '¡Reserva actualizada exitosamente!'
+        ]);
+    }
+
+    /**
+     * Construye el mensaje de éxito para la actualización
+     */
+    protected function buildSuccessMessage($reserva)
+    {
+        $mensajeExito = [
+            "¡Reserva actualizada exitosamente!",
+            "Usuario: {$reserva->user->name}",
+            "Email: {$reserva->user->email}",
+            "Espacio: {$reserva->espacio->nombre}"
+        ];
+
+        if ($reserva->escritorio_id) {
+            $mensajeExito[] = "Escritorio: {$reserva->escritorio->nombre}";
+        }
+
+        $mensajeExito = array_merge($mensajeExito, [
+            "Fecha de Inicio: {$reserva->fecha_inicio->format('d/m/Y H:i')}",
+            "Fecha de Fin: {$reserva->fecha_fin->format('d/m/Y H:i')}",
+            "Tipo de Reserva: {$reserva->tipo_reserva}",
+            "Estado: {$reserva->estado}"
+        ]);
 
         if ($reserva->motivo) {
             $mensajeExito[] = "Motivo: {$reserva->motivo}";
         }
 
-        // Unir el array con saltos de línea
-        $mensajeFinal = implode("\n", $mensajeExito);
-
-        // Regresar con mensaje de éxito
-        return back()->with('success', $mensajeFinal);
+        return $mensajeExito;
     }
 
-    public function edit($id)
-    {
-        $reserva = Reserva::with(['user', 'espacio', 'escritorio'])->findOrFail($id);
-        $users = User::all();
-        $espacios = Espacio::all();
-        $escritorios = Escritorio::all();
-
-        return Inertia::render('ReservasCrud/ReservaEdit', [
-            'reserva' => $reserva,
-            'users' => $users,
-            'espacios' => $espacios,
-            'escritorios' => $escritorios,
-        ]);
-    }
-
-    // Método para eliminar una reserva
+    /**
+     * Elimina una reserva
+     */
     public function destroy($id)
     {
-        $reserva = Reserva::findOrFail($id);
-        $reserva->delete();
+        try {
+            $reserva = Reserva::findOrFail($id);
+            $reserva->delete();
 
-        return redirect()->route('admin.reservas.index')->with('success', 'Reserva eliminada exitosamente.');
+            return redirect()
+                ->route('superadmin.reservas.index')
+                ->with('success', 'Reserva eliminada exitosamente.');
+        } catch (\Exception $e) {
+            Log::error('Error al eliminar reserva:', ['error' => $e->getMessage()]);
+            return back()->withErrors(['error' => 'Error al eliminar la reserva.']);
+        }
     }
 }

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useForm } from '@inertiajs/react';
 import { toast } from 'react-toastify';
 import Modal from "@/Components/Modal";
@@ -10,7 +10,6 @@ import InputLabel from "@/Components/InputLabel";
 import PrimaryButton from "@/Components/PrimaryButton";
 import SecondaryButton from "@/Components/SecondaryButton";
 import HourSelectInput from "@/Components/HourSelectInput";
-import { format, addDays, addMonths } from "date-fns";
 
 export default function ReservaModal({
     reserva,
@@ -19,7 +18,7 @@ export default function ReservaModal({
     espacios,
     escritorios
 }) {
-    const { data, setData, post, processing, errors, reset } = useForm({
+    const { data, setData, patch, processing, errors } = useForm({
         user_id: reserva.user_id,
         espacio_id: reserva.espacio_id,
         escritorio_id: reserva.escritorio_id,
@@ -36,8 +35,10 @@ export default function ReservaModal({
     const [escritoriosLibres, setEscritoriosLibres] = useState([]);
     const [showHoras, setShowHoras] = useState(reserva.tipo_reserva === 'hora' || reserva.tipo_reserva === 'medio_dia');
     const [fechaFinCalculada, setFechaFinCalculada] = useState('');
-    const [horariosDisponibles, setHorariosDisponibles] = useState([]);
-    const lastMessageRef = useRef({});
+    const [horariosDisponibles] = useState([
+        { inicio: '08:00', fin: '14:00', label: 'Mañana (08:00 - 14:00)' },
+        { inicio: '14:00', fin: '20:00', label: 'Tarde (14:00 - 20:00)' }
+    ]);
 
     useEffect(() => {
         const selectedEspacio = espacios.find(espacio => espacio.id === Number(data.espacio_id));
@@ -49,77 +50,101 @@ export default function ReservaModal({
             setEscritoriosLibres(libres);
         } else {
             setShowEscritorio(false);
-            setData('escritorio_id', '');
+            setData('escritorio_id', null);
         }
     }, [data.espacio_id, escritorios, espacios]);
 
     useEffect(() => {
         setShowHoras(data.tipo_reserva === 'hora' || data.tipo_reserva === 'medio_dia');
-        
-        if (data.tipo_reserva === 'medio_dia') {
-            setHorariosDisponibles([
-                { inicio: '08:00', fin: '14:00', label: 'Mañana (08:00 - 14:00)' },
-                { inicio: '14:00', fin: '20:00', label: 'Tarde (14:00 - 20:00)' }
-            ]);
-            if (!['08:00', '14:00'].includes(data.hora_inicio)) {
-                setData('hora_inicio', '08:00');
-                setData('hora_fin', '14:00');
-            }
-        }
-
-        if (!showHoras) {
-            setData(data => ({
-                ...data,
-                hora_inicio: '',
-                hora_fin: ''
-            }));
-        }
 
         if (data.fecha_inicio) {
-            let fechaFin = data.fecha_inicio;
-            
-            if (data.tipo_reserva === 'semana') {
-                fechaFin = format(addDays(new Date(data.fecha_inicio), 6), 'yyyy-MM-dd');
-                setFechaFinCalculada(format(addDays(new Date(data.fecha_inicio), 6), 'dd/MM/yyyy'));
-            } else if (data.tipo_reserva === 'mes') {
-                const fecha = new Date(data.fecha_inicio);
-                const ultimoDiaMes = new Date(fecha.getFullYear(), fecha.getMonth() + 1, 0);
-                fechaFin = format(ultimoDiaMes, 'yyyy-MM-dd');
-                setFechaFinCalculada(format(ultimoDiaMes, 'dd/MM/yyyy'));
-            } else {
-                setFechaFinCalculada('');
+            let fechaFin = '';
+            const fecha = new Date(data.fecha_inicio);
+
+            switch (data.tipo_reserva) {
+                case 'dia_completo':
+                    fechaFin = fecha.toISOString().split('T')[0];
+                    break;
+                case 'semana':
+                    fecha.setDate(fecha.getDate() + 6);
+                    fechaFin = fecha.toISOString().split('T')[0];
+                    break;
+                case 'mes':
+                    fecha.setMonth(fecha.getMonth() + 1);
+                    fecha.setDate(fecha.getDate() - 1);
+                    fechaFin = fecha.toISOString().split('T')[0];
+                    break;
+                default:
+                    fechaFin = fecha.toISOString().split('T')[0];
             }
             
             setData('fecha_fin', fechaFin);
+            setFechaFinCalculada(fechaFin);
         }
     }, [data.tipo_reserva, data.fecha_inicio]);
 
     useEffect(() => {
         if (data.tipo_reserva === 'medio_dia' && data.hora_inicio) {
-            const horaFin = data.hora_inicio === '08:00' ? '14:00' : '20:00';
-            setData('hora_fin', horaFin);
+            const horario = horariosDisponibles.find(h => h.inicio === data.hora_inicio);
+            if (horario) {
+                setData('hora_fin', horario.fin);
+            }
         }
     }, [data.hora_inicio, data.tipo_reserva]);
 
+    
+
+
+
+
+
+
     const submit = (e) => {
         e.preventDefault();
-        post(route('superadmin.reservas.update', reserva.id), {
-            onSuccess: () => {
-                toast.success('Reserva actualizada exitosamente');
-                onClose();
-            },
-            onError: (errors) => {
-                Object.values(errors).forEach(error => {
-                    toast.error(error);
-                });
-            }
+    
+        console.log('Actualizando reserva:', {
+            id: reserva.id,
+            estado: data.estado,
+            motivo: data.motivo
         });
+    
+        const statusUpdate = new URLSearchParams();
+        statusUpdate.append('_method', 'PATCH');
+        statusUpdate.append('is_status_update', 'true');
+        statusUpdate.append('estado', data.estado);
+        statusUpdate.append('motivo', data.motivo || '');
+    
+        axios.post(route('superadmin.reservas.update', reserva.id), statusUpdate)
+            .then(response => {
+                console.log('Respuesta:', response.data);
+                toast.success(response.data.message, {
+                    position: "top-right",
+                    autoClose: 3000
+                });
+                onClose();
+                window.location.reload();
+            })
+            .catch(error => {
+                console.error('Error completo:', error);
+                const mensaje = error.response?.data?.message 
+                    || 'Error al actualizar el estado';
+                toast.error(mensaje, {
+                    position: "top-right",
+                    autoClose: 5000
+                });
+            });
     };
+
+
+
+
+
+
+
 
     return (
         <Modal show={true} onClose={onClose} maxWidth="2xl">
             <form onSubmit={submit} className="p-6 max-h-[90vh] overflow-y-auto">
-                {/* Usuario (No editable) */}
                 <div>
                     <InputLabel htmlFor="user_name" value="Reserva Perteneciente a el/la Usuario" className='text-center'/>
                     <div className="p-3 text-4xl text-center">
@@ -130,7 +155,6 @@ export default function ReservaModal({
                     <input type="hidden" name="user_id" value={data.user_id} />
                 </div>
 
-                {/* Espacio */}
                 <div className="mt-6">
                     <InputLabel htmlFor="espacio_id" value="Espacio" />
                     <SelectInput
@@ -148,9 +172,27 @@ export default function ReservaModal({
                     <InputError message={errors.espacio_id} className="mt-2" />
                 </div>
 
-                {/* Grid para campos relacionados */}
+                {showEscritorio && (
+                    <div className="mt-6">
+                        <InputLabel htmlFor="escritorio_id" value="Escritorio" />
+                        <SelectInput
+                            id="escritorio_id"
+                            value={data.escritorio_id}
+                            onChange={e => setData('escritorio_id', e.target.value)}
+                            className="mt-1 block w-full"
+                        >
+                            <option value="">Seleccione un escritorio</option>
+                            {escritoriosLibres.map(escritorio => (
+                                <option key={escritorio.id} value={escritorio.id}>
+                                    {escritorio.nombre}
+                                </option>
+                            ))}
+                        </SelectInput>
+                        <InputError message={errors.escritorio_id} className="mt-2" />
+                    </div>
+                )}
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
-                    {/* Tipo de Reserva */}
                     <div>
                         <InputLabel htmlFor="tipo_reserva" value="Tipo de Reserva" />
                         <SelectInput
@@ -168,7 +210,6 @@ export default function ReservaModal({
                         <InputError message={errors.tipo_reserva} className="mt-2" />
                     </div>
 
-                    {/* Estado */}
                     <div>
                         <InputLabel htmlFor="estado" value="Estado de la Reserva" />
                         <SelectInput
@@ -185,27 +226,25 @@ export default function ReservaModal({
                     </div>
                 </div>
 
-                {/* Grid para fechas y horas */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
-                    {/* Fecha de Inicio */}
-                    <div>
-                        <InputLabel htmlFor="fecha_inicio" value="Fecha de Inicio" />
-                        <TextInput
-                            id="fecha_inicio"
-                            type="date"
-                            value={data.fecha_inicio}
-                            onChange={e => setData('fecha_inicio', e.target.value)}
-                            className="mt-1 block w-full"
-                        />
-                        <InputError message={errors.fecha_inicio} className="mt-2" />
-                        {fechaFinCalculada && (
-                            <p className="mt-2 text-sm text-gray-600">
-                                Fecha de finalización: {fechaFinCalculada}
-                            </p>
-                        )}
-                    </div>
+                <div className="mt-6">
+                    <InputLabel htmlFor="fecha_inicio" value="Fecha de Inicio" />
+                    <TextInput
+                        id="fecha_inicio"
+                        type="date"
+                        value={data.fecha_inicio}
+                        onChange={e => setData('fecha_inicio', e.target.value)}
+                        className="mt-1 block w-full"
+                    />
+                    <InputError message={errors.fecha_inicio} className="mt-2" />
+                    {fechaFinCalculada && (
+                        <p className="mt-2 text-sm text-gray-600">
+                            Fecha de finalización: {fechaFinCalculada}
+                        </p>
+                    )}
+                </div>
 
-                    {showHoras && (
+                {showHoras && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
                         <div>
                             <InputLabel htmlFor="hora_inicio" value="Horario" />
                             {data.tipo_reserva === 'medio_dia' ? (
@@ -239,23 +278,22 @@ export default function ReservaModal({
                             )}
                             <InputError message={errors.hora_inicio} className="mt-2" />
                         </div>
-                    )}
 
-                    {data.tipo_reserva === 'hora' && (
-                        <div>
-                            <InputLabel htmlFor="hora_fin" value="Hora de Fin" />
-                            <HourSelectInput
-                                id="hora_fin"
-                                value={data.hora_fin}
-                                onChange={e => setData('hora_fin', e.target.value)}
-                                className="mt-1 block w-full"
-                            />
-                            <InputError message={errors.hora_fin} className="mt-2" />
-                        </div>
-                    )}
-                </div>
+                        {data.tipo_reserva === 'hora' && (
+                            <div>
+                                <InputLabel htmlFor="hora_fin" value="Hora de Fin" />
+                                <HourSelectInput
+                                    id="hora_fin"
+                                    value={data.hora_fin}
+                                    onChange={e => setData('hora_fin', e.target.value)}
+                                    className="mt-1 block w-full"
+                                />
+                                <InputError message={errors.hora_fin} className="mt-2" />
+                            </div>
+                        )}
+                    </div>
+                )}
 
-                {/* Motivo */}
                 <div className="mt-6">
                     <InputLabel htmlFor="motivo" value="Motivo (Opcional)" />
                     <TextareaInput
@@ -268,7 +306,6 @@ export default function ReservaModal({
                     <InputError message={errors.motivo} className="mt-2" />
                 </div>
 
-                {/* Botones */}
                 <div className="mt-6 flex justify-end space-x-3">
                     <SecondaryButton onClick={onClose}>
                         Cancelar

@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -15,9 +16,11 @@ class Reserva extends Model
         'escritorio_id',
         'fecha_inicio',
         'fecha_fin',
+        'hora_inicio',
+        'hora_fin',
         'tipo_reserva',
         'estado',
-        'motivo',
+        'motivo'
     ];
 
     protected $dates = [
