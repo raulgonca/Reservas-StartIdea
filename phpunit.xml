@@ -27,9 +27,9 @@
         <env name="DB_PORT" value="3306"/>
 
 
-        <!-- <env name="DB_DATABASE" value="reservas-db"/> bd original -->
+         <env name="DB_DATABASE" value="reservas-db"/> bd original
         
-        <env name="DB_DATABASE" value="reservas_testing"/>  <!-- de testing -->
+        <!--<env name="DB_DATABASE" value="reservas_testing"/>   de testing -->
 
 
         <env name="DB_USERNAME" value="root"/>

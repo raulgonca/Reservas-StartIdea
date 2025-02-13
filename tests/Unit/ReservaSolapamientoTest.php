@@ -9,6 +9,7 @@ use App\Models\Espacio;
 use App\Models\Escritorio;
 use App\Models\Reserva;
 use App\Services\ReservaService;
+use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Validation\ValidationException;
 
@@ -34,17 +35,17 @@ class ReservaSolapamientoTest extends TestCase
     public function setUp(): void
     {
         parent::setUp();
-        
+
         // Crear instancia del servicio de reservas
         $this->reservaService = new ReservaService();
-        
+
         // Crear usuario de prueba
         $this->user = User::factory()->create([
             'name' => 'Test User',
             'email' => 'test@example.com',
             'role' => 'user'
         ]);
-        
+
         // Crear espacio de coworking
         $this->espacioCoworking = Espacio::create([
             'nombre' => 'Test Coworking',
@@ -53,7 +54,7 @@ class ReservaSolapamientoTest extends TestCase
             'horario_fin' => '18:00:00',
             'disponible_24_7' => false
         ]);
-        
+
         // Crear espacio de despacho
         $this->espacioDespacho = Espacio::create([
             'nombre' => 'Test Despacho',
@@ -71,7 +72,7 @@ class ReservaSolapamientoTest extends TestCase
             'horario_fin' => '18:00:00',
             'disponible_24_7' => false
         ]);
-        
+
         // Crear escritorio en espacio coworking
         $this->escritorio = Escritorio::create([
             'nombre' => 'Escritorio Test',
@@ -319,7 +320,7 @@ class ReservaSolapamientoTest extends TestCase
         $this->assertNull($result);
     }
 
-     /**
+    /**
      * Test que verifica que se pueden hacer reservas fuera del horario permitido
      * Debe fallar si se intenta reservar fuera del horario del espacio
      */
@@ -373,14 +374,17 @@ class ReservaSolapamientoTest extends TestCase
     #[Test]
     public function detecta_reserva_en_fecha_pasada()
     {
+        $fechaPasada = Carbon::now()->subDay()->format('Y-m-d');
+
         $this->expectException(ValidationException::class);
 
-        $this->reservaService->checkOverlap([
+        $this->reservaService->validateAndPrepareData([
             'user_id' => $this->user->id,
-            'espacio_id' => $this->espacioDespacho->id,
-            'fecha_inicio' => '2023-02-12 09:00:00', // Fecha pasada
-            'fecha_fin' => '2023-02-12 14:00:00',
-            'tipo_reserva' => 'medio_dia'
+            'espacio_id' => $this->espacioCoworking->id,
+            'escritorio_id' => $this->escritorio->id,
+            'fecha_inicio' => $fechaPasada,
+            'tipo_reserva' => 'dia_completo',
+            'estado' => 'pendiente'
         ]);
     }
 

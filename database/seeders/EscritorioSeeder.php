@@ -1,39 +1,27 @@
-<?php 
+<?php
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Seeder;
+use App\Models\Espacio;
 use App\Models\Escritorio;
+use Illuminate\Database\Seeder;
 
 class EscritorioSeeder extends Seeder
 {
-    public function run()
+    public function run(): void
     {
-        // Escritorios para Coworking Sala Compartida 1
-        for ($i = 1; $i <= 6; $i++) {
-            Escritorio::create([
-                'espacio_id' => 4, // ID de Coworking Sala Compartida 1
-                'nombre' => 'Escritorio ' . $i,
-                'disponible' => true,
-            ]);
-        }
+        // Obtener solo espacios de tipo coworking
+        $espaciosCoworking = Espacio::where('tipo', 'coworking')->get();
 
-        // Escritorios para Coworking Sala Compartida 2
-        for ($i = 1; $i <= 6; $i++) {
-            Escritorio::create([
-                'espacio_id' => 5, // ID de Coworking Sala Compartida 2
-                'nombre' => 'Escritorio ' . ($i + 6),
-                'disponible' => true,
-            ]);
-        }
-
-        // Escritorios para Despacho Privado
-        for ($i = 1; $i <= 2; $i++) {
-            Escritorio::create([
-                'espacio_id' => 6, // ID de Despacho Privado
-                'nombre' => 'Escritorio ' . ($i + 12),
-                'disponible' => true,
-            ]);
+        foreach ($espaciosCoworking as $espacio) {
+            // Crear 10 escritorios por cada espacio coworking
+            for ($i = 1; $i <= 6; $i++) {
+                Escritorio::create([
+                    'espacio_id' => $espacio->id,
+                    'nombre' => "Escritorio $i",
+                    'disponible' => true,
+                ]);
+            }
         }
     }
 }
