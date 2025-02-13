@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Head } from '@inertiajs/react';
-import { useForm, usePage } from '@inertiajs/react';
+import { Head, useForm, usePage } from '@inertiajs/react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
@@ -13,8 +12,13 @@ import UserSearch from '@/Components/UserSearch';
 import { toast } from 'react-toastify';
 
 export default function CreateReserva() {
+    // Obtener el usuario autenticado y sus datos
+    const { auth } = usePage().props;
+
+    // Inicializar el formulario con valores por defecto
     const { data, setData, post, processing, errors, reset } = useForm({
-        user_id: '',
+        // Si es usuario normal, establecer automáticamente su ID
+        user_id: auth.user.role === 'user' ? auth.user.id : '',
         espacio_id: '',
         escritorio_id: null,
         fecha_inicio: '',
@@ -26,7 +30,10 @@ export default function CreateReserva() {
         estado: 'pendiente',
     });
 
-    const { users, espacios, escritorios, flash = {} } = usePage().props;
+    // Obtener datos necesarios de las props
+    const { users, espacios, escritorios } = usePage().props;
+
+    // Estados locales
     const [userSearchTerm, setUserSearchTerm] = useState('');
     const [showEscritorio, setShowEscritorio] = useState(false);
     const [escritoriosLibres, setEscritoriosLibres] = useState([]);
@@ -37,11 +44,12 @@ export default function CreateReserva() {
         { inicio: '14:00', fin: '20:00', label: 'Tarde (14:00 - 20:00)' }
     ]);
 
+    // Efecto para manejar la visibilidad y disponibilidad de escritorios
     useEffect(() => {
         const selectedEspacio = espacios.find(espacio => espacio.id === Number(data.espacio_id));
         if (selectedEspacio && selectedEspacio.tipo === 'coworking') {
             setShowEscritorio(true);
-            const libres = escritorios.filter(escritorio => 
+            const libres = escritorios.filter(escritorio =>
                 escritorio.espacio_id === Number(data.espacio_id) && escritorio.disponible
             );
             setEscritoriosLibres(libres);
@@ -51,6 +59,7 @@ export default function CreateReserva() {
         }
     }, [data.espacio_id, escritorios, espacios]);
 
+    // Efecto para calcular fechas según el tipo de reserva
     useEffect(() => {
         setShowHoras(data.tipo_reserva === 'hora' || data.tipo_reserva === 'medio_dia');
 
@@ -74,12 +83,13 @@ export default function CreateReserva() {
                 default:
                     fechaFin = fecha.toISOString().split('T')[0];
             }
-            
+
             setData('fecha_fin', fechaFin);
             setFechaFinCalculada(fechaFin);
         }
     }, [data.tipo_reserva, data.fecha_inicio]);
 
+    // Efecto para manejar horarios en reservas de medio día
     useEffect(() => {
         if (data.tipo_reserva === 'medio_dia' && data.hora_inicio) {
             const horario = horariosDisponibles.find(h => h.inicio === data.hora_inicio);
@@ -89,8 +99,11 @@ export default function CreateReserva() {
         }
     }, [data.hora_inicio, data.tipo_reserva]);
 
+    // Función para resetear el formulario
     const handleReset = () => {
+        const userId = auth.user.role === 'user' ? auth.user.id : '';
         reset();
+        setData('user_id', userId);
         setUserSearchTerm('');
         setShowEscritorio(false);
         setEscritoriosLibres([]);
@@ -98,39 +111,49 @@ export default function CreateReserva() {
         setShowHoras(true);
     };
 
+    // Función para manejar el envío del formulario
     const submit = (e) => {
         e.preventDefault();
-        post(route('superadmin.reservas.store'), {
+
+        // Determinar la ruta según el rol del usuario
+        const routeName = auth.user.role === 'user'
+            ? 'user.reservas.store'
+            : auth.user.role === 'admin'
+                ? 'admin.reservas.store'
+                : 'superadmin.reservas.store';
+
+        post(route(routeName), {
             onSuccess: (response) => {
-                // Construir mensaje detallado
-                const usuario = users.find(u => u.id === Number(data.user_id));
+                // Construir mensaje de éxito
+                const usuario = auth.user.role === 'user'
+                    ? auth.user
+                    : users.find(u => u.id === Number(data.user_id));
                 const espacio = espacios.find(e => e.id === Number(data.espacio_id));
                 const escritorio = escritorios.find(e => e.id === Number(data.escritorio_id));
-    
+
                 const mensajeExito = [
                     "¡Reserva creada exitosamente!",
                     `Usuario: ${usuario?.name || 'No especificado'}`,
                     `Email: ${usuario?.email || 'No especificado'}`,
                     `Espacio: ${espacio?.nombre || 'No especificado'}`
                 ];
-    
+
                 if (escritorio) {
                     mensajeExito.push(`Escritorio: ${escritorio.nombre}`);
                 }
-    
+
                 mensajeExito.push(
                     `Fecha de Inicio: ${data.fecha_inicio} ${data.hora_inicio || ''}`,
                     `Fecha de Fin: ${data.fecha_fin} ${data.hora_fin || ''}`,
                     `Tipo de Reserva: ${data.tipo_reserva}`,
                     data.motivo ? `Motivo: ${data.motivo}` : null
                 );
-    
-                // Mostrar mensaje detallado
+
                 toast.success(mensajeExito.filter(Boolean).join('\n'), {
-                    autoClose: 5000, // Dar más tiempo para leer el mensaje
-                    style: { whiteSpace: 'pre-line' } // Mantener saltos de línea
+                    autoClose: 5000,
+                    style: { whiteSpace: 'pre-line' }
                 });
-    
+
                 handleReset();
             },
             onError: (errors) => {
@@ -148,16 +171,27 @@ export default function CreateReserva() {
 
             <div className="max-w-2xl mx-auto py-12">
                 <form onSubmit={submit} className="space-y-6">
-                    {/* Buscador de Usuario */}
-                    <UserSearch
-                        users={users}
-                        value={userSearchTerm}
-                        onChange={(value) => {
-                            setUserSearchTerm(value);
-                            setData('user_id', value);
-                        }}
-                        error={errors.user_id}
-                    />
+                    {/* Mostrar buscador de usuario solo para admin y superadmin */}
+                    {auth.user.role !== 'user' && (
+                        <UserSearch
+                            users={users}
+                            value={userSearchTerm}
+                            onChange={(value) => {
+                                setUserSearchTerm(value);
+                                setData('user_id', value);
+                            }}
+                            error={errors.user_id}
+                        />
+                    )}
+
+                    {/* Campo oculto con el ID del usuario si es role user */}
+                    {auth.user.role === 'user' && (
+                        <input
+                            type="hidden"
+                            name="user_id"
+                            value={auth.user.id}
+                        />
+                    )}
 
                     {/* Espacio */}
                     <div>
@@ -199,10 +233,10 @@ export default function CreateReserva() {
                         </div>
                     )}
 
-                    {/* Grid para tipo de reserva y estado */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        {/* Tipo de Reserva */}
-                        <div>
+                    {/* Grid para tipo de reserva y estado - Ajustado según rol */}
+                    <div className={`grid grid-cols-1 ${auth.user.role !== 'user' ? 'md:grid-cols-2' : ''} gap-6`}>
+                        {/* Tipo de Reserva - Ancho completo para usuarios normales */}
+                        <div className={auth.user.role === 'user' ? 'col-span-full' : ''}>
                             <InputLabel htmlFor="tipo_reserva" value="Tipo de Reserva" />
                             <SelectInput
                                 id="tipo_reserva"
@@ -219,21 +253,23 @@ export default function CreateReserva() {
                             <InputError message={errors.tipo_reserva} className="mt-2" />
                         </div>
 
-                        {/* Estado */}
-                        <div>
-                            <InputLabel htmlFor="estado" value="Estado de la Reserva" />
-                            <SelectInput
-                                id="estado"
-                                className="mt-1 block w-full"
-                                value={data.estado}
-                                onChange={e => setData('estado', e.target.value)}
-                            >
-                                <option value="pendiente">Pendiente</option>
-                                <option value="confirmada">Confirmada</option>
-                                <option value="cancelada">Cancelada</option>
-                            </SelectInput>
-                            <InputError message={errors.estado} className="mt-2" />
-                        </div>
+                        {/* Estado - Solo visible para admin y superadmin */}
+                        {auth.user.role !== 'user' && (
+                            <div>
+                                <InputLabel htmlFor="estado" value="Estado de la Reserva" />
+                                <SelectInput
+                                    id="estado"
+                                    className="mt-1 block w-full"
+                                    value={data.estado}
+                                    onChange={e => setData('estado', e.target.value)}
+                                >
+                                    <option value="pendiente">Pendiente</option>
+                                    <option value="confirmada">Confirmada</option>
+                                    <option value="cancelada">Cancelada</option>
+                                </SelectInput>
+                                <InputError message={errors.estado} className="mt-2" />
+                            </div>
+                        )}
                     </div>
 
                     {/* Fecha de Inicio */}
@@ -256,56 +292,56 @@ export default function CreateReserva() {
                     </div>
 
                     {/* Horarios */}
-                    {showHoras && (
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div>
-                                <InputLabel htmlFor="hora_inicio" value="Hora de Inicio" />
-                                {data.tipo_reserva === 'medio_dia' ? (
-                                    <>
-                                        <SelectInput
-                                            id="hora_inicio"
-                                            className="mt-1 block w-full"
-                                            value={data.hora_inicio}
-                                            onChange={e => setData('hora_inicio', e.target.value)}
-                                        >
-                                            <option value="">Seleccione un horario</option>
-                                            {horariosDisponibles.map((horario, index) => (
-                                                <option key={index} value={horario.inicio}>
-                                                    {horario.label}
-                                                </option>
-                                            ))}
-                                        </SelectInput>
-                                        {data.hora_inicio && (
-                                            <p className="mt-2 text-sm text-gray-600">
-                                                Horario seleccionado: {data.hora_inicio} - {data.hora_fin}
-                                            </p>
-                                        )}
-                                    </>
-                                ) : (
-                                    <HourSelectInput
-                                        id="hora_inicio"
-                                        className="mt-1 block w-full"
-                                        value={data.hora_inicio}
-                                        onChange={e => setData('hora_inicio', e.target.value)}
-                                    />
-                                )}
-                                <InputError message={errors.hora_inicio} className="mt-2" />
-                            </div>
-
-                            {data.tipo_reserva === 'hora' && (
-                                <div>
-                                    <InputLabel htmlFor="hora_fin" value="Hora de Fin" />
-                                    <HourSelectInput
-                                        id="hora_fin"
-                                        className="mt-1 block w-full"
-                                        value={data.hora_fin}
-                                        onChange={e => setData('hora_fin', e.target.value)}
-                                    />
-                                    <InputError message={errors.hora_fin} className="mt-2" />
-                                </div>
-                            )}
-                        </div>
+{showHoras && (
+    <div className={`grid grid-cols-1 ${data.tipo_reserva === 'hora' ? 'md:grid-cols-2' : ''} gap-6`}>
+        <div className={data.tipo_reserva === 'medio_dia' && auth.user.role === 'user' ? 'col-span-full' : ''}>
+            <InputLabel htmlFor="hora_inicio" value="Hora de Inicio" />
+            {data.tipo_reserva === 'medio_dia' ? (
+                <>
+                    <SelectInput
+                        id="hora_inicio"
+                        className="mt-1 block w-full"
+                        value={data.hora_inicio}
+                        onChange={e => setData('hora_inicio', e.target.value)}
+                    >
+                        <option value="">Seleccione un horario</option>
+                        {horariosDisponibles.map((horario, index) => (
+                            <option key={index} value={horario.inicio}>
+                                {horario.label}
+                            </option>
+                        ))}
+                    </SelectInput>
+                    {data.hora_inicio && (
+                        <p className="mt-2 text-sm text-gray-600">
+                            Horario seleccionado: {data.hora_inicio} - {data.hora_fin}
+                        </p>
                     )}
+                </>
+            ) : (
+                <HourSelectInput
+                    id="hora_inicio"
+                    className="mt-1 block w-full"
+                    value={data.hora_inicio}
+                    onChange={e => setData('hora_inicio', e.target.value)}
+                />
+            )}
+            <InputError message={errors.hora_inicio} className="mt-2" />
+        </div>
+
+        {data.tipo_reserva === 'hora' && (
+            <div>
+                <InputLabel htmlFor="hora_fin" value="Hora de Fin" />
+                <HourSelectInput
+                    id="hora_fin"
+                    className="mt-1 block w-full"
+                    value={data.hora_fin}
+                    onChange={e => setData('hora_fin', e.target.value)}
+                />
+                <InputError message={errors.hora_fin} className="mt-2" />
+            </div>
+        )}
+    </div>
+)}
 
                     {/* Motivo */}
                     <div>

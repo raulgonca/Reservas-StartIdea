@@ -33,18 +33,17 @@ export default function ReservasUser() {
 
   return (
     <AuthenticatedLayout>
-      <Head title="Mis Reservas" />
+      
 
       <div className="py-12">
         <div className="max-w-7xl mx-auto sm:px-6 lg:px-8">
+            <h1 className="text-4xl text-center text-teal-500 mt-10 mb-10">Mis reservas</h1>
           {/* Lista de Reservas */}
           <div className="overflow-x-auto mt-6">
             <table className="min-w-full bg-white shadow-md rounded-lg overflow-hidden">
               <thead className="bg-gray-200 dark:bg-gray-700">
                 <tr>
-                  <th className="py-3 px-4 text-left text-sm font-medium text-gray-700 dark:text-gray-300">
-                    ID
-                  </th>
+                  
                   <th className="py-3 px-4 text-left text-sm font-medium text-gray-700 dark:text-gray-300">
                     Espacio
                   </th>
@@ -84,9 +83,7 @@ export default function ReservasUser() {
                       key={reserva.id}
                       className="border-b last:border-none dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700"
                     >
-                      <td className="py-3 px-4 text-sm text-gray-700 dark:text-gray-300">
-                        {reserva.id}
-                      </td>
+                      
                       <td className="py-3 px-4 text-sm text-gray-700 dark:text-gray-300">
                         {reserva.espacio?.nombre}
                       </td>
