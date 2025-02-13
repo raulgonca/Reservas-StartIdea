@@ -17,4 +17,14 @@ class Espacio extends Model
         'disponible_24_7',
         'descripcion',
     ];
+
+    public function reservas()
+    {
+        return $this->hasMany(Reserva::class);
+    }
+
+    public function escritorios()
+    {
+        return $this->hasMany(Escritorio::class);
+    }
 }

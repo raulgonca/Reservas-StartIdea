@@ -10,7 +10,9 @@ use App\Services\ReservaService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\ValidationException;
+
 
 class ReservaController extends Controller
 {
@@ -22,12 +24,30 @@ class ReservaController extends Controller
     }
 
     public function index()
-    {
-        $reservas = Reserva::with(['user', 'espacio', 'escritorio'])->get();
+{
+    $user = Auth::user(); 
+
+    // Si el usuario es admin o superadmin, mostrar todas las reservas
+    if ($user->role === 'admin' || $user->role === 'superadmin') {
+        $reservas = Reserva::with(['user', 'espacio', 'escritorio'])
+            ->orderBy('fecha_inicio', 'desc')
+            ->get();
+
         return Inertia::render('ReservasCrud/ReservasList', [
             'reservas' => $reservas,
         ]);
     }
+
+    // Si es usuario normal, mostrar solo sus reservas
+    $reservas = Reserva::where('user_id', $user->id)
+        ->with(['espacio', 'escritorio'])
+        ->orderBy('fecha_inicio', 'desc')
+        ->get();
+
+    return Inertia::render('Users/ReservasUser', [
+        'reservas' => $reservas,
+    ]);
+}
 
     public function create()
     {

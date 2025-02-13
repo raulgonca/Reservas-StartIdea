@@ -28,11 +28,11 @@ Route::get('/dashboard', function () {
 })->middleware(['auth', 'verified'])->name('dashboard');
 
 //------------------------------- USUARIOS ----------------------------------//
-
-// Prefijo de versión para las rutas de usuarios
-Route::prefix('v1/user')->middleware(['auth', 'user'])->group(function () {
-    // Rutas para mostrar y listar las reservas
+Route::prefix('v1/user')->middleware(['auth'])->group(function () {
+    // Solo mantener las rutas necesarias para usuario
     Route::get('/reservas', [ReservaController::class, 'index'])->name('user.reservas.index');
+    Route::get('/reservas/create', [ReservaController::class, 'create'])->name('user.reservas.create');
+    Route::post('/reservas', [ReservaController::class, 'store'])->name('user.reservas.store');
     Route::get('/reservas/{id}', [ReservaController::class, 'show'])->name('user.reservas.show');
 });
 
@@ -50,7 +50,6 @@ Route::prefix('v1')->middleware('auth')->group(function () {
 
 //------------------------------- ADMINISTRADOR ----------------------------------//
 
-// Prefijo de versión para las rutas del administrador
 Route::prefix('v1/admin')->middleware(['auth'])->group(function () {
     // Rutas para gestionar reservas
     Route::get('/reservas', [ReservaController::class, 'index'])->name('admin.reservas.index');
@@ -59,8 +58,15 @@ Route::prefix('v1/admin')->middleware(['auth'])->group(function () {
     Route::get('/reservas/{id}/edit', [ReservaController::class, 'edit'])->name('admin.reservas.edit');
     Route::patch('/reservas/{id}', [ReservaController::class, 'update'])->name('admin.reservas.update');
     Route::delete('/reservas/{id}', [ReservaController::class, 'destroy'])->name('admin.reservas.destroy');
-});
 
+    // Rutas para gestionar espacios
+    Route::get('/espacios', [EspacioController::class, 'index'])->name('admin.espacios.index');
+    Route::get('/espacios/create', [EspacioController::class, 'create'])->name('admin.espacios.create');
+    Route::post('/espacios', [EspacioController::class, 'store'])->name('admin.espacios.store');
+    Route::get('/espacios/{id}/edit', [EspacioController::class, 'edit'])->name('admin.espacios.edit');
+    Route::put('/espacios/{id}', [EspacioController::class, 'update'])->name('admin.espacios.update');
+    Route::delete('/espacios/{id}', [EspacioController::class, 'destroy'])->name('admin.espacios.destroy');
+});
 //------------------------------- BLOQUEOS ----------------------------------//
 
 // Prefijo de versión para las rutas de bloqueos

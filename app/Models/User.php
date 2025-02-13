@@ -48,4 +48,12 @@ class User extends Authenticatable
             'password' => 'hashed',
         ];
     }
+
+    /**
+     * Get the reservas for the user.
+     */
+    public function reservas()
+    {
+        return $this->hasMany(Reserva::class);
+    }
 }
