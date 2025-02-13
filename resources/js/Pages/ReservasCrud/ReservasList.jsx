@@ -174,7 +174,6 @@ export default function ReservasList() {
                                 onChange={handleStatusChange}
                                 className="mt-1 block w-full"
                             >
-                                <option value="">Seleccione un estado</option>
                                 <option value="confirmada">Confirmada</option>
                                 <option value="pendiente">Pendiente</option>
                                 <option value="cancelada">Cancelada</option>

@@ -21,7 +21,7 @@ class ReservaSeeder extends Seeder
         $escritorios = Escritorio::all();
 
         // Generar 50 reservas con estados aleatorios
-        Reserva::factory()->count(50)->make()->each(function ($reserva) use ($users, $espacios, $escritorios) {
+        Reserva::factory()->count(100)->make()->each(function ($reserva) use ($users, $espacios, $escritorios) {
             $reserva->user_id = $users->random()->id;
             $reserva->espacio_id = $espacios->random()->id;
             $reserva->escritorio_id = $escritorios->random()->id;

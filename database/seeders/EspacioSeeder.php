@@ -70,5 +70,15 @@ class EspacioSeeder extends Seeder
             'disponible_24_7' => false,
             'descripcion' => 'Despacho privado.',
         ]);
+
+        Espacio::create([
+            'nombre' => 'Radio',
+            'tipo' => 'Radio',
+            'aforo' => 6,
+            'horario_inicio' => '08:00:00',
+            'horario_fin' => '21:00:00',
+            'disponible_24_7' => false,
+            'descripcion' => 'Radio con aforo para 6 personas aprox.',
+        ]);
     }
 }
