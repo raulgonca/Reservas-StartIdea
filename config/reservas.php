@@ -13,6 +13,14 @@ return [
 
     'notification_email' => env('RESERVAS_NOTIFICATION_EMAIL', 'admin@tudominio.com'),
 
+    'mail' => [
+        'debug' => env('MAIL_DEBUG', false),
+        'from' => [
+            'address' => env('MAIL_FROM_ADDRESS', 'no-reply@reservas.com'),
+            'name' => env('MAIL_FROM_NAME', 'Sistema de Reservas'),
+        ],
+    ],
+
     /*
     |--------------------------------------------------------------------------
     | Estados de reserva

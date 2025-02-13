@@ -4,50 +4,49 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Default Mailer
+    | Mailer por Defecto
     |--------------------------------------------------------------------------
     |
-    | This option controls the default mailer that is used to send all email
-    | messages unless another mailer is explicitly specified when sending
-    | the message. All additional mailers can be configured within the
-    | "mailers" array. Examples of each type of mailer are provided.
+    | Esta opción controla el mailer predeterminado que se usa para enviar todos
+    | los mensajes de correo electrónico a menos que se especifique explícitamente
+    | otro mailer al enviar el mensaje. Todos los mailers adicionales pueden
+    | configurarse dentro del array "mailers".
     |
     */
 
-    'default' => env('MAIL_MAILER', 'log'),
+    'default' => env('MAIL_MAILER', 'smtp'),
 
     /*
     |--------------------------------------------------------------------------
-    | Mailer Configurations
+    | Configuraciones de Mailer
     |--------------------------------------------------------------------------
     |
-    | Here you may configure all of the mailers used by your application plus
-    | their respective settings. Several examples have been configured for
-    | you and you are free to add your own as your application requires.
+    | Aquí puede configurar todos los mailers utilizados por su aplicación más
+    | su configuración respectiva. Se han configurado varios ejemplos para
+    | usted y puede agregar los suyos propios según lo requiera su aplicación.
     |
-    | Laravel supports a variety of mail "transport" drivers that can be used
-    | when delivering an email. You may specify which one you're using for
-    | your mailers below. You may also add additional mailers if needed.
+    | Laravel admite una variedad de controladores de correo "transport" que se 
+    | pueden usar al entregar un correo electrónico. Puede especificar cuál está
+    | usando para sus mailers a continuación.
     |
-    | Supported: "smtp", "sendmail", "mailgun", "ses", "ses-v2",
+    | Soportados: "smtp", "sendmail", "mailgun", "ses", "ses-v2",
     |            "postmark", "resend", "log", "array",
     |            "failover", "roundrobin"
     |
     */
 
     'mailers' => [
-
         'smtp' => [
-            'transport' => 'smtp',
-            'scheme' => env('MAIL_SCHEME'),
-            'url' => env('MAIL_URL'),
-            'host' => env('MAIL_HOST', '127.0.0.1'),
-            'port' => env('MAIL_PORT', 2525),
-            'username' => env('MAIL_USERNAME'),
-            'password' => env('MAIL_PASSWORD'),
-            'timeout' => null,
-            'local_domain' => env('MAIL_EHLO_DOMAIN', parse_url(env('APP_URL', 'http://localhost'), PHP_URL_HOST)),
-        ],
+        'transport' => 'smtp',
+        'host' => env('MAIL_HOST', 'sandbox.smtp.mailtrap.io'),
+        'port' => env('MAIL_PORT', 2525),
+        'encryption' => env('MAIL_ENCRYPTION', 'tls'),
+        'username' => env('MAIL_USERNAME'),
+        'password' => env('MAIL_PASSWORD'),
+        'timeout' => 5,
+        'auth_mode' => null,
+        'verify_peer' => false,
+    ],
 
         'ses' => [
             'transport' => 'ses',
@@ -55,10 +54,6 @@ return [
 
         'postmark' => [
             'transport' => 'postmark',
-            // 'message_stream_id' => env('POSTMARK_MESSAGE_STREAM_ID'),
-            // 'client' => [
-            //     'timeout' => 5,
-            // ],
         ],
 
         'resend' => [
@@ -94,23 +89,23 @@ return [
                 'postmark',
             ],
         ],
-
     ],
 
     /*
     |--------------------------------------------------------------------------
-    | Global "From" Address
+    | Dirección Global "From"
     |--------------------------------------------------------------------------
     |
-    | You may wish for all emails sent by your application to be sent from
-    | the same address. Here you may specify a name and address that is
-    | used globally for all emails that are sent by your application.
+    | Es posible que desee que todos los correos electrónicos enviados por su
+    | aplicación se envíen desde la misma dirección. Aquí puede especificar
+    | un nombre y una dirección que se usa globalmente para todos los correos
+    | electrónicos que envía su aplicación.
     |
     */
 
     'from' => [
-        'address' => env('MAIL_FROM_ADDRESS', 'hello@example.com'),
-        'name' => env('MAIL_FROM_NAME', 'Example'),
+        'address' => env('MAIL_FROM_ADDRESS', 'no-reply@reservas.com'),
+        'name' => env('MAIL_FROM_NAME', 'Sistema de Reservas'),
     ],
 
 ];
