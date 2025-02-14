@@ -1,9 +1,13 @@
 import React from 'react';
-import { router } from '@inertiajs/react';
+import { router, usePage } from '@inertiajs/react';
 import PrimaryButton from '@/Components/PrimaryButton';
 import DangerButton from '@/Components/DangerButton';
 
 export default function ReservasTable({ reservas, onDelete }) {
+    // Obtener los datos de autenticación usando el hook usePage
+    const { auth } = usePage().props;
+
+    // Función para formatear fechas al formato español
     const formatDate = (dateString) => {
         const options = { 
             day: '2-digit', 
@@ -14,6 +18,7 @@ export default function ReservasTable({ reservas, onDelete }) {
         return new Date(dateString).toLocaleDateString('es-ES', options);
     };
 
+    // Función para formatear horas al formato español
     const formatTime = (dateString) => {
         const options = { 
             hour: '2-digit', 
@@ -23,23 +28,33 @@ export default function ReservasTable({ reservas, onDelete }) {
         return new Date(dateString).toLocaleTimeString('es-ES', options);
     };
 
+    // Función para asignar clases de color según el estado de la reserva
     const getStatusClass = (status) => {
         switch (status) {
             case 'confirmada':
-                return 'text-green-600  px-2 py-1 ';
+                return 'text-green-600  px-2 py-1 '; // Verde para confirmada
             case 'pendiente':
-                return 'text-yellow-600  px-2 py-1 ';
+                return 'text-yellow-600  px-2 py-1 '; // Amarillo para pendiente
             case 'cancelada':
-                return 'text-red-600  px-2 py-1 ';
+                return 'text-red-600  px-2 py-1 '; // Rojo para cancelada
             default:
-                return 'text-gray-600  px-2 py-1 ';
+                return 'text-gray-600  px-2 py-1 '; // Gris para otros estados
         }
     };
 
+    // Función para manejar la edición de reservas según el rol
     const handleEdit = (reserva) => {
-        router.visit(route('superadmin.reservas.edit', reserva.id));
+        // Determinar el prefijo de la ruta según el rol del usuario
+        const prefix = auth.user.role === 'admin' ? 'admin' : 'superadmin';
+        router.visit(route(`${prefix}.reservas.edit`, reserva.id));
     };
 
+    // Función para verificar si el usuario puede gestionar reservas
+    const canManageReserva = () => {
+        return ['admin', 'superadmin'].includes(auth.user.role);
+    };
+
+    // Función para obtener el texto descriptivo del tipo de reserva
     const getTipoReservaText = (tipo) => {
         const tipos = {
             'hora': 'Por Hora',
@@ -54,6 +69,7 @@ export default function ReservasTable({ reservas, onDelete }) {
     return (
         <div className="overflow-x-auto mt-6">
             <table className="min-w-full bg-white shadow-md rounded-lg overflow-hidden">
+                {/* Encabezado de la tabla */}
                 <thead className="bg-gray-200 dark:bg-gray-700">
                     <tr>
                         <th className="py-3 px-4 text-left text-sm font-medium text-gray-700 dark:text-gray-300">ID</th>
@@ -69,14 +85,17 @@ export default function ReservasTable({ reservas, onDelete }) {
                         <th className="py-3 px-4 text-left text-sm font-medium text-gray-700 dark:text-gray-300">Acciones</th>
                     </tr>
                 </thead>
+                {/* Cuerpo de la tabla */}
                 <tbody className="bg-white dark:bg-gray-800">
                     {reservas.length === 0 ? (
+                        // Mensaje cuando no hay reservas
                         <tr>
                             <td colSpan="11" className="py-6 px-4 text-center text-gray-500 dark:text-gray-400">
                                 No se encontraron reservas
                             </td>
                         </tr>
                     ) : (
+                        // Mapeo de las reservas existentes
                         reservas.map((reserva) => (
                             <tr key={reserva.id} className="border-b last:border-none dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700">
                                 <td className="py-3 px-4 text-sm text-gray-700 dark:text-gray-300">{reserva.id}</td>
@@ -102,21 +121,24 @@ export default function ReservasTable({ reservas, onDelete }) {
                                         {reserva.estado.charAt(0).toUpperCase() + reserva.estado.slice(1)}
                                     </span>
                                 </td>
+                                {/* Botones de acción condicionados por el rol del usuario */}
                                 <td className="py-3 px-4 text-sm text-gray-700 dark:text-gray-300">
-                                    <div className="flex space-x-2">
-                                        <PrimaryButton
-                                            onClick={() => handleEdit(reserva)}
-                                            className="text-xs px-3 py-1"
-                                        >
-                                            Editar
-                                        </PrimaryButton>
-                                        <DangerButton
-                                            onClick={() => onDelete(reserva)}
-                                            className="text-xs px-3 py-1"
-                                        >
-                                            Eliminar
-                                        </DangerButton>
-                                    </div>
+                                    {canManageReserva() && (
+                                        <div className="flex space-x-2">
+                                            <PrimaryButton
+                                                onClick={() => handleEdit(reserva)}
+                                                className="text-xs px-3 py-1"
+                                            >
+                                                Editar
+                                            </PrimaryButton>
+                                            <DangerButton
+                                                onClick={() => onDelete(reserva)}
+                                                className="text-xs px-3 py-1"
+                                            >
+                                                Eliminar
+                                            </DangerButton>
+                                        </div>
+                                    )}
                                 </td>
                             </tr>
                         ))
