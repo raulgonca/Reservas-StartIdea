@@ -17,7 +17,7 @@ use Illuminate\Validation\Rule;
 class ReservaService
 {
     /**
-     * Horarios predefinidos para reservas de medio día (podemos modificarlos aqui...)
+     * Horarios predefinidos para reservas de medio día
      */
     protected const HORARIOS_MEDIO_DIA = [
         'mañana' => ['inicio' => '08:00', 'fin' => '14:00'],
@@ -26,11 +26,10 @@ class ReservaService
 
     /**
      * Configuración de los diferentes tipos de reserva
-     * Especifica si requieren hora específica y su duración
      */
     protected const TIPOS_RESERVA = [
         'hora' => ['requiere_hora' => true, 'duracion' => '1 hour'],
-        'medio_dia' => ['requiere_hora' => true, 'duracion' => '6 hours'],  //  para modificar el rango de horario en medio dia aqui...
+        'medio_dia' => ['requiere_hora' => true, 'duracion' => '6 hours'],
         'dia_completo' => ['requiere_hora' => false, 'duracion' => '1 day'],
         'semana' => ['requiere_hora' => false, 'duracion' => '1 week'],
         'mes' => ['requiere_hora' => false, 'duracion' => '1 month']
@@ -63,18 +62,12 @@ class ReservaService
 
     /**
      * Valida y prepara los datos de la reserva
-     * @param array $data Datos de la reserva
-     * @param bool $isUpdate Indica si es una actualización
-     * @return array Datos validados y procesados
-     * @throws ValidationException
      */
     public function validateAndPrepareData($data, $isUpdate = false)
     {
-        // Validar fecha en el pasado antes de otras validaciones
         $fechaInicio = Carbon::parse($data['fecha_inicio']);
         $esCancelada = isset($data['estado']) && $data['estado'] === 'cancelada';
 
-        // Para reservas no canceladas y nuevas, verificar que no sean en el pasado
         if (!$esCancelada && !$isUpdate) {
             $ahora = Carbon::now()->startOfDay();
             if ($fechaInicio->lt($ahora)) {
@@ -84,7 +77,6 @@ class ReservaService
             }
         }
 
-        // Reglas de validación básicas
         $rules = [
             'user_id' => 'required|exists:users,id',
             'espacio_id' => 'required|exists:espacios,id',
@@ -108,13 +100,14 @@ class ReservaService
             'motivo' => 'nullable|string|max:255'
         ];
 
-        // Reglas adicionales para reservas por hora o medio día (podemos modificarlos aqui...)
+        // Reglas específicas para hora inicio y fin
         $rules['hora_inicio'] = [
             Rule::requiredIf(function () use ($data) {
                 return in_array($data['tipo_reserva'] ?? '', ['hora', 'medio_dia']);
             }),
             'nullable',
             'date_format:H:i',
+            // Solo aplicar restricción de horario para medio día
             Rule::when(
                 isset($data['tipo_reserva']) && $data['tipo_reserva'] === 'medio_dia',
                 ['in:08:00,14:00']
@@ -123,14 +116,13 @@ class ReservaService
 
         $rules['hora_fin'] = [
             Rule::requiredIf(function () use ($data) {
-                return in_array($data['tipo_reserva'] ?? '', ['hora', 'medio_dia']);
+                return ($data['tipo_reserva'] ?? '') === 'hora';
             }),
             'nullable',
             'date_format:H:i',
             'after:hora_inicio'
         ];
 
-        // Validar los datos
         $validator = Validator::make($data, $rules, $this->messages);
 
         if ($validator->fails()) {
@@ -141,33 +133,28 @@ class ReservaService
             throw ValidationException::withMessages($validator->errors()->toArray());
         }
 
-        // Calcular las fechas según el tipo de reserva
-        $datosValidados = $validator->validated();
-        return $this->calculateDates($datosValidados);
+        return $this->calculateDates($validator->validated());
     }
 
     /**
      * Calcula las fechas de inicio y fin según el tipo de reserva
-     * @param array $data Datos validados
-     * @return array Datos con fechas calculadas
-     * @throws ValidationException
      */
     protected function calculateDates($data)
     {
         $fechaInicio = Carbon::parse($data['fecha_inicio']);
         $tipoReserva = self::TIPOS_RESERVA[$data['tipo_reserva']];
 
-        // Establecer la hora si es necesario
         if (isset($data['hora_inicio']) && $tipoReserva['requiere_hora']) {
             $fechaInicio->setTimeFromTimeString($data['hora_inicio']);
         } else {
             $fechaInicio->startOfDay();
         }
 
-        // Calcular fecha fin según tipo de reserva
         switch ($data['tipo_reserva']) {
             case 'hora':
-                $fechaFin = $fechaInicio->copy()->addHour();
+                $fechaFin = isset($data['hora_fin']) ? 
+                    $fechaInicio->copy()->setTimeFromTimeString($data['hora_fin']) :
+                    $fechaInicio->copy()->addHour();
                 break;
             case 'medio_dia':
                 $fechaFin = $fechaInicio->copy()->addHours(6);
@@ -187,7 +174,6 @@ class ReservaService
                 ]);
         }
 
-        // Verificar que la fecha fin no sea anterior a la fecha inicio
         if ($fechaFin->lt($fechaInicio)) {
             throw ValidationException::withMessages([
                 'fecha_fin' => 'La fecha de fin debe ser posterior a la fecha de inicio'
@@ -206,30 +192,19 @@ class ReservaService
         ];
     }
 
-
-
-
     /**
      * Verifica si hay solapamientos con otras reservas
-     * @param array $data Datos de la reserva
-     * @param int|null $reservaId ID de la reserva actual (para actualizaciones)
-     * @throws ValidationException
      */
     public function checkOverlap($data, $reservaId = null)
     {
-        // Si solo es actualización de estado, no verificar solapamientos
         if ($this->isOnlyStatusData($data)) {
             return;
         }
 
-        // Convertir fechas a objetos Carbon
         $fechaInicio = Carbon::parse($data['fecha_inicio']);
         $fechaFin = Carbon::parse($data['fecha_fin']);
-
-        // Comprobar si es una reserva cancelada
         $esCancelada = isset($data['estado']) && $data['estado'] === 'cancelada';
 
-        // Para reservas canceladas, solo validar fechas invertidas
         if ($esCancelada) {
             if ($fechaFin->lt($fechaInicio)) {
                 throw ValidationException::withMessages([
@@ -239,29 +214,32 @@ class ReservaService
             return;
         }
 
-        // 1. Verificar fechas invertidas (para reservas no canceladas)
-        if ($fechaFin->lt($fechaInicio)) {
-            throw ValidationException::withMessages([
-                'fecha_fin' => 'La fecha de fin debe ser posterior a la fecha de inicio'
-            ]);
-        }
-
-        // 2. Obtener el espacio
         $espacio = Espacio::findOrFail($data['espacio_id']);
 
-        // 3. Verificar horario del espacio
-        if (!$espacio->disponible_24_7 && in_array($data['tipo_reserva'], ['hora', 'medio_dia'])) {
+        // Verificar horario del espacio solo para reservas de medio día
+        if (!$espacio->disponible_24_7 && $data['tipo_reserva'] === 'medio_dia') {
             $horaInicio = $fechaInicio->format('H:i:s');
             $horaFin = $fechaFin->format('H:i:s');
 
             if ($horaInicio < $espacio->horario_inicio || $horaFin > $espacio->horario_fin) {
                 throw ValidationException::withMessages([
-                    'horario' => "Las reservas deben estar dentro del horario del espacio ({$espacio->horario_inicio} - {$espacio->horario_fin})"
+                    'horario' => "Las reservas de medio día deben estar dentro del horario del espacio ({$espacio->horario_inicio} - {$espacio->horario_fin})"
                 ]);
             }
         }
 
-        // 4. Verificar reservas simultáneas del mismo usuario
+        // Verificar reservas simultáneas del mismo usuario
+        $this->checkUserSimultaneousReservations($data, $fechaInicio, $fechaFin, $reservaId);
+
+        // Verificar solapamientos con otras reservas
+        $this->checkReservationOverlaps($data, $fechaInicio, $fechaFin, $reservaId, $espacio);
+    }
+
+    /**
+     * Verifica reservas simultáneas del mismo usuario
+     */
+    protected function checkUserSimultaneousReservations($data, $fechaInicio, $fechaFin, $reservaId)
+    {
         $reservasSimultaneas = Reserva::where('user_id', $data['user_id'])
             ->where('estado', 'confirmada')
             ->where('id', '!=', $reservaId)
@@ -279,18 +257,21 @@ class ReservaService
                 'usuario' => 'Ya tienes una reserva activa en este horario'
             ]);
         }
+    }
 
-        // 5. Verificar solapamientos con otras reservas
+    /**
+     * Verifica solapamientos con otras reservas
+     */
+    protected function checkReservationOverlaps($data, $fechaInicio, $fechaFin, $reservaId, $espacio)
+    {
         $query = Reserva::where('espacio_id', $data['espacio_id'])
             ->where('estado', 'confirmada')
             ->where('id', '!=', $reservaId);
 
-        // Añadir filtro de escritorio si está especificado
         if (!empty($data['escritorio_id'])) {
             $query->where('escritorio_id', $data['escritorio_id']);
         }
 
-        // Verificar solapamientos de fechas
         $query->where(function ($q) use ($fechaInicio, $fechaFin) {
             $q->whereBetween('fecha_inicio', [$fechaInicio, $fechaFin])
                 ->orWhereBetween('fecha_fin', [$fechaInicio, $fechaFin])
@@ -310,7 +291,8 @@ class ReservaService
                     Carbon::parse($reserva->fecha_inicio)->format('H:i'),
                     Carbon::parse($reserva->fecha_fin)->format('H:i'),
                     ucfirst($reserva->tipo_reserva),
-                    ($espacio->tipo === 'coworking' && $reserva->escritorio_id) ? " - Escritorio: {$reserva->escritorio->nombre}" : ""
+                    ($espacio->tipo === 'coworking' && $reserva->escritorio_id) ? 
+                        " - Escritorio: {$reserva->escritorio->nombre}" : ""
                 );
             })->join("\n");
 
@@ -320,29 +302,24 @@ class ReservaService
         }
     }
 
-
     /**
      * Verifica si los datos son solo para actualización de estado
-     * @param array $data Datos de la reserva
-     * @return bool
      */
     public function isOnlyStatusData($data)
     {
-        $allowedFields = ['estado', 'motivo', '_method', '_token', 'is_status_update'];
-
-        $receivedFields = array_filter(array_keys($data), function ($key) use ($data) {
-            return !in_array($key, ['_method', '_token']) &&
-                isset($data[$key]) &&
-                $data[$key] !== '' &&
-                $data[$key] !== null;
-        });
-
         if (isset($data['is_status_update']) && $data['is_status_update'] === 'true') {
             $validFields = ['estado', 'motivo'];
-            $actualFields = array_diff($receivedFields, ['is_status_update']);
+            $actualFields = array_diff(
+                array_filter(array_keys($data), function ($key) use ($data) {
+                    return !in_array($key, ['_method', '_token', 'is_status_update']) &&
+                        isset($data[$key]) &&
+                        $data[$key] !== '' &&
+                        $data[$key] !== null;
+                }),
+                ['is_status_update']
+            );
             return empty(array_diff($actualFields, $validFields));
         }
-
         return false;
     }
 }

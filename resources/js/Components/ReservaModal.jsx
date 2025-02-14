@@ -19,29 +19,49 @@ export default function ReservaModal({
     espacios,
     escritorios
 }) {
+
+    // Función para formatear hora desde string de fecha
+    const formatTime = (dateString) => {
+        if (!dateString) return '';
+        return new Date(dateString).toLocaleTimeString('es-ES', {
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: false,
+            timeZone: 'UTC'
+        });
+    };
+
+    // Inicialización del formulario con useForm
     const { data, setData, errors, setError, clearErrors } = useForm({
         user_id: reserva.user_id,
         espacio_id: reserva.espacio_id,
         escritorio_id: reserva.escritorio_id,
         fecha_inicio: reserva.fecha_inicio.split("T")[0],
         fecha_fin: reserva.fecha_fin.split("T")[0],
-        hora_inicio: reserva.hora_inicio || '',
-        hora_fin: reserva.hora_fin || '',
+        // Asegurar que las horas se inicialicen correctamente desde la reserva
+        hora_inicio: reserva.hora_inicio || formatTime(reserva.fecha_inicio),
+        hora_fin: reserva.hora_fin || formatTime(reserva.fecha_fin),
         tipo_reserva: reserva.tipo_reserva,
         motivo: reserva.motivo || '',
         estado: reserva.estado || 'pendiente',
     });
 
+    // Estados locales del componente
     const [showEscritorio, setShowEscritorio] = useState(false);
     const [escritoriosLibres, setEscritoriosLibres] = useState([]);
     const [showHoras, setShowHoras] = useState(reserva.tipo_reserva === 'hora' || reserva.tipo_reserva === 'medio_dia');
     const [fechaFinCalculada, setFechaFinCalculada] = useState('');
     const [processing, setProcessing] = useState(false);
+    
+    // Horarios predefinidos para reservas de medio día
     const [horariosDisponibles] = useState([
         { inicio: '08:00', fin: '14:00', label: 'Mañana (08:00 - 14:00)' },
         { inicio: '14:00', fin: '20:00', label: 'Tarde (14:00 - 20:00)' }
     ]);
 
+    
+
+    // Efecto para manejar la visibilidad del selector de escritorios
     useEffect(() => {
         const selectedEspacio = espacios.find(espacio => espacio.id === Number(data.espacio_id));
         if (selectedEspacio && selectedEspacio.tipo === 'coworking') {
@@ -56,6 +76,7 @@ export default function ReservaModal({
         }
     }, [data.espacio_id, escritorios, espacios]);
 
+    // Efecto para calcular fecha fin según tipo de reserva
     useEffect(() => {
         setShowHoras(data.tipo_reserva === 'hora' || data.tipo_reserva === 'medio_dia');
 
@@ -85,6 +106,7 @@ export default function ReservaModal({
         }
     }, [data.tipo_reserva, data.fecha_inicio]);
 
+    // Efecto para manejar horarios de medio día
     useEffect(() => {
         if (data.tipo_reserva === 'medio_dia' && data.hora_inicio) {
             const horario = horariosDisponibles.find(h => h.inicio === data.hora_inicio);
@@ -94,6 +116,7 @@ export default function ReservaModal({
         }
     }, [data.hora_inicio, data.tipo_reserva]);
 
+    // Validación del formulario
     const validateForm = () => {
         clearErrors();
         let isValid = true;
@@ -111,6 +134,7 @@ export default function ReservaModal({
         return isValid;
     };
 
+    // Manejador del envío del formulario
     const submit = (e) => {
         e.preventDefault();
         if (!validateForm()) return;
@@ -162,9 +186,11 @@ export default function ReservaModal({
             });
     };
 
+    // Renderizado del componente
     return (
         <Modal show={true} onClose={onClose} maxWidth="2xl">
             <form onSubmit={submit} className="p-6 max-h-[90vh] overflow-y-auto">
+                {/* Campo de usuario (solo lectura) */}
                 <div>
                     <InputLabel htmlFor="user_name" value="Reserva Perteneciente a el/la Usuario" className='text-center'/>
                     <div className="p-3 text-4xl text-center">
@@ -175,6 +201,7 @@ export default function ReservaModal({
                     <input type="hidden" name="user_id" value={data.user_id} />
                 </div>
 
+                {/* Selector de espacio */}
                 <div className="mt-6">
                     <InputLabel htmlFor="espacio_id" value="Espacio" />
                     <SelectInput
@@ -193,6 +220,7 @@ export default function ReservaModal({
                     <InputError message={errors.espacio_id} className="mt-2" />
                 </div>
 
+                {/* Selector de escritorio (condicional) */}
                 {showEscritorio && (
                     <div className="mt-6">
                         <InputLabel htmlFor="escritorio_id" value="Escritorio" />
@@ -214,6 +242,7 @@ export default function ReservaModal({
                     </div>
                 )}
 
+                {/* Grid para tipo de reserva y estado */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
                     <div>
                         <InputLabel htmlFor="tipo_reserva" value="Tipo de Reserva" />
@@ -250,6 +279,7 @@ export default function ReservaModal({
                     </div>
                 </div>
 
+                {/* Campo de fecha de inicio */}
                 <div className="mt-6">
                     <InputLabel htmlFor="fecha_inicio" value="Fecha de Inicio" />
                     <TextInput
@@ -268,6 +298,7 @@ export default function ReservaModal({
                     )}
                 </div>
 
+                {/* Campos de horario (condicionales) */}
                 {showHoras && (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
                         <div>
@@ -322,6 +353,7 @@ export default function ReservaModal({
                     </div>
                 )}
 
+                {/* Campo de motivo */}
                 <div className="mt-6">
                     <InputLabel htmlFor="motivo" value="Motivo (Opcional)" />
                     <TextareaInput
@@ -335,6 +367,7 @@ export default function ReservaModal({
                     <InputError message={errors.motivo} className="mt-2" />
                 </div>
 
+                {/* Botones de acción */}
                 <div className="mt-6 flex justify-end space-x-3">
                     <SecondaryButton onClick={onClose} disabled={processing}>
                         Cancelar
@@ -344,6 +377,7 @@ export default function ReservaModal({
                     </PrimaryButton>
                 </div>
 
+                {/* Mensajes de error */}
                 {errors.hora && (
                     <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-md">
                         <p className="text-red-600 text-sm">{errors.hora}</p>
