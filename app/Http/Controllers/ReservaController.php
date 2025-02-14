@@ -227,48 +227,86 @@ class ReservaController extends Controller
      * @return string Mensaje de éxito
      */
     protected function buildSuccessMessage(Reserva $reserva)
-    {
-        if (Auth::user()->role === 'user') {
-            return "Su reserva será revisada por el equipo de la empresa y pronto nos comunicaremos con usted. Detalles de la reserva pendiente: {$reserva->details}";
-        } else {
-            $mensajeBase = [];
+{
+    if (Auth::user()->role === 'user') {
+        $mensaje = [
+            "Su reserva será revisada por el equipo de la empresa y pronto nos comunicaremos con usted.",
+            "",
+            "Detalles de su reserva pendiente:",
+            "Espacio: " . $reserva->espacio->nombre
+        ];
 
-            // Información básica
-            $mensajeBase[] = "¡Reserva creada exitosamente!";
-            $mensajeBase[] = "Usuario: {$reserva->user->name}";
-            $mensajeBase[] = "Email: {$reserva->user->email}";
-            $mensajeBase[] = "Espacio: {$reserva->espacio->nombre}";
-
-            // Información de escritorio si existe
-            if ($reserva->escritorio_id) {
-                $mensajeBase[] = "Escritorio: {$reserva->escritorio->nombre}";
-            }
-
-            // Fechas y horarios
-            $mensajeBase[] = "Fecha de Inicio: {$reserva->fecha_inicio->format('d/m/Y')}";
-            $mensajeBase[] = "Fecha de Fin: {$reserva->fecha_fin->format('d/m/Y')}";
-
-            // Agregar hora solo si es relevante
-            if (in_array($reserva->tipo_reserva, ['hora', 'medio_dia'])) {
-                $horaInfo = "Hora: {$reserva->hora_inicio}";
-                if ($reserva->hora_fin) {
-                    $horaInfo .= " a {$reserva->hora_fin}";
-                }
-                $mensajeBase[] = $horaInfo;
-            }
-
-            // Tipo de reserva y estado
-            $mensajeBase[] = "Tipo de Reserva: " . ucfirst($reserva->tipo_reserva);
-            $mensajeBase[] = "Estado: " . ucfirst($reserva->estado);
-
-            // Motivo si existe
-            if ($reserva->motivo) {
-                $mensajeBase[] = "Motivo: {$reserva->motivo}";
-            }
-
-            return implode("\n", $mensajeBase);
+        // Agregar información del escritorio si es coworking
+        if ($reserva->escritorio_id) {
+            $mensaje[] = "Escritorio: " . $reserva->escritorio->nombre;
         }
+
+        // Fechas según tipo de reserva
+        $mensaje[] = "Fecha de inicio: " . $reserva->fecha_inicio->format('d/m/Y');
+        
+        if ($reserva->tipo_reserva !== 'dia_completo') {
+            $mensaje[] = "Fecha de fin: " . $reserva->fecha_fin->format('d/m/Y');
+        }
+
+        // Agregar horarios si aplica
+        if (in_array($reserva->tipo_reserva, ['hora', 'medio_dia'])) {
+            $mensaje[] = "Hora de inicio: " . $reserva->hora_inicio;
+            if ($reserva->hora_fin) {
+                $mensaje[] = "Hora de fin: " . $reserva->hora_fin;
+            }
+        }
+
+        // Tipo de reserva formateado
+        $tiposReserva = [
+            'hora' => 'Por hora',
+            'medio_dia' => 'Medio día',
+            'dia_completo' => 'Día completo',
+            'semana' => 'Semana',
+            'mes' => 'Mes'
+        ];
+        
+        $mensaje[] = "Tipo de reserva: " . ($tiposReserva[$reserva->tipo_reserva] ?? $reserva->tipo_reserva);
+
+        return implode("\n", $mensaje);
+    } else {
+        $mensajeBase = [];
+
+        // Información básica
+        $mensajeBase[] = "¡Reserva creada exitosamente!";
+        $mensajeBase[] = "Usuario: {$reserva->user->name}";
+        $mensajeBase[] = "Email: {$reserva->user->email}";
+        $mensajeBase[] = "Espacio: {$reserva->espacio->nombre}";
+
+        // Información de escritorio si existe
+        if ($reserva->escritorio_id) {
+            $mensajeBase[] = "Escritorio: {$reserva->escritorio->nombre}";
+        }
+
+        // Fechas y horarios
+        $mensajeBase[] = "Fecha de Inicio: {$reserva->fecha_inicio->format('d/m/Y')}";
+        $mensajeBase[] = "Fecha de Fin: {$reserva->fecha_fin->format('d/m/Y')}";
+
+        // Agregar hora solo si es relevante
+        if (in_array($reserva->tipo_reserva, ['hora', 'medio_dia'])) {
+            $horaInfo = "Hora: {$reserva->hora_inicio}";
+            if ($reserva->hora_fin) {
+                $horaInfo .= " a {$reserva->hora_fin}";
+            }
+            $mensajeBase[] = $horaInfo;
+        }
+
+        // Tipo de reserva y estado
+        $mensajeBase[] = "Tipo de Reserva: " . ucfirst($reserva->tipo_reserva);
+        $mensajeBase[] = "Estado: " . ucfirst($reserva->estado);
+
+        // Motivo si existe
+        if ($reserva->motivo) {
+            $mensajeBase[] = "Motivo: {$reserva->motivo}";
+        }
+
+        return implode("\n", $mensajeBase);
     }
+}
 
     public function destroy($id)
     {

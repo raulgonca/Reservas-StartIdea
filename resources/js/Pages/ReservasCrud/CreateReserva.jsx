@@ -122,45 +122,21 @@ export default function CreateReserva() {
                 ? 'admin.reservas.store'
                 : 'superadmin.reservas.store';
 
-        post(route(routeName), {
-            onSuccess: (response) => {
-                // Construir mensaje de éxito
-                const usuario = auth.user.role === 'user'
-                    ? auth.user
-                    : users.find(u => u.id === Number(data.user_id));
-                const espacio = espacios.find(e => e.id === Number(data.espacio_id));
-                const escritorio = escritorios.find(e => e.id === Number(data.escritorio_id));
-
-                const mensajeExito = [
-                    "¡Reserva creada exitosamente!",
-                    `Usuario: ${usuario?.name || 'No especificado'}`,
-                    `Email: ${usuario?.email || 'No especificado'}`,
-                    `Espacio: ${espacio?.nombre || 'No especificado'}`
-                ];
-
-                if (escritorio) {
-                    mensajeExito.push(`Escritorio: ${escritorio.nombre}`);
-                }
-
-                mensajeExito.push(
-                    `Fecha de Inicio: ${data.fecha_inicio} ${data.hora_inicio || ''}`,
-                    `Fecha de Fin: ${data.fecha_fin} ${data.hora_fin || ''}`,
-                    `Tipo de Reserva: ${data.tipo_reserva}`,
-                    data.motivo ? `Motivo: ${data.motivo}` : null
-                );
-
-                toast.success(mensajeExito.filter(Boolean).join('\n'), {
-                    autoClose: 5000,
-                    style: { whiteSpace: 'pre-line' }
+                post(route(routeName), {
+                    onSuccess: (page) => {
+                        if (page.props.flash.success) {
+                            toast.success(page.props.flash.success, {
+                                autoClose: 5000,
+                                style: { whiteSpace: 'pre-line' }
+                            });
+                        }
+                        handleReset();
+                    },
+                    onError: (errors) => {
+                        const uniqueErrors = [...new Set(Object.values(errors))];
+                        uniqueErrors.forEach(error => toast.error(error));
+                    }
                 });
-
-                handleReset();
-            },
-            onError: (errors) => {
-                const uniqueErrors = [...new Set(Object.values(errors))];
-                uniqueErrors.forEach(error => toast.error(error));
-            }
-        });
     };
 
     const today = new Date().toISOString().split('T')[0];
