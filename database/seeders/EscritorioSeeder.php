@@ -14,12 +14,12 @@ class EscritorioSeeder extends Seeder
         $espaciosCoworking = Espacio::where('tipo', 'coworking')->get();
 
         foreach ($espaciosCoworking as $espacio) {
-            // Crear 10 escritorios por cada espacio coworking
+            // Crear 6 escritorios por cada espacio coworking
             for ($i = 1; $i <= 6; $i++) {
                 Escritorio::create([
                     'espacio_id' => $espacio->id,
-                    'nombre' => "Escritorio $i",
-                    'disponible' => true,
+                    'numero' => 'E' . str_pad($i, 2, '0', STR_PAD_LEFT),
+                    'is_active' => true
                 ]);
             }
         }

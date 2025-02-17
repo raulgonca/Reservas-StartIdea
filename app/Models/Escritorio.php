@@ -4,18 +4,22 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
+// app/Models/Escritorio.php
 class Escritorio extends Model
 {
-    use HasFactory;
-
     protected $fillable = [
         'espacio_id',
-        'nombre',
-        'disponible',
+        'numero',
+        'is_active'
     ];
 
     public function espacio()
     {
         return $this->belongsTo(Espacio::class);
+    }
+
+    public function reservas()
+    {
+        return $this->hasMany(Reserva::class);
     }
 }

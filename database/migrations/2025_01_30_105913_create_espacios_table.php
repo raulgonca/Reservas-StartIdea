@@ -15,12 +15,17 @@ class CreateEspaciosTable extends Migration
         Schema::create('espacios', function (Blueprint $table) {
             $table->id();
             $table->string('nombre');
+            $table->string('slug')->nullable();
             $table->enum('tipo', ['sala', 'coworking', 'radio', 'despacho']);
             $table->integer('aforo')->nullable();
             $table->time('horario_inicio')->nullable();
             $table->time('horario_fin')->nullable();
             $table->boolean('disponible_24_7')->default(false);
             $table->text('descripcion')->nullable();
+            $table->string('image')->nullable();
+            $table->json('features')->nullable();
+            $table->decimal('price', 8, 2)->default(0);
+            $table->boolean('is_active')->default(true);
             $table->timestamps();
         });
     }

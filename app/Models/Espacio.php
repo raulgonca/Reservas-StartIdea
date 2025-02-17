@@ -9,13 +9,20 @@ class Espacio extends Model
     use HasFactory;
 
     protected $fillable = [
-        'nombre',
-        'tipo',
-        'aforo',
-        'horario_inicio',
-        'horario_fin',
-        'disponible_24_7',
-        'descripcion',
+        'title',
+        'slug',
+        'description',
+        'image',
+        'features',
+        'capacity',
+        'price',
+        'is_active'
+    ];
+
+    protected $casts = [
+        'features' => 'array',
+        'is_active' => 'boolean',
+        'price' => 'decimal:2'
     ];
 
     public function reservas()
@@ -26,5 +33,11 @@ class Espacio extends Model
     public function escritorios()
     {
         return $this->hasMany(Escritorio::class);
+    }
+
+    // Accessor para la URL de la imagen
+    public function getImageUrlAttribute()
+    {
+        return $this->image ? asset('storage/' . $this->image) : null;
     }
 }
