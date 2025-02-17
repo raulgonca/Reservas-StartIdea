@@ -52,7 +52,7 @@ export default function Welcome({ auth, laravelVersion, phpVersion, espacios = [
                                 muted
                                 playsInline
                             >
-                                <source src="/storage/videos/coworking1.mp4" type="video/mp4" />
+                                <source src="/storage/videos/general/coworking1.mp4" type="video/mp4" />
                             </video>
                         </div>
 
