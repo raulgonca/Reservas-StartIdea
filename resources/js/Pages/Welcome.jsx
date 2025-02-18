@@ -1,11 +1,31 @@
 import { Head, Link } from "@inertiajs/react";
 import ApplicationLogo from "@/Components/ApplicationLogo";
 import SpaceCard from "@/Components/SpaceCard";
+import SpaceModal from "@/Components/SpaceModal";
+import { useState } from "react";
 
 export default function Welcome({ auth, laravelVersion, phpVersion, espacios = [] }) {
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [selectedSpace, setSelectedSpace] = useState(null);
+
+    const openModal = (space) => {
+        setSelectedSpace(space);
+        setIsModalOpen(true);
+    };
+
+    const closeModal = () => {
+        setIsModalOpen(false);
+        setSelectedSpace(null);
+    };
+
     return (
         <>
             <Head title="Reservas" />
+            <SpaceModal 
+                isOpen={isModalOpen} 
+                closeModal={closeModal} 
+                space={selectedSpace}
+            />
             <div className="flex flex-col min-h-screen bg-gray-50 text-white">
                 <header className="bg-gray-800 w-full flex items-center justify-between px-6">
                     <div className="flex items-center">
@@ -76,7 +96,6 @@ export default function Welcome({ auth, laravelVersion, phpVersion, espacios = [
                     </div>
                 </main>
 
-
                 {/* Sección de Espacios */}
                 <section id="espacios" className="py-24 bg-gray-50">
                     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -94,14 +113,8 @@ export default function Welcome({ auth, laravelVersion, phpVersion, espacios = [
                             {espacios && espacios.map((espacio) => (
                                 <SpaceCard
                                     key={espacio.id}
-                                    title={espacio.title}
-                                    description={espacio.description}
-                                    image={espacio.image}
-                                    features={espacio.features}
-                                    capacity={espacio.capacity}
-                                    price={espacio.price}
-                                    buttonLink={route('espacios.show', espacio.slug)}
-                                    buttonText="Ver Detalles"
+                                    space={espacio}
+                                    onOpenModal={openModal}
                                 />
                             ))}
                         </div>

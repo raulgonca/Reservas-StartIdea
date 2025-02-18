@@ -8,7 +8,7 @@ use Inertia\Inertia;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Foundation\Application;
-
+use Illuminate\Support\Facades\Log;
 
 class EspacioController extends Controller
 {
@@ -17,18 +17,34 @@ class EspacioController extends Controller
         $espacios = Espacio::where('is_active', true)
             ->select(
                 'id',
-                'nombre as title',
+                'nombre',
                 'slug',
-                'descripcion as description',
+                'descripcion',
                 'image',
                 'features',
-                'aforo as capacity',
+                'aforo',
                 'price'
             )
             ->get()
             ->map(function ($espacio) {
-                $espacio->features = json_decode($espacio->features, true) ?? [];
-                return $espacio;
+                // Log para depuración
+                Log::info('Procesando espacio:', [
+                    'id' => $espacio->id,
+                    'nombre' => $espacio->nombre,
+                    'image_path' => $espacio->image,
+                    'image_url' => asset('storage/' . $espacio->image)
+                ]);
+
+                return [
+                    'id' => $espacio->id,
+                    'nombre' => $espacio->nombre,
+                    'slug' => $espacio->slug,
+                    'descripcion' => $espacio->descripcion,
+                    'image_url' => asset('storage/' . $espacio->image),
+                    'features' => json_decode($espacio->features, true) ?? [],
+                    'aforo' => $espacio->aforo,
+                    'price' => $espacio->price
+                ];
             });
 
         return Inertia::render('Welcome', [

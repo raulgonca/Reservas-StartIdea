@@ -1,84 +1,54 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from '@inertiajs/react';
 
-export default function SpaceCard({ 
-    title, 
-    description, 
-    image, 
-    features, 
-    capacity, 
-    price, 
-    slug,
-    buttonText = "Ver Detalles",
-    buttonLink = null,
-    buttonAction = null,
-    className = ""
-}) {
-    const [isHovered, setIsHovered] = useState(false);
+const SpaceCard = ({ space, onOpenModal }) => {
+    useEffect(() => {
+        console.log('SpaceCard data:', {
+            space: space,
+            imageUrl: space.image_url
+        });
+    }, [space]);
 
-    const ButtonComponent = buttonLink ? Link : 'button';
-    const buttonProps = buttonLink 
-        ? { href: buttonLink }
-        : { onClick: buttonAction };
+    const handleImageError = (e) => {
+        console.error('Error cargando imagen:', {
+            espacio: space.nombre,
+            rutaOriginal: space.image_url,
+            elemento: e.target
+        });
+        e.target.src = '/storage/images/placeholder.png';
+    };
 
     return (
-        <div 
-            className={`relative group bg-white rounded-xl shadow-lg overflow-hidden transform transition-all duration-300 hover:scale-105 ${className}`}
-            onMouseEnter={() => setIsHovered(true)}
-            onMouseLeave={() => setIsHovered(false)}
-        >
-            {/* Imagen del espacio */}
-            <div className="relative h-64 overflow-hidden">
+        <div className="bg-white rounded-lg shadow-lg overflow-hidden">
+            <div className="aspect-w-16 aspect-h-9">
                 <img
-                    src={image}
-                    alt={title}
-                    className="w-full h-full object-cover transform transition-transform duration-300 group-hover:scale-110"
+                    src={space.image_url}
+                    alt={space.nombre}
+                    className="object-cover w-full h-full"
+                    onError={handleImageError}
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent"/>
             </div>
-
-            {/* Contenido */}
             <div className="p-6">
-                <h3 className="text-2xl font-montserrat font-bold text-gray-900 mb-2">
-                    {title}
-                </h3>
-                <p className="text-gray-600 mb-4">
-                    {description}
-                </p>
-
-                {/* Características */}
-                <div className="space-y-2 mb-6">
-                    {features.map((feature, index) => (
-                        <div key={index} className="flex items-center text-sm text-gray-500">
-                            <svg className="w-4 h-4 mr-2 text-[#1A237E]" fill="currentColor" viewBox="0 0 20 20">
-                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"/>
-                            </svg>
-                            {feature}
-                        </div>
-                    ))}
+                <h3 className="text-xl font-semibold text-gray-900 mb-2">{space.nombre}</h3>
+                <p className="text-gray-600 mb-4 line-clamp-2">{space.descripcion}</p>
+                
+                {/* Capacidad y Precio */}
+                <div className="flex justify-between items-center mb-4 text-gray-600">
+                    {space.aforo && (
+                        <span>Capacidad: {space.aforo} personas</span>
+                    )}
+                    <span>{space.price}€/hora</span>
                 </div>
 
-                {/* Información adicional */}
-                <div className="flex justify-between items-center mb-4">
-                    <div className="text-sm text-gray-500">
-                        <span className="font-semibold">Capacidad:</span> {capacity}
-                    </div>
-                    <div className="text-lg font-bold text-[#1A237E]">
-                        {price}€/hora
-                    </div>
-                </div>
-
-                {/* Botón de acción dinámico */}
-                <ButtonComponent
-                    {...buttonProps}
-                    className="w-full inline-flex justify-center items-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-[#1A237E] hover:bg-[#283593] transition-colors duration-300"
+                <button
+                    onClick={() => onOpenModal(space)}
+                    className="w-full bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 transition"
                 >
-                    {buttonText}
-                    <svg className="ml-2 -mr-1 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                    </svg>
-                </ButtonComponent>
+                    Ver Detalles
+                </button>
             </div>
         </div>
     );
-}
+};
+
+export default SpaceCard;
