@@ -4,7 +4,12 @@ import SpaceCard from "@/Components/SpaceCard";
 import SpaceModal from "@/Components/SpaceModal";
 import { useState } from "react";
 
-export default function Welcome({ auth, laravelVersion, phpVersion, espacios = [] }) {
+export default function Welcome({
+    auth,
+    laravelVersion,
+    phpVersion,
+    espacios = [],
+}) {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedSpace, setSelectedSpace] = useState(null);
 
@@ -21,9 +26,9 @@ export default function Welcome({ auth, laravelVersion, phpVersion, espacios = [
     return (
         <>
             <Head title="Reservas" />
-            <SpaceModal 
-                isOpen={isModalOpen} 
-                closeModal={closeModal} 
+            <SpaceModal
+                isOpen={isModalOpen}
+                closeModal={closeModal}
                 space={selectedSpace}
             />
             <div className="flex flex-col min-h-screen bg-gray-50 text-white">
@@ -72,24 +77,45 @@ export default function Welcome({ auth, laravelVersion, phpVersion, espacios = [
                                 muted
                                 playsInline
                             >
-                                <source src="/storage/videos/general/coworking1.mp4" type="video/mp4" />
+                                <source
+                                    src="/storage/videos/general/coworking1.mp4"
+                                    type="video/mp4"
+                                />
                             </video>
                         </div>
 
                         {/* Contenido superpuesto */}
-                        <div className="relative z-20 w-full">
+                        <div className="relative z-20 w-full p-4">
                             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                                 <div className="text-center">
-                                    <h1 className="font-montserrat text-7xl sm:text-8xl md:text-9xl lg:text-[120px] font-extrabold tracking-wider text-white leading-none mb-8">
+                                    {/* Título principal con mejor escalado de texto */}
+                                    <h1
+                                        className="font-montserrat text-6xl sm:text-7xl md:text-8xl lg:text-9xl xl:text-9xl 
+                         font-extrabold tracking-wider text-white leading-tight mb-4 sm:mb-6 lg:mb-8
+                         transition-all duration-300"
+                                    >
                                         HUB de Innovación Social Startidea
                                     </h1>
-                                    <p className="mt-8 max-w-md mx-auto text-base text-[#90CAF9] sm:text-lg md:mt-5 md:text-xl md:max-w-8xl">
+
+                                    {/* Descripción con mejor adaptación y legibilidad */}
+                                    <p
+                                        className="mt-4 sm:mt-6 lg:mt-8 
+                         mx-auto 
+                         text-sm sm:text-base md:text-lg lg:text-xl
+                         text-[#90CAF9] 
+                         max-w-xs sm:max-w-sm md:max-w-lg lg:max-w-2xl
+                         leading-relaxed
+                         px-4"
+                                    >
                                         Tu espacio de coworking en el corazón de la ciudad. Espacios
                                         flexibles diseñados para impulsar tu creatividad y
                                         productividad.
                                     </p>
 
-                                    <ApplicationLogo />
+                                    {/* Logo con tamaño adaptativo */}
+                                    <div className="mt-8 sm:mt-10 lg:mt-12">
+                                        <ApplicationLogo className="w-24 h-24 sm:w-32 sm:h-32 lg:w-40 lg:h-40 mx-auto" />
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -104,19 +130,21 @@ export default function Welcome({ auth, laravelVersion, phpVersion, espacios = [
                                 Nuestros Espacios
                             </h2>
                             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-                                Descubre los diferentes espacios que tenemos disponibles para ti.
-                                Cada uno diseñado para satisfacer tus necesidades profesionales.
+                                Descubre los diferentes espacios que tenemos disponibles para
+                                ti. Cada uno diseñado para satisfacer tus necesidades
+                                profesionales.
                             </p>
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                            {espacios && espacios.map((espacio) => (
-                                <SpaceCard
-                                    key={espacio.id}
-                                    space={espacio}
-                                    onOpenModal={openModal}
-                                />
-                            ))}
+                            {espacios &&
+                                espacios.map((espacio) => (
+                                    <SpaceCard
+                                        key={espacio.id}
+                                        space={espacio}
+                                        onOpenModal={openModal}
+                                    />
+                                ))}
                         </div>
                     </div>
                 </section>
@@ -125,8 +153,8 @@ export default function Welcome({ auth, laravelVersion, phpVersion, espacios = [
                     <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
                         <div className="text-center text-sm">
                             <p>
-                                © {new Date().getFullYear()} HUB de Innovación Social Startidea - Laravel v
-                                {laravelVersion} (PHP v{phpVersion})
+                                © {new Date().getFullYear()} HUB de Innovación Social Startidea
+                                - Laravel v{laravelVersion} (PHP v{phpVersion})
                             </p>
                         </div>
                     </div>
