@@ -46,35 +46,72 @@ class Espacio extends Model
 
     // Accessor para la URL de la imagen
     public function getImageUrlAttribute()
-    {
-        Log::channel('daily')->info('Generando URL de imagen:', [
-            'espacio' => $this->nombre,
-            'imagen_original' => $this->image,
-            'ruta_storage' => storage_path('app/public'),
-            'existe_archivo' => Storage::exists('public/' . $this->image)
-        ]);
+{
+    // Log para depuración de rutas absolutas
+    Log::info('Verificando rutas de imagen:', [
+        'espacio' => $this->nombre,
+        'ruta_base' => storage_path('app/public'),
+        'ruta_imagen' => $this->image,
+        'ruta_completa' => storage_path('app/public/' . $this->image)
+    ]);
 
-        if ($this->image && Storage::exists('public/' . $this->image)) {
-            return asset('storage/' . $this->image);
-        }
-
-        Log::channel('daily')->warning('Imagen no encontrada, usando placeholder');
-        return asset('storage/images/placeholder.png');
+    // Verificar si la imagen existe directamente
+    if ($this->image && Storage::disk('public')->exists($this->image)) {
+        return asset('storage/' . $this->image);
     }
 
-    public function getGalleryImagesAttribute()
+    // Verificar en diferentes ubicaciones posibles
+    $posiblePaths = [
+        $this->image,
+        'images/espacios/' . $this->slug . '/' . basename($this->image),
+        'images/espacios/' . $this->slug . '/main.jpg'
+    ];
+
+    foreach ($posiblePaths as $path) {
+        if (Storage::disk('public')->exists($path)) {
+            return asset('storage/' . $path);
+        }
+    }
+
+    return asset('storage/images/placeholder.png');
+}
+
+    public function getGalleryMediaAttribute()
     {
         if (!$this->image) return [];
-        
-        $directory = dirname($this->image);
-        $files = Storage::files('public/' . $directory);
-        
-        return collect($files)
-            ->map(fn($file) => [
-                'url' => asset('storage/' . str_replace('public/', '', $file)),
-                'name' => basename($file)
-            ])
-            ->values()
-            ->all();
+
+        $directory = 'images/espacios/' . $this->slug;
+        $images = Storage::files('public/' . $directory);
+        $videos = Storage::files('public/' . $directory . '/videos');
+
+        $media = [];
+        $allowedImageExtensions = ['.jpg', '.jpeg', '.png', '.gif'];
+        $allowedVideoExtensions = ['.mp4', '.webm'];
+
+        // Procesar imágenes
+        foreach ($images as $image) {
+            $extension = strtolower(pathinfo($image, PATHINFO_EXTENSION));
+            if (in_array('.' . $extension, $allowedImageExtensions)) {
+                $media[] = [
+                    'type' => 'image',
+                    'url' => asset('storage/' . str_replace('public/', '', $image)),
+                    'thumbnail' => asset('storage/' . str_replace('public/', '', $image))
+                ];
+            }
+        }
+
+        // Procesar videos
+        foreach ($videos as $video) {
+            $extension = strtolower(pathinfo($video, PATHINFO_EXTENSION));
+            if (in_array('.' . $extension, $allowedVideoExtensions)) {
+                $media[] = [
+                    'type' => 'video',
+                    'url' => asset('storage/' . str_replace('public/', '', $video)),
+                    'thumbnail' => asset('storage/' . str_replace('public/', '', $directory . '/thumbnails/' . basename($video, '.mp4') . '.jpg'))
+                ];
+            }
+        }
+
+        return $media;
     }
 }

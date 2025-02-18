@@ -125,7 +125,7 @@ export default function Welcome({ auth, laravelVersion, phpVersion, espacios = [
                     <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
                         <div className="text-center text-sm">
                             <p>
-                                © {new Date().getFullYear()} Hub Start Idea - Laravel v
+                                © {new Date().getFullYear()} HUB de Innovación Social Startidea - Laravel v
                                 {laravelVersion} (PHP v{phpVersion})
                             </p>
                         </div>

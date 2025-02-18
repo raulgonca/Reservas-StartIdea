@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
-import { Link } from '@inertiajs/react';
 
 const SpaceCard = ({ space, onOpenModal }) => {
+    const [currentImageIndex, setCurrentImageIndex] = useState(0);
+
+    // Log para depuración
     useEffect(() => {
         console.log('SpaceCard data:', {
             space: space,
-            imageUrl: space.image_url
+            galleryMedia: space.gallery_media
         });
     }, [space]);
 
@@ -20,19 +22,44 @@ const SpaceCard = ({ space, onOpenModal }) => {
 
     return (
         <div className="bg-white rounded-lg shadow-lg overflow-hidden">
-            <div className="aspect-w-16 aspect-h-9">
-                <img
-                    src={space.image_url}
-                    alt={space.nombre}
-                    className="object-cover w-full h-full"
-                    onError={handleImageError}
-                />
+            {/* Contenedor de imagen con aspect ratio fijo */}
+            <div className="relative pt-[56.25%]"> {/* Aspect ratio 16:9 */}
+                <div className="absolute inset-0">
+                    {/* Imagen principal */}
+                    <img
+                        src={space.gallery_media?.[currentImageIndex]?.url || space.image_url}
+                        alt={space.nombre}
+                        className="w-full h-full object-cover"
+                        onError={handleImageError}
+                    />
+
+                    {/* Miniaturas */}
+                    {space.gallery_media?.length > 1 && (
+                        <div className="absolute bottom-2 left-2 right-2 flex gap-1 overflow-x-auto p-1">
+                            {space.gallery_media.map((media, index) => (
+                                <button
+                                    key={index}
+                                    onClick={() => setCurrentImageIndex(index)}
+                                    className={`w-12 h-12 flex-shrink-0 rounded-md overflow-hidden border-2 
+                                        ${currentImageIndex === index ? 'border-blue-500' : 'border-transparent'}`}
+                                >
+                                    <img
+                                        src={media.thumbnail}
+                                        alt={`${space.nombre} - ${index + 1}`}
+                                        className="w-full h-full object-cover"
+                                    />
+                                </button>
+                            ))}
+                        </div>
+                    )}
+                </div>
             </div>
+
+            {/* Contenido de la card */}
             <div className="p-6">
                 <h3 className="text-xl font-semibold text-gray-900 mb-2">{space.nombre}</h3>
                 <p className="text-gray-600 mb-4 line-clamp-2">{space.descripcion}</p>
                 
-                {/* Capacidad y Precio */}
                 <div className="flex justify-between items-center mb-4 text-gray-600">
                     {space.aforo && (
                         <span>Capacidad: {space.aforo} personas</span>

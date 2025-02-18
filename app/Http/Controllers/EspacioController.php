@@ -31,8 +31,7 @@ class EspacioController extends Controller
                 Log::info('Procesando espacio:', [
                     'id' => $espacio->id,
                     'nombre' => $espacio->nombre,
-                    'image_path' => $espacio->image,
-                    'image_url' => asset('storage/' . $espacio->image)
+                    'gallery_media_count' => count($espacio->gallery_media)
                 ]);
 
                 return [
@@ -40,7 +39,8 @@ class EspacioController extends Controller
                     'nombre' => $espacio->nombre,
                     'slug' => $espacio->slug,
                     'descripcion' => $espacio->descripcion,
-                    'image_url' => asset('storage/' . $espacio->image),
+                    'image_url' => $espacio->image_url,
+                    'gallery_media' => $espacio->gallery_media,
                     'features' => json_decode($espacio->features, true) ?? [],
                     'aforo' => $espacio->aforo,
                     'price' => $espacio->price

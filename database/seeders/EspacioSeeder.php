@@ -4,11 +4,16 @@ namespace Database\Seeders;
 
 use App\Models\Espacio;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\File;
 
 class EspacioSeeder extends Seeder
 {
     public function run()
     {
+        // Asegurarnos que existe el directorio base
+        Storage::makeDirectory('public/images/espacios');
+
         $espacios = [
             [
                 'nombre' => 'CC33',
@@ -111,13 +116,25 @@ class EspacioSeeder extends Seeder
         ];
 
         foreach ($espacios as $espacioData) {
-            $espacio = Espacio::where('slug', $espacioData['slug'])->first();
+            // Crear directorio para el espacio si no existe
+            $espacioPath = 'public/' . dirname($espacioData['image']);
+            Storage::makeDirectory($espacioPath);
+
+            // Verificar si tenemos las imágenes en nuestro directorio de assets
+            $sourcePath = database_path('seeders/assets/' . $espacioData['image']);
             
-            if ($espacio) {
-                $espacio->update($espacioData);
-            } else {
-                Espacio::create($espacioData);
+            if (File::exists($sourcePath)) {
+                Storage::put(
+                    'public/' . $espacioData['image'],
+                    File::get($sourcePath)
+                );
             }
+
+            // Crear o actualizar el registro en la base de datos
+            $espacio = Espacio::updateOrCreate(
+                ['slug' => $espacioData['slug']],
+                $espacioData
+            );
         }
     }
 }
