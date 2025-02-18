@@ -146,42 +146,37 @@ class MediaService
      * @return array
      */
     private function processVideos(Espacio $espacio, string $baseDir): array
-    {
-        $videos = [];
-        $videoDir = Config::get('media.paths.espacios.videos') . '/' . $espacio->slug;
+{
+    $videos = [];
+    $videoDir = Config::get('media.paths.espacios.videos') . '/' . $espacio->slug;
 
-        Log::info('Buscando videos en:', ['directorio' => $videoDir]);
-
-        if (!Storage::disk($this->disk)->exists($videoDir)) {
-            Log::warning('Directorio de videos no encontrado:', ['directorio' => $videoDir]);
-            return $videos;
-        }
-
-        $files = Storage::disk($this->disk)->files($videoDir);
-
-        Log::info('Videos encontrados:', ['files' => $files]);
-
-        foreach ($files as $video) {
-            $extension = strtolower(pathinfo($video, PATHINFO_EXTENSION));
-            if (in_array($extension, ['mp4', 'webm'])) {
-                $videos[] = [
-                    'type' => 'video',
-                    'url' => asset("storage/{$video}"),
-                    // Usamos la primera imagen del espacio como thumbnail
-                    'thumbnail' => asset("storage/images/espacios/{$espacio->slug}/1.jpg"),
-                    'is_main' => false,
-                    'mime_type' => "video/{$extension}"
-                ];
-                Log::info('Video procesado:', [
-                    'espacio' => $espacio->nombre,
-                    'video' => $video,
-                    'url' => asset("storage/{$video}")
-                ]);
-            }
-        }
-
+    if (!Storage::disk($this->disk)->exists($videoDir)) {
+        Log::warning('Directorio de videos no encontrado:', ['directorio' => $videoDir]);
         return $videos;
     }
+
+    $files = Storage::disk($this->disk)->files($videoDir);
+
+    foreach ($files as $video) {
+        $extension = strtolower(pathinfo($video, PATHINFO_EXTENSION));
+        if (in_array($extension, ['mp4', 'webm'])) {
+            $videos[] = [
+                'type' => 'video',
+                'url' => asset("storage/{$video}"),
+                'is_main' => false,
+                'mime_type' => "video/{$extension}",
+                'isVideo' => true
+            ];
+            
+            Log::info('Video procesado:', [
+                'espacio' => $espacio->nombre,
+                'video' => $video
+            ]);
+        }
+    }
+
+    return $videos;
+}
 
     /**
      * Obtiene la ruta del thumbnail para un video

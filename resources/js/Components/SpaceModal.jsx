@@ -1,5 +1,6 @@
 import { Dialog, Transition } from '@headlessui/react';
 import { Fragment, useState } from 'react';
+import VideoThumbnail from './VideoThumbnail';
 
 const SpaceModal = ({ isOpen, closeModal, space }) => {
     const [currentMediaIndex, setCurrentMediaIndex] = useState(0);
@@ -35,7 +36,7 @@ const SpaceModal = ({ isOpen, closeModal, space }) => {
                             leaveTo="opacity-0 scale-95"
                         >
                             <Dialog.Panel className="w-full max-w-4xl transform overflow-hidden rounded-2xl bg-white p-6 shadow-xl transition-all">
-                                {/* Galería de imágenes */}
+                                {/* Galería de imágenes/videos */}
                                 <div className="relative aspect-w-16 aspect-h-9 mb-6">
                                     {space.gallery_media?.[currentMediaIndex]?.type === 'video' ? (
                                         <video
@@ -63,11 +64,15 @@ const SpaceModal = ({ isOpen, closeModal, space }) => {
                                                 className={`flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden border-2
                                                     ${currentMediaIndex === index ? 'border-blue-500' : 'border-transparent'}`}
                                             >
-                                                <img
-                                                    src={media.thumbnail}
-                                                    alt={`${space.nombre} - ${index + 1}`}
-                                                    className="w-full h-full object-cover"
-                                                />
+                                                {media.type === 'video' ? (
+                                                    <VideoThumbnail videoUrl={media.url} />
+                                                ) : (
+                                                    <img
+                                                        src={media.url}
+                                                        alt={`${space.nombre} - ${index + 1}`}
+                                                        className="w-full h-full object-cover"
+                                                    />
+                                                )}
                                             </button>
                                         ))}
                                     </div>
@@ -111,7 +116,6 @@ const SpaceModal = ({ isOpen, closeModal, space }) => {
                                         type="button"
                                         className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700"
                                         onClick={() => {
-                                            // Aquí irá la lógica para reservar
                                             console.log('Reservar:', space);
                                         }}
                                     >
