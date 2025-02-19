@@ -9,10 +9,10 @@ export default function GuestLayout({ children }) {
             <div className="absolute left-4 top-4 sm:left-8 sm:top-8">
                 <Link
                     href="/"
-                    className="inline-flex items-center text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 transition-colors duration-200"
+                    className="inline-flex items-center text-sm text-sky-500 hover:text-slate-200 dark:text-sky-500dark:hover:text-gray-300 transition-colors duration-200"
                 >
-                    <ArrowLeftIcon className="w-4 h-4 mr-2" />
-                    Volver
+                    <ArrowLeftIcon className="w-6 h-6 mr-2" />
+                    
                 </Link>
             </div>
 
