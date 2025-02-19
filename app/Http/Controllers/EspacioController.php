@@ -3,17 +3,26 @@
 namespace App\Http\Controllers;
 
 use App\Models\Espacio;
-use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Foundation\Application;
-use Illuminate\Support\Facades\Log;
 
+/**
+ * Controlador para la gestión de espacios
+ * 
+ * @package App\Http\Controllers
+ */
 class EspacioController extends Controller
 {
+    /**
+     * Muestra la lista de espacios activos en la página principal
+     * 
+     * @return \Inertia\Response Vista Welcome con los espacios y datos de la aplicación
+     */
     public function index()
     {
+        // Obtiene los espacios activos con los campos necesarios
         $espacios = Espacio::where('is_active', true)
             ->select(
                 'id',
@@ -27,13 +36,7 @@ class EspacioController extends Controller
             )
             ->get()
             ->map(function ($espacio) {
-                // Log para depuración
-                Log::info('Procesando espacio:', [
-                    'id' => $espacio->id,
-                    'nombre' => $espacio->nombre,
-                    'gallery_media_count' => count($espacio->gallery_media)
-                ]);
-
+                // Transforma cada espacio al formato requerido por el frontend
                 return [
                     'id' => $espacio->id,
                     'nombre' => $espacio->nombre,
@@ -47,6 +50,7 @@ class EspacioController extends Controller
                 ];
             });
 
+        // Renderiza la vista con los datos necesarios
         return Inertia::render('Welcome', [
             'auth' => [
                 'user' => Auth::check() ? Auth::user() : null
@@ -59,12 +63,21 @@ class EspacioController extends Controller
         ]);
     }
 
+    /**
+     * Muestra los detalles de un espacio específico
+     * 
+     * @param string $slug El slug del espacio a mostrar
+     * @return \Inertia\Response Vista Show con los detalles del espacio
+     * @throws \Illuminate\Database\Eloquent\ModelNotFoundException Si el espacio no existe o no está activo
+     */
     public function show($slug)
     {
+        // Busca el espacio activo por su slug
         $espacio = Espacio::where('slug', $slug)
             ->where('is_active', true)
             ->firstOrFail();
 
+        // Renderiza la vista de detalles del espacio
         return Inertia::render('Espacios/Show', [
             'espacio' => $espacio
         ]);

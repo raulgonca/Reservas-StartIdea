@@ -56,11 +56,6 @@ class MediaService
         }
 
         // Si no se encuentra ninguna imagen, retornar placeholder
-        Log::warning('Imagen principal no encontrada para espacio:', [
-            'espacio' => $espacio->nombre,
-            'rutas_verificadas' => $possiblePaths
-        ]);
-
         return asset('storage/' . Config::get('media.placeholders.image'));
     }
 
@@ -80,11 +75,6 @@ class MediaService
                 $this->processImages($espacio, $baseDir),
                 $this->processVideos($espacio, $baseDir)
             );
-
-            Log::info('Galería procesada correctamente', [
-                'espacio' => $espacio->nombre,
-                'total_medios' => count($media)
-            ]);
         } catch (\Exception $e) {
             Log::error('Error procesando galería:', [
                 'espacio' => $espacio->nombre,
@@ -146,37 +136,31 @@ class MediaService
      * @return array
      */
     private function processVideos(Espacio $espacio, string $baseDir): array
-{
-    $videos = [];
-    $videoDir = Config::get('media.paths.espacios.videos') . '/' . $espacio->slug;
+    {
+        $videos = [];
+        $videoDir = Config::get('media.paths.espacios.videos') . '/' . $espacio->slug;
 
-    if (!Storage::disk($this->disk)->exists($videoDir)) {
-        Log::warning('Directorio de videos no encontrado:', ['directorio' => $videoDir]);
+        if (!Storage::disk($this->disk)->exists($videoDir)) {
+            return $videos;
+        }
+
+        $files = Storage::disk($this->disk)->files($videoDir);
+
+        foreach ($files as $video) {
+            $extension = strtolower(pathinfo($video, PATHINFO_EXTENSION));
+            if (in_array($extension, ['mp4', 'webm'])) {
+                $videos[] = [
+                    'type' => 'video',
+                    'url' => asset("storage/{$video}"),
+                    'is_main' => false,
+                    'mime_type' => "video/{$extension}",
+                    'isVideo' => true
+                ];
+            }
+        }
+
         return $videos;
     }
-
-    $files = Storage::disk($this->disk)->files($videoDir);
-
-    foreach ($files as $video) {
-        $extension = strtolower(pathinfo($video, PATHINFO_EXTENSION));
-        if (in_array($extension, ['mp4', 'webm'])) {
-            $videos[] = [
-                'type' => 'video',
-                'url' => asset("storage/{$video}"),
-                'is_main' => false,
-                'mime_type' => "video/{$extension}",
-                'isVideo' => true
-            ];
-            
-            Log::info('Video procesado:', [
-                'espacio' => $espacio->nombre,
-                'video' => $video
-            ]);
-        }
-    }
-
-    return $videos;
-}
 
     /**
      * Obtiene la ruta del thumbnail para un video
