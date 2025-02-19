@@ -1,51 +1,86 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import VideoThumbnail from './VideoThumbnail';
 
 /**
- * Componente SpaceCard
- * Muestra una tarjeta con la información de un espacio y su galería de medios
+ * SpaceCard - Componente que muestra la información de un espacio en formato de tarjeta
  * 
+ * @component
  * @param {Object} props
- * @param {Object} props.space - Datos del espacio
- * @param {Function} props.onOpenModal - Función para abrir el modal del espacio
+ * @param {Object} props.space - Objeto con los datos del espacio
+ * @param {string} props.space.nombre - Nombre del espacio
+ * @param {string} props.space.descripcion - Descripción del espacio
+ * @param {number} props.space.aforo - Capacidad máxima del espacio
+ * @param {string|Array} props.space.features - Características del espacio
+ * @param {Array} props.space.gallery_media - Galería de imágenes y videos
+ * @param {number} props.space.price - Precio por hora
+ * @param {Function} props.onOpenModal - Función para abrir el modal con detalles
  */
-const SpaceCard = ({ space, onOpenModal }) => {
-    // Estado para controlar el índice de la imagen/video actual
+const SpaceCard = ({ space = {}, onOpenModal }) => {
+    // Control del índice de la imagen actual en la galería
     const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
-    // Log para depuración de la galería de medios
-    useEffect(() => {
-        console.log('Space media:', space.gallery_media);
-    }, [space]);
-
-    // Manejador de errores para imágenes
+    /**
+     * Maneja los errores de carga de imágenes
+     * @param {Event} e - Evento de error
+     */
     const handleImageError = (e) => {
-        console.error('Error loading image:', e);
         e.target.src = '/placeholder.jpg';
     };
 
+    /**
+     * Formatea una hora al formato HH:mm
+     * @param {string} time - Hora en formato string
+     * @returns {string} Hora formateada
+     */
+    const formatTime = (time) => {
+        return time ? time.slice(0, 5) : '';
+    };
+
+    /**
+     * Capitaliza la primera letra de un texto
+     * @param {string} text - Texto a capitalizar
+     * @returns {string} Texto capitalizado
+     */
+    const capitalize = (text) => {
+        return text ? text.charAt(0).toUpperCase() + text.slice(1) : '';
+    };
+
+    /**
+     * Verifica si el espacio está disponible 24/7
+     * @returns {boolean}
+     */
+    const is24x7 = () => Number(space.disponible_24_7) === 1;
+
+    // Parseo de características
+    const features = typeof space.features === 'string' ? 
+        JSON.parse(space.features) : space.features || [];
+
+    // No renderizar si no hay datos del espacio
+    if (!space) return null;
+
     return (
-        <div 
+        <div
             className="bg-white rounded-lg shadow-md overflow-hidden cursor-pointer transform transition hover:scale-[1.02]"
             onClick={() => onOpenModal(space)}
         >
-            {/* Contenedor principal de imagen/video */}
+            {/* Sección de Galería */}
             <div className="relative aspect-video bg-gray-100">
+                {/* Visualizador principal de imagen/video */}
                 {space.gallery_media?.[currentImageIndex]?.type === 'video' ? (
-                    <VideoThumbnail 
+                    <VideoThumbnail
                         videoUrl={space.gallery_media[currentImageIndex].url}
-                        className="w-full h-full"
+                        className="w-full h-full object-cover"
                     />
                 ) : (
                     <img
-                        src={space.gallery_media?.[currentImageIndex]?.url || space.image_url}
+                        src={space.gallery_media?.[currentImageIndex]?.url || space.image}
                         alt={space.nombre}
                         className="w-full h-full object-cover"
                         onError={handleImageError}
                     />
                 )}
 
-                {/* Miniaturas superpuestas */}
+                {/* Miniaturas de la galería */}
                 {space.gallery_media?.length > 1 && (
                     <div className="absolute bottom-2 left-2 right-2 flex gap-1 overflow-x-auto p-1">
                         {space.gallery_media.map((media, index) => (
@@ -74,36 +109,64 @@ const SpaceCard = ({ space, onOpenModal }) => {
                 )}
             </div>
 
-            {/* Información del espacio */}
-            <div className="p-4">
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                    {space.nombre}
-                </h3>
-                <p className="text-gray-600 text-sm mb-4 line-clamp-2">
-                    {space.descripcion}
-                </p>
-                <div className="flex justify-between items-center">
-                    {space.aforo && (
-                        <span className="text-sm text-gray-500">
-                            Hasta {space.aforo} personas
-                        </span>
-                    )}
-                    <span className="text-blue-600 font-semibold">
-                        {space.price}€/hora
-                    </span>
+            {/* Sección de Información */}
+            <div className="p-4 space-y-4">
+                {/* Encabezado con nombre y tipo */}
+                <div className="flex justify-between items-start">
+                    <h3 className="text-lg font-semibold text-gray-900">
+                        {space.nombre}
+                    </h3>
                 </div>
 
-                {/* Botones de acción */}
-                <div className="mt-4 flex justify-end gap-2">
-                    
+                {/* Descripción del espacio */}
+                <p className="text-gray-600 text-sm line-clamp-2 min-h-[4em]">
+                    {space.descripcion}
+                </p>
+
+                {/* Información Principal en grid */}
+                <div className="grid grid-cols-2 gap-3 text-sm">
+                    {/* Aforo - Solo si existe */}
+                    {space.aforo && (
+                        <div className="flex items-center gap-2 text-gray-600 bg-gray-50 p-2 rounded">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                            </svg>
+                            <span>Aforo: {space.aforo}</span>
+                        </div>
+                    )}
+                </div>
+
+                {/* Características con mejor UI */}
+                {features.length > 0 && (
+                    <div className="mt-3">
+                        {features.map((feature, index) => (
+                            <div 
+                                key={index} 
+                                className="flex items-center gap-2 px-3 py-2 mt-1 mb-1 bg-gray-50 rounded-lg text-sm text-gray-700 hover:bg-blue-100 transition-colors"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                </svg>
+                                <span className="truncate">{feature}</span>
+                            </div>
+                        ))}
+                    </div>
+                )}
+
+                {/* Pie: Precio y Botón de acción */}
+                <div className="flex justify-between items-center pt-3 border-t border-gray-200">
+                    <div className="flex flex-col">
+                        <span className="text-gray-500 text-xs">Desde</span>
+                        <span className="text-blue-600 font-semibold text-lg">{space.price}€/hora</span>
+                    </div>
                     <button
                         onClick={(e) => {
                             e.stopPropagation();
-                            onOpenModal(space); // Abre el modal con la información completa
+                            onOpenModal(space);
                         }}
-                        className="px-3 py-1 text-sm text-white bg-blue-600 rounded-md hover:bg-blue-700"
+                        className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors"
                     >
-                        Ver más
+                        Ver detalles
                     </button>
                 </div>
             </div>
