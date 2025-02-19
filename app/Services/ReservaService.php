@@ -68,6 +68,15 @@ class ReservaService
         $fechaInicio = Carbon::parse($data['fecha_inicio']);
         $esCancelada = isset($data['estado']) && $data['estado'] === 'cancelada';
 
+
+        // Primero verificar si es solo actualización de estado
+    if ($this->isOnlyStatusData($data)) {
+        return [
+            'estado' => $data['estado'],
+            'motivo' => $data['motivo'] ?? null
+        ];
+    }
+
         if (!$esCancelada && !$isUpdate) {
             $ahora = Carbon::now()->startOfDay();
             if ($fechaInicio->lt($ahora)) {
