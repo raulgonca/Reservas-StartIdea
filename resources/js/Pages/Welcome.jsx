@@ -12,7 +12,8 @@ export default function Welcome({
 }) {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedSpace, setSelectedSpace] = useState(null);
-
+    const [isMenuOpen, setIsMenuOpen] = useState(false);
+    
     const openModal = (space) => {
         setSelectedSpace(space);
         setIsModalOpen(true);
@@ -36,30 +37,91 @@ export default function Welcome({
                     <div className="flex items-center">
                         <ApplicationLogo className="h-20 w-20 fill-current text-gray-500" />
                     </div>
-                    <nav className="flex space-x-4">
-                        {auth.user ? (
-                            <Link
-                                href={route("dashboard")}
-                                className="text-white hover:text-gray-300"
+
+
+                    <nav className="relative">
+                        {/* Menú Desktop */}
+                        <div className="hidden md:flex md:space-x-4">
+                            {auth.user ? (
+                                <Link
+                                    href={route("dashboard")}
+                                    className="text-white text-sm md:text-base hover:text-gray-300 transition-colors duration-200"
+                                >
+                                    Dashboard
+                                </Link>
+                            ) : (
+                                <>
+                                    <Link
+                                        href={route("login")}
+                                        className="text-white text-sm md:text-base hover:text-gray-300 transition-colors duration-200"
+                                    >
+                                        Iniciar sesión
+                                    </Link>
+                                    <Link
+                                        href={route("register")}
+                                        className="text-white text-sm md:text-base hover:text-gray-300 transition-colors duration-200"
+                                    >
+                                        Registrarse
+                                    </Link>
+                                </>
+                            )}
+                        </div>
+
+                        {/* Botón Hamburguesa */}
+                        <button
+                            onClick={() => setIsMenuOpen(!isMenuOpen)}
+                            className="md:hidden p-2 text-white hover:text-gray-300 focus:outline-none"
+                            aria-label="Toggle menu"
+                        >
+                            <svg
+                                className="w-6 h-6"
+                                fill="none"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth="2"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
                             >
-                                Dashboard
-                            </Link>
-                        ) : (
-                            <>
-                                <Link
-                                    href={route("login")}
-                                    className="text-white hover:text-gray-300"
-                                >
-                                    Iniciar sesión
-                                </Link>
-                                <Link
-                                    href={route("register")}
-                                    className="text-white hover:text-gray-300"
-                                >
-                                    Registrarse
-                                </Link>
-                            </>
-                        )}
+                                {isMenuOpen ? (
+                                    <path d="M6 18L18 6M6 6l12 12" />
+                                ) : (
+                                    <path d="M4 6h16M4 12h16M4 18h16" />
+                                )}
+                            </svg>
+                        </button>
+
+                        {/* Menú Móvil */}
+                        <div
+                            className={`${isMenuOpen ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-0'
+                                } md:hidden absolute right-0 top-10 w-48 bg-gray-800 rounded-lg shadow-lg 
+        transition-all duration-200 ease-in-out transform z-50`}
+                        >
+                            <div className="py-2 space-y-2">
+                                {auth.user ? (
+                                    <Link
+                                        href={route("dashboard")}
+                                        className="block px-4 py-2 text-white hover:bg-gray-700 transition-colors duration-200"
+                                    >
+                                        Dashboard
+                                    </Link>
+                                ) : (
+                                    <>
+                                        <Link
+                                            href={route("login")}
+                                            className="block px-4 py-2 text-white hover:bg-gray-700 transition-colors duration-200"
+                                        >
+                                            Iniciar sesión
+                                        </Link>
+                                        <Link
+                                            href={route("register")}
+                                            className="block px-4 py-2 text-white hover:bg-gray-700 transition-colors duration-200"
+                                        >
+                                            Registrarse
+                                        </Link>
+                                    </>
+                                )}
+                            </div>
+                        </div>
                     </nav>
                 </header>
 
@@ -90,9 +152,16 @@ export default function Welcome({
                                 <div className="text-center">
                                     {/* Título principal con mejor escalado de texto */}
                                     <h1
-                                        className="font-montserrat text-6xl sm:text-7xl md:text-8xl lg:text-9xl xl:text-9xl 
-                         font-extrabold tracking-wider text-white leading-tight mb-4 sm:mb-6 lg:mb-8
-                         transition-all duration-300"
+                                        className="font-montserrat 
+                                        text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl 2xl:text-9xl
+                                        font-extrabold tracking-wide text-white 
+                                        leading-tight 
+                                        mb-6 sm:mb-8 lg:mb-10
+                                        transition-all duration-300
+                                        overflow-hidden text-wrap
+                                        max-w-[95vw] sm:max-w-[90vw] md:max-w-[85vw] lg:max-w-[80vw]
+                                        mx-auto
+                                        break-words"
                                     >
                                         HUB de Innovación Social Startidea
                                     </h1>
