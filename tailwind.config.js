@@ -15,6 +15,8 @@ export default {
             fontFamily: {
                 sans: ['Figtree', ...defaultTheme.fontFamily.sans],
                 'montserrat': ['Montserrat', 'sans-serif'],
+                'playfair': ['"Playfair Display"', 'serif'],
+
             },
         },
     },
