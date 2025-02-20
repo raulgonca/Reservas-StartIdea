@@ -2,7 +2,8 @@ import { Dialog, Transition } from '@headlessui/react';
 import { Fragment, useState } from 'react';
 import { router, usePage } from '@inertiajs/react';
 import VideoThumbnail from './VideoThumbnail';
-import AuthModal from './AuthModal'; // Nuevo import
+import AuthModal from './AuthModal';
+import SpaceAvailability from './SpaceAvailability';
 
 /**
  * Componente modal para mostrar detalles de un espacio y gestionar reservas
@@ -12,19 +13,12 @@ import AuthModal from './AuthModal'; // Nuevo import
  * @param {Object} props.space - Datos del espacio a mostrar
  */
 const SpaceModal = ({ isOpen, closeModal, space }) => {
-    // Estados del componente
     const { auth } = usePage().props;
     const [currentMediaIndex, setCurrentMediaIndex] = useState(0);
     const [showAuthModal, setShowAuthModal] = useState(false);
 
-    // Validación de seguridad
     if (!space) return null;
 
-    /**
-     * Maneja el proceso de reserva del espacio
-     * Si el usuario no está autenticado, muestra el modal de autenticación
-     * Si está autenticado, redirige al formulario de reserva
-     */
     const handleReservarClick = () => {
         if (!auth.user) {
             setShowAuthModal(true);
@@ -36,16 +30,12 @@ const SpaceModal = ({ isOpen, closeModal, space }) => {
         }
     };
 
-    /**
-     * Cierra el modal de autenticación
-     */
     const handleCloseAuthModal = () => {
         setShowAuthModal(false);
     };
 
     return (
         <>
-            {/* Modal de autenticación */}
             <AuthModal
                 isOpen={showAuthModal}
                 closeModal={handleCloseAuthModal}
@@ -54,7 +44,6 @@ const SpaceModal = ({ isOpen, closeModal, space }) => {
 
             <Transition appear show={isOpen} as={Fragment}>
                 <Dialog as="div" className="relative z-50" onClose={closeModal}>
-                    {/* Overlay del modal */}
                     <Transition.Child
                         as={Fragment}
                         enter="ease-out duration-300"
@@ -67,9 +56,8 @@ const SpaceModal = ({ isOpen, closeModal, space }) => {
                         <div className="fixed inset-0 bg-black/75" />
                     </Transition.Child>
 
-                    {/* Contenedor principal del modal */}
                     <div className="fixed inset-0 overflow-y-auto">
-                        <div className="flex min-h-full items-center justify-center p-4">
+                        <div className="flex min-h-full items-center justify-center p-2 sm:p-4">
                             <Transition.Child
                                 as={Fragment}
                                 enter="ease-out duration-300"
@@ -79,9 +67,9 @@ const SpaceModal = ({ isOpen, closeModal, space }) => {
                                 leaveFrom="opacity-100 scale-100"
                                 leaveTo="opacity-0 scale-95"
                             >
-                                <Dialog.Panel className="w-full max-w-4xl transform overflow-hidden rounded-2xl bg-white p-6 shadow-xl transition-all">
+                                <Dialog.Panel className="w-full max-w-[95vw] sm:max-w-xl md:max-w-2xl lg:max-w-4xl transform overflow-hidden rounded-2xl bg-white p-4 sm:p-6 shadow-xl transition-all">
                                     {/* Visualizador de media principal */}
-                                    <div className="relative aspect-w-16 aspect-h-9 mb-6">
+                                    <div className="relative aspect-w-16 aspect-h-9 mb-4 sm:mb-6">
                                         {space.gallery_media?.[currentMediaIndex]?.type === 'video' ? (
                                             <video
                                                 src={space.gallery_media[currentMediaIndex].url}
@@ -98,14 +86,14 @@ const SpaceModal = ({ isOpen, closeModal, space }) => {
                                         )}
                                     </div>
 
-                                    {/* Galería de miniaturas */}
+                                    {/* Galería de miniaturas responsive */}
                                     {space.gallery_media?.length > 1 && (
-                                        <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
+                                        <div className="flex gap-2 mb-4 sm:mb-6 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-gray-300">
                                             {space.gallery_media.map((media, index) => (
                                                 <button
                                                     key={index}
                                                     onClick={() => setCurrentMediaIndex(index)}
-                                                    className={`flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden border-2
+                                                    className={`flex-shrink-0 w-16 h-16 sm:w-20 sm:h-20 rounded-lg overflow-hidden border-2 transition-all
                                                     ${currentMediaIndex === index ? 'border-blue-500' : 'border-transparent'}`}
                                                 >
                                                     {media.type === 'video' ? (
@@ -125,41 +113,43 @@ const SpaceModal = ({ isOpen, closeModal, space }) => {
                                     {/* Información del espacio */}
                                     <Dialog.Title
                                         as="h3"
-                                        className="text-2xl font-bold text-gray-900 mb-4"
+                                        className="text-xl sm:text-2xl font-bold text-gray-900 mb-2 sm:mb-4"
                                     >
                                         {space.nombre}
                                     </Dialog.Title>
 
-                                    <p className="text-gray-600 mb-6">
+                                    <p className="text-sm sm:text-base text-gray-600 mb-4 sm:mb-6">
                                         {space.descripcion}
                                     </p>
 
-                                    {/* Detalles adicionales */}
-                                    <div className="grid grid-cols-2 gap-4 mb-6">
+                                    {/* Detalles adicionales responsive */}
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mb-4 sm:mb-6">
                                         {space.aforo && (
-                                            <div>
-                                                <h4 className="font-semibold text-gray-900">Capacidad</h4>
-                                                <p className="text-gray-600">{space.aforo} personas</p>
+                                            <div className="p-3 bg-gray-50 rounded-lg">
+                                                <h4 className="text-sm sm:text-base font-semibold text-gray-900">Capacidad</h4>
+                                                <p className="text-sm sm:text-base text-gray-600">{space.aforo} personas</p>
                                             </div>
                                         )}
-                                        <div>
-                                            <h4 className="font-semibold text-gray-900">Precio</h4>
-                                            <p className="text-gray-600">{space.price}€/hora</p>
+                                        <div className="p-3 bg-gray-50 rounded-lg">
+                                            <h4 className="text-sm sm:text-base font-semibold text-gray-900">Precio</h4>
+                                            <p className="text-sm sm:text-base text-gray-600">{space.price}€/hora</p>
                                         </div>
                                     </div>
 
-                                    {/* Botones de acción */}
-                                    <div className="flex justify-end gap-4">
+                                    <SpaceAvailability space={space} />
+
+                                    {/* Botones de acción responsive */}
+                                    <div className="flex flex-col sm:flex-row justify-end gap-2 sm:gap-4 mt-4">
                                         <button
                                             type="button"
-                                            className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
+                                            className="w-full sm:w-auto px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors"
                                             onClick={closeModal}
                                         >
                                             Cerrar
                                         </button>
                                         <button
                                             type="button"
-                                            className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700"
+                                            className="w-full sm:w-auto px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 transition-colors"
                                             onClick={handleReservarClick}
                                         >
                                             {auth.user ? 'Realizar Reserva' : 'Reservar Ahora'}

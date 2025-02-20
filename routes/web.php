@@ -89,6 +89,8 @@ Route::prefix('v1/superadmin')->middleware(['auth'])->group(function () {
 Route::prefix('v1')->group(function () {
     Route::get('/espacios', [EspacioController::class, 'index'])->name('espacios.index');
     Route::get('/espacios/{slug}', [EspacioController::class, 'show'])->name('espacios.show');
+    Route::get('/espacios/{id}/availability', [EspacioController::class, 'getAvailability']);
+    Route::get('/espacios/{id}/escritorios/availability', [EspacioController::class, 'getDesksAvailability']);
 });
 
 //------------------------------- ESCRITORIOS ----------------------------------//

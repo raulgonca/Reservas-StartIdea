@@ -11,13 +11,12 @@ import HourSelectInput from '@/Components/HourSelectInput';
 import UserSearch from '@/Components/UserSearch';
 import { toast } from 'react-toastify';
 
-export default function CreateReserva() {
+const CreateReserva = () => {
     // Obtener el usuario autenticado y sus datos
-    const { auth } = usePage().props;
+    const { auth, users, espacios, escritorios } = usePage().props;
 
     // Inicializar el formulario con valores por defecto
     const { data, setData, post, processing, errors, reset } = useForm({
-        // Si es usuario normal, establecer automáticamente su ID
         user_id: auth.user.role === 'user' ? auth.user.id : '',
         espacio_id: '',
         escritorio_id: null,
@@ -29,9 +28,6 @@ export default function CreateReserva() {
         motivo: '',
         estado: 'pendiente',
     });
-
-    // Obtener datos necesarios de las props
-    const { users, espacios, escritorios } = usePage().props;
 
     // Estados locales
     const [userSearchTerm, setUserSearchTerm] = useState('');
@@ -46,16 +42,23 @@ export default function CreateReserva() {
 
     // Efecto para manejar la visibilidad y disponibilidad de escritorios
     useEffect(() => {
-        const selectedEspacio = espacios.find(espacio => espacio.id === Number(data.espacio_id));
+        if (!data.espacio_id) return;
+
+        const selectedEspacio = espacios.find(
+            espacio => espacio.id === Number(data.espacio_id)
+        );
+        
         if (selectedEspacio && selectedEspacio.tipo === 'coworking') {
             setShowEscritorio(true);
-            const libres = escritorios.filter(escritorio =>
-                escritorio.espacio_id === Number(data.espacio_id) && escritorio.disponible
+            const libres = escritorios.filter(
+                escritorio => 
+                    escritorio.espacio_id === Number(data.espacio_id) && 
+                    escritorio.is_active === 1
             );
             setEscritoriosLibres(libres);
         } else {
             setShowEscritorio(false);
-            setData('escritorio_id', null);
+            setData('escritorio_id', '');
         }
     }, [data.espacio_id, escritorios, espacios]);
 
@@ -115,28 +118,27 @@ export default function CreateReserva() {
     const submit = (e) => {
         e.preventDefault();
 
-        // Determinar la ruta según el rol del usuario
         const routeName = auth.user.role === 'user'
             ? 'user.reservas.store'
             : auth.user.role === 'admin'
                 ? 'admin.reservas.store'
                 : 'superadmin.reservas.store';
 
-                post(route(routeName), {
-                    onSuccess: (page) => {
-                        if (page.props.flash.success) {
-                            toast.success(page.props.flash.success, {
-                                autoClose: 5000,
-                                style: { whiteSpace: 'pre-line' }
-                            });
-                        }
-                        handleReset();
-                    },
-                    onError: (errors) => {
-                        const uniqueErrors = [...new Set(Object.values(errors))];
-                        uniqueErrors.forEach(error => toast.error(error));
-                    }
-                });
+        post(route(routeName), {
+            onSuccess: (page) => {
+                if (page.props.flash.success) {
+                    toast.success(page.props.flash.success, {
+                        autoClose: 5000,
+                        style: { whiteSpace: 'pre-line' }
+                    });
+                }
+                handleReset();
+            },
+            onError: (errors) => {
+                const uniqueErrors = [...new Set(Object.values(errors))];
+                uniqueErrors.forEach(error => toast.error(error));
+            }
+        });
     };
 
     const today = new Date().toISOString().split('T')[0];
@@ -147,7 +149,6 @@ export default function CreateReserva() {
 
             <div className="max-w-2xl mx-auto py-12">
                 <form onSubmit={submit} className="space-y-6">
-                    {/* Mostrar buscador de usuario solo para admin y superadmin */}
                     {auth.user.role !== 'user' && (
                         <UserSearch
                             users={users}
@@ -160,7 +161,6 @@ export default function CreateReserva() {
                         />
                     )}
 
-                    {/* Campo oculto con el ID del usuario si es role user */}
                     {auth.user.role === 'user' && (
                         <input
                             type="hidden"
@@ -169,7 +169,6 @@ export default function CreateReserva() {
                         />
                     )}
 
-                    {/* Espacio */}
                     <div>
                         <InputLabel htmlFor="espacio_id" value="Espacio" />
                         <SelectInput
@@ -178,7 +177,6 @@ export default function CreateReserva() {
                             value={data.espacio_id}
                             onChange={e => setData('espacio_id', e.target.value)}
                         >
-                            <option value="">Seleccione un espacio</option>
                             {espacios.map(espacio => (
                                 <option key={espacio.id} value={espacio.id}>
                                     {espacio.nombre}
@@ -188,7 +186,6 @@ export default function CreateReserva() {
                         <InputError message={errors.espacio_id} className="mt-2" />
                     </div>
 
-                    {/* Escritorio (condicional) */}
                     {showEscritorio && (
                         <div>
                             <InputLabel htmlFor="escritorio_id" value="Escritorio" />
@@ -198,10 +195,9 @@ export default function CreateReserva() {
                                 value={data.escritorio_id}
                                 onChange={e => setData('escritorio_id', e.target.value)}
                             >
-                                <option value="">Seleccione un escritorio</option>
                                 {escritoriosLibres.map(escritorio => (
                                     <option key={escritorio.id} value={escritorio.id}>
-                                        {escritorio.nombre}
+                                        {escritorio.numero}
                                     </option>
                                 ))}
                             </SelectInput>
@@ -209,9 +205,7 @@ export default function CreateReserva() {
                         </div>
                     )}
 
-                    {/* Grid para tipo de reserva y estado - Ajustado según rol */}
                     <div className={`grid grid-cols-1 ${auth.user.role !== 'user' ? 'md:grid-cols-2' : ''} gap-6`}>
-                        {/* Tipo de Reserva - Ancho completo para usuarios normales */}
                         <div className={auth.user.role === 'user' ? 'col-span-full' : ''}>
                             <InputLabel htmlFor="tipo_reserva" value="Tipo de Reserva" />
                             <SelectInput
@@ -229,7 +223,6 @@ export default function CreateReserva() {
                             <InputError message={errors.tipo_reserva} className="mt-2" />
                         </div>
 
-                        {/* Estado - Solo visible para admin y superadmin */}
                         {auth.user.role !== 'user' && (
                             <div>
                                 <InputLabel htmlFor="estado" value="Estado de la Reserva" />
@@ -248,7 +241,6 @@ export default function CreateReserva() {
                         )}
                     </div>
 
-                    {/* Fecha de Inicio */}
                     <div>
                         <InputLabel htmlFor="fecha_inicio" value="Fecha de Inicio" />
                         <TextInput
@@ -267,59 +259,56 @@ export default function CreateReserva() {
                         )}
                     </div>
 
-                    {/* Horarios */}
-{showHoras && (
-    <div className={`grid grid-cols-1 ${data.tipo_reserva === 'hora' ? 'md:grid-cols-2' : ''} gap-6`}>
-        <div className={data.tipo_reserva === 'medio_dia' && auth.user.role === 'user' ? 'col-span-full' : ''}>
-            <InputLabel htmlFor="hora_inicio" value="Hora de Inicio" />
-            {data.tipo_reserva === 'medio_dia' ? (
-                <>
-                    <SelectInput
-                        id="hora_inicio"
-                        className="mt-1 block w-full"
-                        value={data.hora_inicio}
-                        onChange={e => setData('hora_inicio', e.target.value)}
-                    >
-                        <option value="">Seleccione un horario</option>
-                        {horariosDisponibles.map((horario, index) => (
-                            <option key={index} value={horario.inicio}>
-                                {horario.label}
-                            </option>
-                        ))}
-                    </SelectInput>
-                    {data.hora_inicio && (
-                        <p className="mt-2 text-sm text-gray-600">
-                            Horario seleccionado: {data.hora_inicio} - {data.hora_fin}
-                        </p>
+                    {showHoras && (
+                        <div className={`grid grid-cols-1 ${data.tipo_reserva === 'hora' ? 'md:grid-cols-2' : ''} gap-6`}>
+                            <div className={data.tipo_reserva === 'medio_dia' && auth.user.role === 'user' ? 'col-span-full' : ''}>
+                                <InputLabel htmlFor="hora_inicio" value="Hora de Inicio" />
+                                {data.tipo_reserva === 'medio_dia' ? (
+                                    <>
+                                        <SelectInput
+                                            id="hora_inicio"
+                                            className="mt-1 block w-full"
+                                            value={data.hora_inicio}
+                                            onChange={e => setData('hora_inicio', e.target.value)}
+                                        >
+                                            {horariosDisponibles.map((horario, index) => (
+                                                <option key={index} value={horario.inicio}>
+                                                    {horario.label}
+                                                </option>
+                                            ))}
+                                        </SelectInput>
+                                        {data.hora_inicio && (
+                                            <p className="mt-2 text-sm text-gray-600">
+                                                Horario seleccionado: {data.hora_inicio} - {data.hora_fin}
+                                            </p>
+                                        )}
+                                    </>
+                                ) : (
+                                    <HourSelectInput
+                                        id="hora_inicio"
+                                        className="mt-1 block w-full"
+                                        value={data.hora_inicio}
+                                        onChange={e => setData('hora_inicio', e.target.value)}
+                                    />
+                                )}
+                                <InputError message={errors.hora_inicio} className="mt-2" />
+                            </div>
+
+                            {data.tipo_reserva === 'hora' && (
+                                <div>
+                                    <InputLabel htmlFor="hora_fin" value="Hora de Fin" />
+                                    <HourSelectInput
+                                        id="hora_fin"
+                                        className="mt-1 block w-full"
+                                        value={data.hora_fin}
+                                        onChange={e => setData('hora_fin', e.target.value)}
+                                    />
+                                    <InputError message={errors.hora_fin} className="mt-2" />
+                                </div>
+                            )}
+                        </div>
                     )}
-                </>
-            ) : (
-                <HourSelectInput
-                    id="hora_inicio"
-                    className="mt-1 block w-full"
-                    value={data.hora_inicio}
-                    onChange={e => setData('hora_inicio', e.target.value)}
-                />
-            )}
-            <InputError message={errors.hora_inicio} className="mt-2" />
-        </div>
 
-        {data.tipo_reserva === 'hora' && (
-            <div>
-                <InputLabel htmlFor="hora_fin" value="Hora de Fin" />
-                <HourSelectInput
-                    id="hora_fin"
-                    className="mt-1 block w-full"
-                    value={data.hora_fin}
-                    onChange={e => setData('hora_fin', e.target.value)}
-                />
-                <InputError message={errors.hora_fin} className="mt-2" />
-            </div>
-        )}
-    </div>
-)}
-
-                    {/* Motivo */}
                     <div>
                         <InputLabel htmlFor="motivo" value="Motivo (Opcional)" />
                         <TextareaInput
@@ -331,7 +320,6 @@ export default function CreateReserva() {
                         <InputError message={errors.motivo} className="mt-2" />
                     </div>
 
-                    {/* Botón Submit */}
                     <div className="flex justify-end">
                         <PrimaryButton disabled={processing}>
                             Crear Reserva
@@ -341,4 +329,6 @@ export default function CreateReserva() {
             </div>
         </AuthenticatedLayout>
     );
-}
+};
+
+export default CreateReserva;
