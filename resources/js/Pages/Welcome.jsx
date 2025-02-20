@@ -3,17 +3,6 @@ import ApplicationLogo from "@/Components/ApplicationLogo";
 import SpaceCard from "@/Components/SpaceCard";
 import SpaceModal from "@/Components/SpaceModal";
 import { useState } from "react";
-import {
-    CheckCircleIcon,
-    CalendarIcon,
-    UserCircleIcon,
-    UsersIcon,
-    CheckIcon,
-    ClockIcon,
-    CogIcon,
-    BellIcon,
-    LifebuoyIcon
-} from "@heroicons/react/24/outline";
 
 export default function Welcome({
     auth,
@@ -47,9 +36,9 @@ export default function Welcome({
             />
             <div className="flex flex-col min-h-screen bg-gray-50 text-white">
                 {/* Header y Navegación */}
-                <header className="bg-gray-800 w-full flex items-center justify-between px-6">
+                <header className="bg-transparent absolute top-0 w-full z-30 flex items-center justify-between px-6">
                     <div className="flex items-center">
-                        <ApplicationLogo className="h-20 w-20 fill-current text-gray-500" />
+                        <ApplicationLogo className="h-20 w-20 fill-current text-white" />
                     </div>
 
                     <nav className="relative">
@@ -105,7 +94,9 @@ export default function Welcome({
 
                         {/* Menú Móvil */}
                         <div
-                            className={`${isMenuOpen ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-0'
+                            className={`${isMenuOpen
+                                ? "translate-x-0 opacity-100"
+                                : "translate-x-full opacity-0"
                                 } md:hidden absolute right-0 top-10 w-48 bg-gray-800 rounded-lg shadow-lg 
                             transition-all duration-200 ease-in-out transform z-50`}
                         >
@@ -160,12 +151,13 @@ export default function Welcome({
                         </div>
 
                         {/* Contenido Hero */}
-                        <div className="relative z-20 w-full p-4">
+                        <div className="relative z-20 w-full p-4 -mt-19">
                             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                                 <div className="text-center">
                                     {/* Título principal */}
-                                    <h1 className="font-montserrat 
-                                        text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl 2xl:text-9xl
+                                    <h1
+                                        className="font-montserrat 
+                                        text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl 2xl:text-8xl
                                         font-extrabold tracking-wide text-white 
                                         leading-tight 
                                         mb-6 sm:mb-8 lg:mb-10
@@ -173,38 +165,30 @@ export default function Welcome({
                                         overflow-hidden text-wrap
                                         max-w-[95vw] sm:max-w-[90vw] md:max-w-[85vw] lg:max-w-[80vw]
                                         mx-auto
-                                        break-words">
+                                        break-words"
+                                    >
                                         HUB de Innovación Social Startidea
                                     </h1>
 
                                     {/* Descripción principal */}
 
-                                    <p className="mt-4 
+                                    <p
+                                        className="mt-4 
                                         mx-auto 
                                         text-sm sm:text-base md:text-lg lg:text-xl
                                         text-[#90CAF9] 
                                         max-w-xs sm:max-w-sm md:max-w-lg lg:max-w-2xl
                                         leading-relaxed
-                                        px-4">
+                                        px-4"
+                                    >
                                         Nuestro espacio colaborativo reúne a personas, empresas y
-                                        organizaciones para impulsar la creatividad, la innovación
-                                        y el emprendimiento.
+                                        organizaciones para impulsar la creatividad, la innovación y
+                                        el emprendimiento.
                                     </p>
-
-                                    {/* Logo */}
-                                    <div className="mt-8 sm:mt-10 lg:mt-12">
-                                        <ApplicationLogo className="w-24 h-24 sm:w-32 sm:h-32 lg:w-40 lg:h-40 mx-auto" />
-                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
-
-
-
-
-
-
 
                     {/* Sección de Espacios */}
                     <section id="espacios" className="py-24 bg-gray-50">
@@ -238,8 +222,8 @@ export default function Welcome({
                         <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
                             <div className="text-center text-sm">
                                 <p>
-                                    © {new Date().getFullYear()} HUB de Innovación Social Startidea
-                                    - Laravel v{laravelVersion} (PHP v{phpVersion})
+                                    © {new Date().getFullYear()} HUB de Innovación Social
+                                    Startidea - Laravel v{laravelVersion} (PHP v{phpVersion})
                                 </p>
                             </div>
                         </div>
