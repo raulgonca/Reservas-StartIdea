@@ -6,7 +6,7 @@ import { WEEKDAYS } from './constants';
 
 /**
  * Componente para mostrar la disponibilidad mensual
- * @param {Object} props
+ * @param {Object} props 
  * @param {Date} props.selectedDate - Fecha seleccionada
  * @param {Object} props.availability - Datos de disponibilidad
  * @param {Function} props.onDateSelect - Función para seleccionar fecha
@@ -36,6 +36,8 @@ const MonthView = ({ selectedDate, availability, onDateSelect, selectedDesk }) =
 
     /**
      * Obtiene los datos de disponibilidad para un día específico
+     * @param {string} dayStr - Fecha en formato YYYY-MM-DD
+     * @returns {Object} Datos de disponibilidad del día
      */
     const getDayData = (dayStr) => {
         const dayData = availability?.monthAvailability?.[dayStr];
@@ -117,8 +119,12 @@ const MonthView = ({ selectedDate, availability, onDateSelect, selectedDesk }) =
                                     <div className="relative h-1.5 bg-gray-200 rounded-full overflow-hidden">
                                         <div 
                                             className={`absolute top-0 left-0 h-full ${getStatusColor(status)}`}
-                                            style={{ width: `${occupancyPercentage}%` }}
-                                            title={getStatusText(status, occupancyPercentage)}
+                                            style={{ 
+                                                width: status === 'partial' 
+                                                    ? `${occupancyPercentage}%` 
+                                                    : '100%'
+                                            }}
+                                            title={getStatusText(status, occupancyPercentage, reservas)}
                                         />
                                     </div>
 
@@ -129,10 +135,14 @@ const MonthView = ({ selectedDate, availability, onDateSelect, selectedDesk }) =
                                         </div>
                                     )}
 
-                                    {/* Contador de reservas */}
-                                    {isCurrentMonth && reservas.length > 0 && (
+                                    {/* Contador de reservas activas */}
+                                    {isCurrentMonth && reservas.filter(r => 
+                                        ['confirmada', 'pendiente'].includes(r?.estado)
+                                    ).length > 0 && (
                                         <div className="mt-1 text-xs text-gray-500 text-center">
-                                            {reservas.length}
+                                            {reservas.filter(r => 
+                                                ['confirmada', 'pendiente'].includes(r?.estado)
+                                            ).length} reserva(s)
                                         </div>
                                     )}
                                 </div>

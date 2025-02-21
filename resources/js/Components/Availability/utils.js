@@ -20,12 +20,13 @@ export const getStatusColor = (status) => {
  * Obtiene el texto descriptivo según el estado y porcentaje de ocupación
  * @param {string} status - Estado de disponibilidad
  * @param {number} percentage - Porcentaje de ocupación
+ * @param {Array} reservas - Array de reservas
  * @returns {string} Texto descriptivo
  */
-export const getStatusText = (status, percentage, reservas) => {
-    if (status === 'partial') {
+export const getStatusText = (status, percentage, reservas = []) => {
+    if (status === 'partial' && Array.isArray(reservas)) {
         const reservasActivas = reservas.filter(r => 
-            r.estado === 'confirmada' || r.estado === 'pendiente'
+            r?.estado === 'confirmada' || r?.estado === 'pendiente'
         ).length;
         return `${Math.round(percentage)}% ocupado (${reservasActivas} reservas)`;
     }

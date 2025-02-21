@@ -106,32 +106,44 @@ class EspacioController extends Controller
      * Genera los slots horarios para un día
      */
     private function generateTimeSlots($fecha, $reservas)
-    {
-        $slots = [];
-        $inicio = Carbon::parse($fecha)->setTimeFromTimeString(self::HORA_INICIO);
-        $fin = Carbon::parse($fecha)->setTimeFromTimeString(self::HORA_FIN);
+{
+    $slots = [];
+    $inicio = Carbon::parse($fecha)->setTimeFromTimeString(self::HORA_INICIO);
+    $fin = Carbon::parse($fecha)->setTimeFromTimeString(self::HORA_FIN);
 
-        while ($inicio < $fin) {
-            $slotFin = $inicio->copy()->addMinutes(self::INTERVALO_MINUTOS);
-            
-            // Verificar si el slot está ocupado
-            $ocupado = $reservas->contains(function($reserva) use ($inicio, $slotFin) {
+    while ($inicio < $fin) {
+        $slotFin = $inicio->copy()->addMinutes(self::INTERVALO_MINUTOS);
+        
+        // Verificar si el slot está ocupado por alguna reserva activa
+        $ocupado = $reservas
+            ->filter(function($reserva) {
+                return in_array($reserva->estado, ['confirmada', 'pendiente']);
+            })
+            ->contains(function($reserva) use ($inicio, $slotFin) {
                 $reservaInicio = Carbon::parse($reserva->fecha_inicio);
                 $reservaFin = Carbon::parse($reserva->fecha_fin);
-                return $reservaInicio < $slotFin && $reservaFin > $inicio;
+                
+                // Considerar reservas que cruzan el día
+                if ($reserva->tipo_reserva === 'mes' || $reserva->tipo_reserva === 'semana') {
+                    return true;
+                }
+                
+                // Para reservas diarias o por horas
+                return $reservaInicio->format('H:i') < $slotFin->format('H:i') && 
+                       $reservaFin->format('H:i') > $inicio->format('H:i');
             });
 
-            $slots[] = [
-                'hora_inicio' => $inicio->format('H:i'),
-                'hora_fin' => $slotFin->format('H:i'),
-                'disponible' => !$ocupado
-            ];
+        $slots[] = [
+            'hora_inicio' => $inicio->format('H:i'),
+            'hora_fin' => $slotFin->format('H:i'),
+            'disponible' => !$ocupado
+        ];
 
-            $inicio = $slotFin;
-        }
-
-        return $slots;
+        $inicio = $slotFin;
     }
+
+    return $slots;
+}
 
     /**
      * Obtiene la disponibilidad diaria del espacio
@@ -170,28 +182,44 @@ class EspacioController extends Controller
      * Obtiene la disponibilidad diaria para espacios coworking
      */
     private function getCoworkingDayAvailability($espacio, $fecha, $reservas)
-    {
-        $escritorios = $espacio->escritorios()->get();
-        $escritoriosData = [];
+{
+    $escritorios = $espacio->escritorios()->get();
+    $escritoriosData = [];
 
-        foreach ($escritorios as $escritorio) {
-            $escritorioReservas = $reservas->where('escritorio_id', $escritorio->id);
-            $slots = $this->generateTimeSlots($fecha, $escritorioReservas);
-            $occupancyData = $this->getOccupancyStatus($escritorioReservas, $fecha);
+    foreach ($escritorios as $escritorio) {
+        // Filtrar reservas para este escritorio específico
+        $escritorioReservas = $reservas->filter(function($reserva) use ($escritorio) {
+            return $reserva->escritorio_id == $escritorio->id;
+        });
 
-            $escritoriosData[] = [
-                'id' => $escritorio->id,
-                'numero' => $escritorio->numero,
-                'status' => $occupancyData['status'],
-                'occupancyPercentage' => $occupancyData['percentage'],
-                'slots' => $slots
-            ];
-        }
+        // Generar slots considerando solo reservas activas
+        $slots = $this->generateTimeSlots($fecha, $escritorioReservas);
+        
+        // Calcular ocupación real basada en las reservas activas
+        $occupancyData = $this->getOccupancyStatus($escritorioReservas, $fecha);
 
-        return response()->json([
-            'escritorios' => $escritoriosData
+        $escritoriosData[] = [
+            'id' => $escritorio->id,
+            'numero' => $escritorio->numero,
+            'status' => $occupancyData['status'],
+            'occupancyPercentage' => $occupancyData['percentage'],
+            'slots' => $slots,
+            'reservas' => $this->formatReservas($escritorioReservas) // Añadimos las reservas
+        ];
+
+        // Log para debug
+        Log::info("Datos escritorio {$escritorio->numero}", [
+            'fecha' => $fecha->toDateString(),
+            'reservas_count' => $escritorioReservas->count(),
+            'ocupacion' => $occupancyData,
+            'slots_ocupados' => collect($slots)->where('disponible', false)->count()
         ]);
     }
+
+    return response()->json([
+        'escritorios' => $escritoriosData
+    ]);
+}
 
     /**
      * Obtiene la disponibilidad semanal del espacio

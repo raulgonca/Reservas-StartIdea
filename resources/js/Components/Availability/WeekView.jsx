@@ -13,11 +13,14 @@ import { WEEKDAYS } from './constants';
  * @param {string} props.selectedDesk - ID del escritorio seleccionado
  */
 const WeekView = ({ selectedDate, availability, onDateSelect, selectedDesk }) => {
+    // Obtener el primer día de la semana y generar array con los 7 días
     const weekStart = startOfWeek(selectedDate, { locale: es });
     const weekDays = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
 
     /**
      * Obtiene los datos de disponibilidad para un día específico
+     * @param {string} dayStr - Fecha en formato YYYY-MM-DD
+     * @returns {Object} Datos de disponibilidad del día
      */
     const getDayData = (dayStr) => {
         const dayData = availability?.weekAvailability?.[dayStr];
@@ -83,7 +86,7 @@ const WeekView = ({ selectedDate, availability, onDateSelect, selectedDesk }) =>
                                     : 'border-gray-200'
                             }`}
                         >
-                            {/* Número y nombre del día */}
+                            {/* Número del día */}
                             <div className="text-center mb-2">
                                 <span className={`text-sm font-medium ${
                                     isToday ? 'text-blue-700' : 'text-gray-900'
@@ -96,16 +99,21 @@ const WeekView = ({ selectedDate, availability, onDateSelect, selectedDesk }) =>
                             <div className="relative h-2 bg-gray-200 rounded-full overflow-hidden">
                                 <div 
                                     className={`absolute top-0 left-0 h-full ${getStatusColor(status)}`}
-                                    style={{ width: `${occupancyPercentage}%` }}
-                                    title={getStatusText(status, occupancyPercentage)}
+                                    style={{ 
+                                        width: status === 'partial' 
+                                            ? `${occupancyPercentage}%` 
+                                            : '100%'
+                                    }}
+                                    title={getStatusText(status, occupancyPercentage, reservas)}
                                 />
                             </div>
 
-                            {/* Contador de reservas */}
-                            {reservas.length > 0 && (
+                            {/* Contador de reservas activas */}
+                            {reservas.filter(r => ['confirmada', 'pendiente'].includes(r?.estado)).length > 0 && (
                                 <div className="mt-2 text-center">
                                     <span className="text-xs text-gray-500">
-                                        {reservas.length} reserva{reservas.length !== 1 ? 's' : ''}
+                                        {reservas.filter(r => ['confirmada', 'pendiente'].includes(r?.estado)).length} 
+                                        {' '}reserva{reservas.filter(r => ['confirmada', 'pendiente'].includes(r?.estado)).length !== 1 ? 's' : ''}
                                     </span>
                                 </div>
                             )}
