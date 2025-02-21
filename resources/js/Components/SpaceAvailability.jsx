@@ -59,16 +59,20 @@ const SpaceAvailability = ({ space }) => {
 
     /**
      * Manejador para cambio de fecha
+     * @param {Date} date - Nueva fecha seleccionada
      */
     const handleDateChange = (date) => {
+        console.log('Cambiando fecha a:', format(date, 'dd/MM/yyyy'));
         setSelectedDate(date);
-        if (viewMode === VIEW_MODES.DAY) {
-            setSelectedDesk(null); // Reset desk selection in day view
-        }
+        // Cambiar automáticamente a vista diaria cuando se selecciona un día
+        setViewMode(VIEW_MODES.DAY);
+        // Reset desk selection in day view
+        setSelectedDesk(null);
     };
 
     /**
      * Manejador para cambio de vista
+     * @param {string} newView - Nueva vista seleccionada
      */
     const handleViewChange = (newView) => {
         setViewMode(newView);

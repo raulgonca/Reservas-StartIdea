@@ -1,5 +1,5 @@
 import React from 'react';
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, startOfWeek, endOfWeek } from 'date-fns';
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, startOfWeek, endOfWeek, isSameDay } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { getStatusColor, getStatusText } from './utils';
 import { WEEKDAYS } from './constants';
@@ -61,6 +61,18 @@ const MonthView = ({ selectedDate, availability, onDateSelect, selectedDesk }) =
         };
     };
 
+    /**
+     * Maneja el click en un día
+     * @param {Date} day - Día seleccionado
+     * @param {boolean} isCurrentMonth - Indica si el día pertenece al mes actual
+     */
+    const handleDayClick = (day, isCurrentMonth) => {
+        if (isCurrentMonth) {
+            onDateSelect(day);
+            console.log('Día seleccionado:', format(day, 'dd/MM/yyyy'));
+        }
+    };
+
     return (
         <div className="space-y-4">
             {/* Información del escritorio seleccionado */}
@@ -90,18 +102,19 @@ const MonthView = ({ selectedDate, availability, onDateSelect, selectedDesk }) =
                         {week.map((day) => {
                             const dayStr = format(day, 'yyyy-MM-dd');
                             const isCurrentMonth = format(day, 'M') === format(selectedDate, 'M');
-                            const isToday = format(day, 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd');
+                            const isToday = isSameDay(day, new Date());
+                            const isSelected = isSameDay(day, selectedDate);
                             const { status, reservas, occupancyPercentage } = getDayData(dayStr);
 
                             return (
                                 <div 
                                     key={dayStr}
-                                    onClick={() => isCurrentMonth && onDateSelect(day)}
+                                    onClick={() => handleDayClick(day, isCurrentMonth)}
                                     className={`p-2 border rounded cursor-pointer transition-all
-                                        ${!isCurrentMonth && 'opacity-40'}
+                                        ${!isCurrentMonth && 'opacity-40 cursor-not-allowed'}
                                         ${isToday && 'bg-blue-50 border-blue-200'}
-                                        ${format(day, 'yyyy-MM-dd') === format(selectedDate, 'yyyy-MM-dd')
-                                            ? 'border-blue-500 ring-1 ring-blue-200'
+                                        ${isSelected
+                                            ? 'border-blue-500 ring-2 ring-blue-200 shadow-sm'
                                             : 'border-gray-200 hover:border-gray-300'
                                         }
                                     `}
@@ -120,9 +133,7 @@ const MonthView = ({ selectedDate, availability, onDateSelect, selectedDesk }) =
                                         <div 
                                             className={`absolute top-0 left-0 h-full ${getStatusColor(status)}`}
                                             style={{ 
-                                                width: status === 'partial' 
-                                                    ? `${occupancyPercentage}%` 
-                                                    : '100%'
+                                                width: '100%'
                                             }}
                                             title={getStatusText(status, occupancyPercentage, reservas)}
                                         />
