@@ -13,32 +13,22 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Foundation\Application;
 
 /**
- * Controlador para la gestión de espacios
- * 
- * @package App\Http\Controllers
+ * Controlador para la gestión de espacios y su disponibilidad
  */
 class EspacioController extends Controller
 {
+    // Constantes para horarios
+    private const HORA_INICIO = '08:00';
+    private const HORA_FIN = '20:00';
+    private const INTERVALO_MINUTOS = 60;
+
     /**
      * Muestra la lista de espacios activos en la página principal
-     * 
-     * @return \Inertia\Response Vista Welcome con los espacios y datos de la aplicación
      */
     public function index()
     {
-        // Obtiene los espacios activos con los campos necesarios
         $espacios = Espacio::where('is_active', true)
-            ->select(
-                'id',
-                'nombre',
-                'slug',
-                'descripcion',
-                'image',
-                'features',
-                'aforo',
-                'price',
-                'tipo'
-            )
+            ->select('id', 'nombre', 'slug', 'descripcion', 'image', 'features', 'aforo', 'price', 'tipo')
             ->get()
             ->map(function ($espacio) {
                 return [
@@ -56,9 +46,7 @@ class EspacioController extends Controller
             });
 
         return Inertia::render('Welcome', [
-            'auth' => [
-                'user' => Auth::check() ? Auth::user() : null
-            ],
+            'auth' => ['user' => Auth::check() ? Auth::user() : null],
             'espacios' => $espacios,
             'canLogin' => Route::has('login'),
             'canRegister' => Route::has('register'),
@@ -69,10 +57,6 @@ class EspacioController extends Controller
 
     /**
      * Muestra los detalles de un espacio específico
-     * 
-     * @param string $slug El slug del espacio a mostrar
-     * @return \Inertia\Response Vista Show con los detalles del espacio
-     * @throws \Illuminate\Database\Eloquent\ModelNotFoundException Si el espacio no existe
      */
     public function show($slug)
     {
@@ -87,212 +71,272 @@ class EspacioController extends Controller
 
     /**
      * Obtiene la disponibilidad de un espacio para una fecha específica
-     * 
-     * @param Request $request Contiene date y viewMode (day|week|month)
-     * @param int $id ID del espacio
-     * @return \Illuminate\Http\JsonResponse
      */
     public function getAvailability(Request $request, $id)
     {
         try {
             $espacio = Espacio::findOrFail($id);
-            $fecha = Carbon::parse($request->date);
-            $viewMode = $request->viewMode ?? 'day';
+            $fecha = Carbon::parse($request->fecha);
+            $vista = $request->vista ?? 'day';
+            $escritorio_id = $request->escritorio;
 
             Log::info('Consultando disponibilidad', [
                 'espacio_id' => $id,
                 'fecha' => $fecha->toDateString(),
                 'tipo_espacio' => $espacio->tipo,
-                'viewMode' => $viewMode
+                'vista' => $vista,
+                'escritorio_id' => $escritorio_id
             ]);
 
-            switch ($viewMode) {
-                case 'day':
-                    return $this->getDayAvailability($espacio, $fecha);
+            switch ($vista) {
                 case 'week':
-                    return $this->getWeekAvailability($espacio, $fecha);
+                    return $this->getWeekAvailability($espacio, $fecha, $escritorio_id);
                 case 'month':
-                    return $this->getMonthAvailability($espacio, $fecha);
+                    return $this->getMonthAvailability($espacio, $fecha, $escritorio_id);
                 default:
-                    return response()->json(['error' => 'Modo de vista no válido'], 400);
+                    return $this->getDayAvailability($espacio, $fecha, $escritorio_id);
             }
         } catch (\Exception $e) {
-            Log::error('Error en getAvailability: ' . $e->getMessage(), [
-                'espacio_id' => $id,
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
-            ]);
+            Log::error('Error en getAvailability: ' . $e->getMessage());
             return response()->json(['error' => 'Error al obtener disponibilidad'], 500);
         }
     }
 
     /**
-     * Obtiene la disponibilidad diaria del espacio
-     * 
-     * @param Espacio $espacio
-     * @param Carbon $fecha
-     * @return \Illuminate\Http\JsonResponse
+     * Genera los slots horarios para un día
      */
-    private function getDayAvailability($espacio, $fecha)
+    private function generateTimeSlots($fecha, $reservas)
     {
-        if ($espacio->tipo === 'coworking') {
-            return $this->getCoworkingAvailability($espacio, $fecha);
-        }
-
         $slots = [];
-        $horaInicio = Carbon::parse($espacio->horario_inicio);
-        $horaFin = Carbon::parse($espacio->horario_fin);
+        $inicio = Carbon::parse($fecha)->setTimeFromTimeString(self::HORA_INICIO);
+        $fin = Carbon::parse($fecha)->setTimeFromTimeString(self::HORA_FIN);
 
-        while ($horaInicio < $horaFin) {
-            $slotOcupado = Reserva::where('espacio_id', $espacio->id)
-                ->whereDate('fecha_inicio', '<=', $fecha)
-                ->whereDate('fecha_fin', '>=', $fecha)
-                ->whereTime('fecha_inicio', '<=', $horaInicio)
-                ->whereTime('fecha_fin', '>', $horaInicio)
-                ->whereIn('estado', ['confirmada', 'pendiente'])
-                ->exists();
-
-            $slots[] = [
-                'time' => $horaInicio->format('H:i'),
-                'isAvailable' => !$slotOcupado
-            ];
-
-            $horaInicio->addHour();
-        }
-
-        return response()->json(['slots' => $slots]);
-    }
-
-    /**
-     * Obtiene la disponibilidad de escritorios para espacios coworking
-     * 
-     * @param Espacio $espacio
-     * @param Carbon $fecha
-     * @return \Illuminate\Http\JsonResponse
-     */
-    private function getCoworkingAvailability($espacio, $fecha)
-    {
-        $escritorios = $espacio->escritorios()
-            ->get()
-            ->map(function($escritorio) use ($fecha) {
-                $reservado = Reserva::where('escritorio_id', $escritorio->id)
-                    ->where('espacio_id', $escritorio->espacio_id)
-                    ->whereDate('fecha_inicio', '<=', $fecha)
-                    ->whereDate('fecha_fin', '>=', $fecha)
-                    ->whereIn('estado', ['confirmada', 'pendiente'])
-                    ->exists();
-
-                return [
-                    'id' => $escritorio->id,
-                    'numero' => $escritorio->numero,
-                    'disponible' => !$reservado
-                ];
+        while ($inicio < $fin) {
+            $slotFin = $inicio->copy()->addMinutes(self::INTERVALO_MINUTOS);
+            
+            // Verificar si el slot está ocupado
+            $ocupado = $reservas->contains(function($reserva) use ($inicio, $slotFin) {
+                $reservaInicio = Carbon::parse($reserva->fecha_inicio);
+                $reservaFin = Carbon::parse($reserva->fecha_fin);
+                return $reservaInicio < $slotFin && $reservaFin > $inicio;
             });
 
-        return response()->json(['escritorios' => $escritorios]);
+            $slots[] = [
+                'hora_inicio' => $inicio->format('H:i'),
+                'hora_fin' => $slotFin->format('H:i'),
+                'disponible' => !$ocupado
+            ];
+
+            $inicio = $slotFin;
+        }
+
+        return $slots;
     }
 
     /**
-     * Calcula el estado de ocupación de un día
-     * 
-     * @param \Illuminate\Database\Eloquent\Collection $reservas
-     * @param Carbon $day
-     * @return string 'free'|'partial'|'occupied'
+     * Obtiene la disponibilidad diaria del espacio
      */
-    private function getOccupancyStatus($reservas, $day)
+    private function getDayAvailability($espacio, $fecha, $escritorio_id = null)
     {
-        if ($reservas->isEmpty()) {
-            return 'free';
+        // Obtener reservas del día
+        $query = Reserva::where('espacio_id', $espacio->id)
+            ->whereDate('fecha_inicio', '<=', $fecha)
+            ->whereDate('fecha_fin', '>=', $fecha)
+            ->whereIn('estado', ['confirmada', 'pendiente']);
+
+        if ($escritorio_id && $espacio->tipo === 'coworking') {
+            $query->where('escritorio_id', $escritorio_id);
         }
 
-        $totalHours = 12; // Horario estándar 8:00 a 20:00
-        $occupiedHours = 0;
+        $reservas = $query->get();
 
-        foreach ($reservas as $reserva) {
-            $start = Carbon::parse($reserva->fecha_inicio)->setDate($day->year, $day->month, $day->day);
-            $end = Carbon::parse($reserva->fecha_fin)->setDate($day->year, $day->month, $day->day);
-            
-            $hours = $end->diffInHours($start);
-            $occupiedHours += $hours;
+        // Para espacios coworking
+        if ($espacio->tipo === 'coworking') {
+            return $this->getCoworkingDayAvailability($espacio, $fecha, $reservas);
         }
 
-        if ($occupiedHours >= $totalHours) {
-            return 'occupied';
+        // Para otros tipos de espacios
+        $slots = $this->generateTimeSlots($fecha, $reservas);
+        $occupancyData = $this->getOccupancyStatus($reservas, $fecha);
+
+        return response()->json([
+            'slots' => $slots,
+            'status' => $occupancyData['status'],
+            'occupancyPercentage' => $occupancyData['percentage']
+        ]);
+    }
+
+    /**
+     * Obtiene la disponibilidad diaria para espacios coworking
+     */
+    private function getCoworkingDayAvailability($espacio, $fecha, $reservas)
+    {
+        $escritorios = $espacio->escritorios()->get();
+        $escritoriosData = [];
+
+        foreach ($escritorios as $escritorio) {
+            $escritorioReservas = $reservas->where('escritorio_id', $escritorio->id);
+            $slots = $this->generateTimeSlots($fecha, $escritorioReservas);
+            $occupancyData = $this->getOccupancyStatus($escritorioReservas, $fecha);
+
+            $escritoriosData[] = [
+                'id' => $escritorio->id,
+                'numero' => $escritorio->numero,
+                'status' => $occupancyData['status'],
+                'occupancyPercentage' => $occupancyData['percentage'],
+                'slots' => $slots
+            ];
         }
-        return 'partial';
+
+        return response()->json([
+            'escritorios' => $escritoriosData
+        ]);
     }
 
     /**
      * Obtiene la disponibilidad semanal del espacio
-     * 
-     * @param Espacio $espacio
-     * @param Carbon $fecha
-     * @return \Illuminate\Http\JsonResponse
      */
-    private function getWeekAvailability($espacio, $fecha)
+    private function getWeekAvailability($espacio, $fecha, $escritorio_id = null)
     {
         $weekStart = $fecha->copy()->startOfWeek();
         $weekEnd = $fecha->copy()->endOfWeek();
         $weekAvailability = [];
 
         for ($day = $weekStart->copy(); $day <= $weekEnd; $day->addDay()) {
-            $dayReservas = Reserva::where('espacio_id', $espacio->id)
+            $query = Reserva::where('espacio_id', $espacio->id)
                 ->whereDate('fecha_inicio', '<=', $day)
                 ->whereDate('fecha_fin', '>=', $day)
-                ->whereIn('estado', ['confirmada', 'pendiente'])
-                ->get();
+                ->whereIn('estado', ['confirmada', 'pendiente']);
 
+            if ($escritorio_id && $espacio->tipo === 'coworking') {
+                $query->where('escritorio_id', $escritorio_id);
+            }
+
+            $dayReservas = $query->get();
+            $occupancyData = $this->getOccupancyStatus($dayReservas, $day);
+            
             $weekAvailability[$day->format('Y-m-d')] = [
-                'status' => $this->getOccupancyStatus($dayReservas, $day),
-                'reservas' => $dayReservas->map(function($reserva) {
-                    return [
-                        'id' => $reserva->id,
-                        'tipo_reserva' => $reserva->tipo_reserva,
-                        'estado' => $reserva->estado,
-                        'hora_inicio' => Carbon::parse($reserva->fecha_inicio)->format('H:i'),
-                        'hora_fin' => Carbon::parse($reserva->fecha_fin)->format('H:i')
-                    ];
-                })
+                'status' => $occupancyData['status'],
+                'occupancyPercentage' => $occupancyData['percentage'],
+                'reservas' => $this->formatReservas($dayReservas)
             ];
         }
 
-        return response()->json(['weekAvailability' => $weekAvailability]);
+        $response = ['weekAvailability' => $weekAvailability];
+
+        if ($espacio->tipo === 'coworking') {
+            $response['escritorios'] = $espacio->escritorios()
+                ->get()
+                ->map(fn($escritorio) => [
+                    'id' => $escritorio->id,
+                    'numero' => $escritorio->numero
+                ]);
+        }
+
+        return response()->json($response);
     }
 
     /**
      * Obtiene la disponibilidad mensual del espacio
-     * 
-     * @param Espacio $espacio
-     * @param Carbon $fecha
-     * @return \Illuminate\Http\JsonResponse
      */
-    private function getMonthAvailability($espacio, $fecha)
+    private function getMonthAvailability($espacio, $fecha, $escritorio_id = null)
     {
         $monthStart = $fecha->copy()->startOfMonth();
         $monthEnd = $fecha->copy()->endOfMonth();
         $monthAvailability = [];
 
         for ($day = $monthStart->copy(); $day <= $monthEnd; $day->addDay()) {
-            $dayReservas = Reserva::where('espacio_id', $espacio->id)
+            $query = Reserva::where('espacio_id', $espacio->id)
                 ->whereDate('fecha_inicio', '<=', $day)
                 ->whereDate('fecha_fin', '>=', $day)
-                ->whereIn('estado', ['confirmada', 'pendiente'])
-                ->get();
+                ->whereIn('estado', ['confirmada', 'pendiente']);
 
+            if ($escritorio_id && $espacio->tipo === 'coworking') {
+                $query->where('escritorio_id', $escritorio_id);
+            }
+
+            $dayReservas = $query->get();
+            $occupancyData = $this->getOccupancyStatus($dayReservas, $day);
+            
             $monthAvailability[$day->format('Y-m-d')] = [
-                'status' => $this->getOccupancyStatus($dayReservas, $day),
-                'reservas' => $dayReservas->map(function($reserva) {
-                    return [
-                        'id' => $reserva->id,
-                        'tipo_reserva' => $reserva->tipo_reserva,
-                        'estado' => $reserva->estado,
-                        'hora_inicio' => Carbon::parse($reserva->fecha_inicio)->format('H:i'),
-                        'hora_fin' => Carbon::parse($reserva->fecha_fin)->format('H:i')
-                    ];
-                })
+                'status' => $occupancyData['status'],
+                'occupancyPercentage' => $occupancyData['percentage'],
+                'reservas' => $this->formatReservas($dayReservas)
             ];
         }
 
-        return response()->json(['monthAvailability' => $monthAvailability]);
+        $response = ['monthAvailability' => $monthAvailability];
+
+        if ($espacio->tipo === 'coworking') {
+            $response['escritorios'] = $espacio->escritorios()
+                ->get()
+                ->map(fn($escritorio) => [
+                    'id' => $escritorio->id,
+                    'numero' => $escritorio->numero
+                ]);
+        }
+
+        return response()->json($response);
+    }
+
+    /**
+     * Calcula el estado de ocupación de un día
+     */
+    private function getOccupancyStatus($reservas, $day)
+    {
+        if ($reservas->isEmpty()) {
+            return [
+                'status' => 'free',
+                'percentage' => 0
+            ];
+        }
+
+        $inicio = Carbon::parse($day)->setTimeFromTimeString(self::HORA_INICIO);
+        $fin = Carbon::parse($day)->setTimeFromTimeString(self::HORA_FIN);
+        $totalMinutos = $inicio->diffInMinutes($fin);
+        $minutosOcupados = 0;
+
+        foreach ($reservas as $reserva) {
+            $reservaInicio = Carbon::parse($reserva->fecha_inicio)
+                ->setDate($day->year, $day->month, $day->day)
+                ->max($inicio);
+            $reservaFin = Carbon::parse($reserva->fecha_fin)
+                ->setDate($day->year, $day->month, $day->day)
+                ->min($fin);
+            
+            if ($reservaFin > $reservaInicio) {
+                $minutosOcupados += $reservaInicio->diffInMinutes($reservaFin);
+            }
+        }
+
+        $occupancyPercentage = ($minutosOcupados / $totalMinutos) * 100;
+
+        if ($occupancyPercentage >= 100) {
+            return [
+                'status' => 'occupied',
+                'percentage' => 100
+            ];
+        }
+
+        return [
+            'status' => $occupancyPercentage > 0 ? 'partial' : 'free',
+            'percentage' => round($occupancyPercentage, 2)
+        ];
+    }
+
+    /**
+     * Formatea las reservas para la respuesta JSON
+     */
+    private function formatReservas($reservas)
+    {
+        return $reservas->map(function($reserva) {
+            return [
+                'id' => $reserva->id,
+                'tipo_reserva' => $reserva->tipo_reserva,
+                'estado' => $reserva->estado,
+                'hora_inicio' => Carbon::parse($reserva->fecha_inicio)->format('H:i'),
+                'hora_fin' => Carbon::parse($reserva->fecha_fin)->format('H:i')
+            ];
+        });
     }
 }
