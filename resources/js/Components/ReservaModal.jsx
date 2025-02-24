@@ -26,7 +26,7 @@ export default function ReservaModal({
         try {
             const date = new Date(dateString);
             if (isNaN(date.getTime())) return '';
-            
+
             return date.toLocaleTimeString('es-ES', {
                 hour: '2-digit',
                 minute: '2-digit',
@@ -58,22 +58,24 @@ export default function ReservaModal({
     const [showHoras, setShowHoras] = useState(reserva.tipo_reserva === 'hora' || reserva.tipo_reserva === 'medio_dia');
     const [fechaFinCalculada, setFechaFinCalculada] = useState('');
     const [processing, setProcessing] = useState(false);
-    
+
     // Horarios predefinidos para reservas de medio día
     const [horariosDisponibles] = useState([
         { inicio: '08:00', fin: '14:00', label: 'Mañana (08:00 - 14:00)' },
         { inicio: '14:00', fin: '20:00', label: 'Tarde (14:00 - 20:00)' }
     ]);
 
-    
+
 
     // Efecto para manejar la visibilidad del selector de escritorios
     useEffect(() => {
         const selectedEspacio = espacios.find(espacio => espacio.id === Number(data.espacio_id));
         if (selectedEspacio && selectedEspacio.tipo === 'coworking') {
             setShowEscritorio(true);
-            const libres = escritorios.filter(escritorio => 
-                escritorio.espacio_id === Number(data.espacio_id) && escritorio.disponible
+            // Corregimos el filtro para usar is_active
+            const libres = escritorios.filter(escritorio =>
+                escritorio.espacio_id === Number(data.espacio_id) &&
+                escritorio.is_active === 1
             );
             setEscritoriosLibres(libres);
         } else {
@@ -106,7 +108,7 @@ export default function ReservaModal({
                 default:
                     fechaFin = fecha.toISOString().split('T')[0];
             }
-            
+
             setData('fecha_fin', fechaFin);
             setFechaFinCalculada(fechaFin);
         }
@@ -134,7 +136,7 @@ export default function ReservaModal({
             // Ajustar horarios para medio día
             const horaInicio = data.hora_inicio === '08:00' ? '08:00' : '14:00';
             const horaFin = horaInicio === '08:00' ? '14:00' : '23:59';
-            
+
             setData(data => ({
                 ...data,
                 hora_inicio: horaInicio,
@@ -162,7 +164,7 @@ export default function ReservaModal({
             } else {
                 const inicio = data.hora_inicio.split(':').map(Number);
                 const fin = data.hora_fin.split(':').map(Number);
-                
+
                 if (inicio[0] > fin[0] || (inicio[0] === fin[0] && inicio[1] >= fin[1])) {
                     setError('hora', 'La hora de fin debe ser mayor a la hora de inicio');
                     isValid = false;
@@ -199,11 +201,11 @@ export default function ReservaModal({
             .catch(error => {
                 setProcessing(false);
                 const errorData = error.response?.data?.errors || {};
-                
+
                 if (typeof errorData === 'object') {
                     Object.keys(errorData).forEach(key => {
-                        setError(key, Array.isArray(errorData[key]) ? 
-                            errorData[key].join(', ') : 
+                        setError(key, Array.isArray(errorData[key]) ?
+                            errorData[key].join(', ') :
                             errorData[key]
                         );
                     });
@@ -231,7 +233,7 @@ export default function ReservaModal({
             <form onSubmit={submit} className="p-6 max-h-[90vh] overflow-y-auto">
                 {/* Campo de usuario (solo lectura) */}
                 <div>
-                    <InputLabel htmlFor="user_name" value="Reserva Perteneciente a el/la Usuario" className='text-center'/>
+                    <InputLabel htmlFor="user_name" value="Reserva Perteneciente a el/la Usuario" className='text-center' />
                     <div className="p-3 text-4xl text-center">
                         <span className="text-blue-600">
                             {users.find(user => user.id === Number(data.user_id))?.name || 'Usuario no encontrado'}
@@ -263,6 +265,7 @@ export default function ReservaModal({
                 {showEscritorio && (
                     <div className="mt-6">
                         <InputLabel htmlFor="escritorio_id" value="Escritorio" />
+                        {/* En ReservaModal.jsx */}
                         <SelectInput
                             id="escritorio_id"
                             value={data.escritorio_id}
@@ -273,7 +276,7 @@ export default function ReservaModal({
                             <option value="">Seleccione un escritorio</option>
                             {escritoriosLibres.map(escritorio => (
                                 <option key={escritorio.id} value={escritorio.id}>
-                                    {escritorio.nombre}
+                                    {escritorio.numero}
                                 </option>
                             ))}
                         </SelectInput>
