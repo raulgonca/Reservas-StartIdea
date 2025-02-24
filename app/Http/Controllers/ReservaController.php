@@ -12,7 +12,6 @@ use Inertia\Inertia;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\ValidationException;
-use App\Notifications\NuevaReservaNotification;
 use Illuminate\Support\Facades\Mail;
 
 class ReservaController extends Controller

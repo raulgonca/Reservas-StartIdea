@@ -23,12 +23,19 @@ export default function ReservaModal({
     // Función para formatear hora desde string de fecha
     const formatTime = (dateString) => {
         if (!dateString) return '';
-        return new Date(dateString).toLocaleTimeString('es-ES', {
-            hour: '2-digit',
-            minute: '2-digit',
-            hour12: false,
-            timeZone: 'UTC'
-        });
+        try {
+            const date = new Date(dateString);
+            if (isNaN(date.getTime())) return '';
+            
+            return date.toLocaleTimeString('es-ES', {
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: false,
+                timeZone: 'UTC'  // Asegura consistencia en la zona horaria
+            });
+        } catch (e) {
+            return '';
+        }
     };
 
     // Inicialización del formulario con useForm
@@ -36,11 +43,10 @@ export default function ReservaModal({
         user_id: reserva.user_id,
         espacio_id: reserva.espacio_id,
         escritorio_id: reserva.escritorio_id,
-        fecha_inicio: reserva.fecha_inicio.split("T")[0],
-        fecha_fin: reserva.fecha_fin.split("T")[0],
-        // Asegurar que las horas se inicialicen correctamente desde la reserva
-        hora_inicio: reserva.hora_inicio || formatTime(reserva.fecha_inicio),
-        hora_fin: reserva.hora_fin || formatTime(reserva.fecha_fin),
+        fecha_inicio: reserva.fecha_inicio.split('T')[0],
+        fecha_fin: reserva.fecha_fin.split('T')[0],
+        hora_inicio: formatTime(reserva.fecha_inicio),
+        hora_fin: formatTime(reserva.fecha_fin),
         tipo_reserva: reserva.tipo_reserva,
         motivo: reserva.motivo || '',
         estado: reserva.estado || 'pendiente',
@@ -108,26 +114,59 @@ export default function ReservaModal({
 
     // Efecto para manejar horarios de medio día
     useEffect(() => {
-        if (data.tipo_reserva === 'medio_dia' && data.hora_inicio) {
-            const horario = horariosDisponibles.find(h => h.inicio === data.hora_inicio);
-            if (horario) {
-                setData('hora_fin', horario.fin);
+        if (data.tipo_reserva === 'medio_dia') {
+            // Si no hay hora_inicio establecida o no es válida, establecer valor por defecto
+            if (!data.hora_inicio || !horariosDisponibles.some(h => h.inicio === data.hora_inicio)) {
+                setData('hora_inicio', '08:00');
+                setData('hora_fin', '14:00');
+            } else {
+                // Establecer hora_fin según hora_inicio seleccionada
+                const horario = horariosDisponibles.find(h => h.inicio === data.hora_inicio);
+                if (horario) {
+                    setData('hora_fin', horario.fin);
+                }
             }
         }
-    }, [data.hora_inicio, data.tipo_reserva]);
+    }, [data.tipo_reserva, data.hora_inicio]);
+
+    useEffect(() => {
+        if (data.tipo_reserva === 'medio_dia') {
+            // Ajustar horarios para medio día
+            const horaInicio = data.hora_inicio === '08:00' ? '08:00' : '14:00';
+            const horaFin = horaInicio === '08:00' ? '14:00' : '23:59';
+            
+            setData(data => ({
+                ...data,
+                hora_inicio: horaInicio,
+                hora_fin: horaFin
+            }));
+        } else if (data.tipo_reserva === 'hora') {
+            // Validar que hora_fin sea mayor que hora_inicio
+            if (data.hora_fin && data.hora_inicio && data.hora_fin <= data.hora_inicio) {
+                setError('hora', 'La hora de fin debe ser mayor a la hora de inicio');
+            } else {
+                clearErrors('hora');
+            }
+        }
+    }, [data.tipo_reserva, data.hora_inicio, data.hora_fin]);
 
     // Validación del formulario
     const validateForm = () => {
         clearErrors();
         let isValid = true;
 
-        if (data.tipo_reserva === 'hora' || data.tipo_reserva === 'medio_dia') {
+        if (data.tipo_reserva === 'hora') {
             if (!data.hora_inicio || !data.hora_fin) {
-                setError('hora', 'Las horas son requeridas para reservas por hora o medio día');
+                setError('hora', 'Las horas son requeridas para reservas por hora');
                 isValid = false;
-            } else if (data.hora_inicio >= data.hora_fin) {
-                setError('hora', 'La hora de fin debe ser mayor a la hora de inicio');
-                isValid = false;
+            } else {
+                const inicio = data.hora_inicio.split(':').map(Number);
+                const fin = data.hora_fin.split(':').map(Number);
+                
+                if (inicio[0] > fin[0] || (inicio[0] === fin[0] && inicio[1] >= fin[1])) {
+                    setError('hora', 'La hora de fin debe ser mayor a la hora de inicio');
+                    isValid = false;
+                }
             }
         }
 
