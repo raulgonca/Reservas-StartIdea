@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { format } from 'date-fns';
+import { format, addDays } from 'date-fns';
 import { es } from 'date-fns/locale';
 import CalendarContainer from './Availability/CalendarContainer';
 
@@ -20,13 +20,48 @@ const SpaceAvailability = ({ space }) => {
     });
 
     useEffect(() => {
-        const fetchAvailability = async () => {
+        const fetchAllAvailability = async () => {
             setIsLoading(true);
             setError(null);
+            
             try {
-                const url = `/v1/espacios/${space.id}/availability`;
-                const response = await axios.get(url);
-                setData(response.data);
+                // Crear fecha actual formateada
+                const today = new Date();
+                const formattedDate = format(today, 'yyyy-MM-dd');
+                
+                // Realizar las 3 peticiones en paralelo para mejorar rendimiento
+                const [dayResponse, weekResponse, monthResponse] = await Promise.all([
+                    // Petición para vista diaria
+                    axios.get(`/v1/espacios/${space.id}/availability`, {
+                        params: { fecha: formattedDate, vista: 'day' }
+                    }),
+                    
+                    // Petición para vista semanal
+                    axios.get(`/v1/espacios/${space.id}/availability`, {
+                        params: { fecha: formattedDate, vista: 'week' }
+                    }),
+                    
+                    // Petición para vista mensual
+                    axios.get(`/v1/espacios/${space.id}/availability`, {
+                        params: { fecha: formattedDate, vista: 'month' }
+                    })
+                ]);
+                
+                // Combinar los datos de las tres respuestas
+                setData({
+                    // Los escritorios vienen en la respuesta diaria
+                    escritorios: dayResponse.data.escritorios || [],
+                    // Los datos semanales y mensuales vienen en sus respectivas respuestas
+                    weekData: weekResponse.data.weekData || {},
+                    monthData: monthResponse.data.monthData || {}
+                });
+                
+                console.log('Datos cargados correctamente:', {
+                    day: dayResponse.data,
+                    week: weekResponse.data,
+                    month: monthResponse.data
+                });
+                
             } catch (error) {
                 console.error('Error al cargar disponibilidad:', error);
                 setError('Error al cargar la disponibilidad. Por favor, intente de nuevo.');
@@ -35,7 +70,7 @@ const SpaceAvailability = ({ space }) => {
             }
         };
 
-        fetchAvailability();
+        fetchAllAvailability();
     }, [space.id]);
 
     if (isLoading) {

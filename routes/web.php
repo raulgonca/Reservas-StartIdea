@@ -103,4 +103,19 @@ Route::prefix('v1')->group(function () {
     Route::get('/escritorios/{id}', [EscritorioController::class, 'show'])->name('escritorios.show');
 });
 
+// Añadir estas rutas de prueba
+Route::get('/test-week-availability/{id}', function ($id) {
+    $controller = new App\Http\Controllers\EspacioController();
+    $fecha = Carbon\Carbon::now();
+    $request = new Illuminate\Http\Request(['fecha' => $fecha->format('Y-m-d'), 'vista' => 'week']);
+    return $controller->getAvailability($request, $id);
+});
+
+Route::get('/test-month-availability/{id}', function ($id) {
+    $controller = new App\Http\Controllers\EspacioController();
+    $fecha = Carbon\Carbon::now();
+    $request = new Illuminate\Http\Request(['fecha' => $fecha->format('Y-m-d'), 'vista' => 'month']);
+    return $controller->getAvailability($request, $id);
+});
+
 require __DIR__ . '/auth.php';
