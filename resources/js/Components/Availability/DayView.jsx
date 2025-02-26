@@ -45,7 +45,9 @@ const DayView = ({ escritorios, slots, selectedDate }) => {
                                             {/* Título e icono del escritorio */}
                                             <div className="flex items-center space-x-2">
                                                 <h4 className="text-lg font-medium text-gray-900 group-hover:text-indigo-600 transition-colors">
-                                                    Escritorio {escritorio.numero}
+                                                    {escritorio.tipo_espacio === 'espacio' ? 
+                                                        escritorio.numero : 
+                                                        `Escritorio ${escritorio.numero}`}
                                                 </h4>
                                                 {/* Icono con animación mejorada */}
                                                 <ChevronUpIcon

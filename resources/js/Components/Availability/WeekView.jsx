@@ -1,123 +1,61 @@
 import React from 'react';
-import { format, startOfWeek, addDays } from 'date-fns';
+import { format, eachDayOfInterval, startOfWeek, endOfWeek } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { getStatusColor, getStatusText } from './utils';
-import { WEEKDAYS } from './constants';
+import StatusBadge from './StatusBadge';
 
 /**
- * Componente para mostrar la disponibilidad semanal
+ * Componente WeekView - Muestra la disponibilidad semanal
  * @param {Object} props
  * @param {Date} props.selectedDate - Fecha seleccionada
- * @param {Object} props.availability - Datos de disponibilidad
- * @param {Function} props.onDateSelect - Función para seleccionar fecha
- * @param {string} props.selectedDesk - ID del escritorio seleccionado
+ * @param {Function} props.onDayClick - Función a ejecutar al hacer clic en un día
+ * @param {Object} props.weekData - Datos de disponibilidad de la semana
+ * @returns {JSX.Element}
  */
-const WeekView = ({ selectedDate, availability, onDateSelect, selectedDesk }) => {
-    // Obtener el primer día de la semana y generar array con los 7 días
-    const weekStart = startOfWeek(selectedDate, { locale: es });
-    const weekDays = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
-
-    /**
-     * Obtiene los datos de disponibilidad para un día específico
-     * @param {string} dayStr - Fecha en formato YYYY-MM-DD
-     * @returns {Object} Datos de disponibilidad del día
-     */
-    const getDayData = (dayStr) => {
-        const dayData = availability?.weekAvailability?.[dayStr];
-        
-        if (selectedDesk) {
-            // Si hay escritorio seleccionado, buscar sus datos específicos
-            const deskData = dayData?.escritorios?.find(
-                desk => desk.id.toString() === selectedDesk
-            );
-            return {
-                status: deskData?.status || 'unknown',
-                reservas: deskData?.reservas || [],
-                occupancyPercentage: deskData?.occupancyPercentage || 0
-            };
-        }
-
-        return {
-            status: dayData?.status || 'unknown',
-            reservas: dayData?.reservas || [],
-            occupancyPercentage: dayData?.occupancyPercentage || 0
-        };
-    };
+const WeekView = ({ selectedDate, onDayClick, weekData = {} }) => {
+    // Obtener todos los días de la semana actual
+    const weekDays = eachDayOfInterval({
+        start: startOfWeek(selectedDate, { locale: es }),
+        end: endOfWeek(selectedDate, { locale: es })
+    });
 
     return (
         <div className="space-y-4">
-            {/* Información del escritorio seleccionado */}
-            {selectedDesk && (
-                <div className="mb-4 p-3 bg-blue-50 rounded-lg">
-                    <p className="text-sm text-blue-700">
-                        Mostrando disponibilidad del escritorio {
-                            availability?.escritorios?.find(d => d.id.toString() === selectedDesk)?.numero
-                        }
-                    </p>
-                </div>
-            )}
-
-            {/* Grid de días */}
+            <h3 className="text-lg font-medium text-gray-900 capitalize">
+                {format(selectedDate, "'Semana del' d 'de' MMMM", { locale: es })}
+            </h3>
+            
             <div className="grid grid-cols-7 gap-2">
-                {/* Cabecera de días */}
-                {WEEKDAYS.map(day => (
-                    <div key={day} className="text-center">
-                        <span className="text-sm font-medium text-gray-500">
-                            {day}
-                        </span>
-                    </div>
-                ))}
-
-                {/* Días de la semana */}
                 {weekDays.map((day) => {
-                    const dayStr = format(day, 'yyyy-MM-dd');
-                    const { status, reservas, occupancyPercentage } = getDayData(dayStr);
-                    const isToday = format(day, 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd');
+                    const dateStr = format(day, 'yyyy-MM-dd');
+                    const dayData = weekData[dateStr] || { status: 'unavailable' };
                     
                     return (
-                        <div 
-                            key={dayStr}
-                            onClick={() => onDateSelect(day)}
-                            className={`p-3 border rounded-lg cursor-pointer transition-all ${
-                                isToday ? 'bg-blue-50 border-blue-200' : 'hover:border-gray-300'
-                            } ${
-                                format(day, 'yyyy-MM-dd') === format(selectedDate, 'yyyy-MM-dd')
-                                    ? 'border-blue-500 ring-2 ring-blue-200'
-                                    : 'border-gray-200'
-                            }`}
+                        <button
+                            key={dateStr}
+                            onClick={() => onDayClick(day)}
+                            className={`
+                                p-4 border rounded-lg transition-all duration-200
+                                hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500
+                                ${selectedDate === day ? 'border-indigo-200 shadow-sm' : 'hover:border-gray-300'}
+                            `}
                         >
-                            {/* Número del día */}
-                            <div className="text-center mb-2">
-                                <span className={`text-sm font-medium ${
-                                    isToday ? 'text-blue-700' : 'text-gray-900'
-                                }`}>
-                                    {format(day, 'd')}
-                                </span>
-                            </div>
-
-                            {/* Indicador de estado */}
-                            <div className="relative h-2 bg-gray-200 rounded-full overflow-hidden">
-                                <div 
-                                    className={`absolute top-0 left-0 h-full ${getStatusColor(status)}`}
-                                    style={{ 
-                                        width: status === 'partial' 
-                                            ? `${occupancyPercentage}%` 
-                                            : '100%'
-                                    }}
-                                    title={getStatusText(status, occupancyPercentage, reservas)}
-                                />
-                            </div>
-
-                            {/* Contador de reservas activas */}
-                            {reservas.filter(r => ['confirmada', 'pendiente'].includes(r?.estado)).length > 0 && (
-                                <div className="mt-2 text-center">
-                                    <span className="text-xs text-gray-500">
-                                        {reservas.filter(r => ['confirmada', 'pendiente'].includes(r?.estado)).length} 
-                                        {' '}reserva{reservas.filter(r => ['confirmada', 'pendiente'].includes(r?.estado)).length !== 1 ? 's' : ''}
-                                    </span>
+                            <div className="space-y-2">
+                                <div className="text-center">
+                                    <p className="text-sm font-medium text-gray-900">
+                                        {format(day, 'EEEE', { locale: es })}
+                                    </p>
+                                    <p className="text-2xl font-bold text-gray-900">
+                                        {format(day, 'd')}
+                                    </p>
                                 </div>
-                            )}
-                        </div>
+                                <div className="flex justify-center">
+                                    <StatusBadge 
+                                        status={dayData.status}
+                                        interactive={false}
+                                    />
+                                </div>
+                            </div>
+                        </button>
                     );
                 })}
             </div>

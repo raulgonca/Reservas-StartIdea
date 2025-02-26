@@ -1,165 +1,102 @@
 import React from 'react';
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, startOfWeek, endOfWeek, isSameDay } from 'date-fns';
+import { 
+    format, 
+    eachDayOfInterval, 
+    startOfMonth, 
+    endOfMonth, 
+    startOfWeek,
+    endOfWeek,
+    isSameMonth 
+} from 'date-fns';
 import { es } from 'date-fns/locale';
-import { getStatusColor, getStatusText } from './utils';
-import { WEEKDAYS } from './constants';
+import StatusBadge from './StatusBadge';
 
 /**
- * Componente para mostrar la disponibilidad mensual
- * @param {Object} props 
+ * Componente MonthView - Muestra el calendario mensual con estados de disponibilidad
+ * @param {Object} props
  * @param {Date} props.selectedDate - Fecha seleccionada
- * @param {Object} props.availability - Datos de disponibilidad
- * @param {Function} props.onDateSelect - Función para seleccionar fecha
- * @param {string} props.selectedDesk - ID del escritorio seleccionado
+ * @param {Function} props.onDayClick - Función a ejecutar al hacer clic en un día
+ * @param {Object} props.monthData - Datos de disponibilidad del mes
+ * @returns {JSX.Element}
  */
-const MonthView = ({ selectedDate, availability, onDateSelect, selectedDesk }) => {
-    // Obtener todos los días del mes actual y completar semanas
+const MonthView = ({ selectedDate, onDayClick, monthData = {} }) => {
+    // Obtener el primer y último día del mes
     const monthStart = startOfMonth(selectedDate);
     const monthEnd = endOfMonth(selectedDate);
-    const calendarStart = startOfWeek(monthStart, { locale: es });
-    const calendarEnd = endOfWeek(monthEnd, { locale: es });
+    
+    // Obtener todos los días que se mostrarán en el calendario
+    const calendarDays = eachDayOfInterval({
+        start: startOfWeek(monthStart, { locale: es }),
+        end: endOfWeek(monthEnd, { locale: es })
+    });
 
-    // Crear array con todas las fechas a mostrar
-    const days = eachDayOfInterval({ start: calendarStart, end: calendarEnd });
-    
-    // Agrupar días en semanas
+    // Agrupar los días en semanas
     const weeks = [];
-    let currentWeek = [];
+    let week = [];
     
-    days.forEach(day => {
-        currentWeek.push(day);
-        if (currentWeek.length === 7) {
-            weeks.push(currentWeek);
-            currentWeek = [];
+    calendarDays.forEach((day) => {
+        week.push(day);
+        if (week.length === 7) {
+            weeks.push(week);
+            week = [];
         }
     });
 
-    /**
-     * Obtiene los datos de disponibilidad para un día específico
-     * @param {string} dayStr - Fecha en formato YYYY-MM-DD
-     * @returns {Object} Datos de disponibilidad del día
-     */
-    const getDayData = (dayStr) => {
-        const dayData = availability?.monthAvailability?.[dayStr];
-        
-        if (selectedDesk) {
-            // Si hay escritorio seleccionado, buscar sus datos específicos
-            const deskData = dayData?.escritorios?.find(
-                desk => desk.id.toString() === selectedDesk
-            );
-            return {
-                status: deskData?.status || 'unknown',
-                reservas: deskData?.reservas || [],
-                occupancyPercentage: deskData?.occupancyPercentage || 0
-            };
-        }
-
-        return {
-            status: dayData?.status || 'unknown',
-            reservas: dayData?.reservas || [],
-            occupancyPercentage: dayData?.occupancyPercentage || 0
-        };
-    };
-
-    /**
-     * Maneja el click en un día
-     * @param {Date} day - Día seleccionado
-     * @param {boolean} isCurrentMonth - Indica si el día pertenece al mes actual
-     */
-    const handleDayClick = (day, isCurrentMonth) => {
-        if (isCurrentMonth) {
-            onDateSelect(day);
-            console.log('Día seleccionado:', format(day, 'dd/MM/yyyy'));
-        }
-    };
-
     return (
         <div className="space-y-4">
-            {/* Información del escritorio seleccionado */}
-            {selectedDesk && (
-                <div className="mb-4 p-3 bg-blue-50 rounded-lg">
-                    <p className="text-sm text-blue-700">
-                        Mostrando disponibilidad del escritorio {
-                            availability?.escritorios?.find(d => d.id.toString() === selectedDesk)?.numero
-                        }
-                    </p>
-                </div>
-            )}
+            <h3 className="text-lg font-medium text-gray-900 capitalize">
+                {format(selectedDate, "MMMM 'de' yyyy", { locale: es })}
+            </h3>
 
-            {/* Cabecera con días de la semana */}
-            <div className="grid grid-cols-7 gap-2 mb-2">
-                {WEEKDAYS.map(day => (
-                    <div key={day} className="text-center text-sm font-medium text-gray-500">
-                        {day}
+            <div className="grid grid-cols-7 gap-px bg-gray-200 rounded-lg overflow-hidden">
+                {/* Cabecera con los días de la semana */}
+                {['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'].map((dayName) => (
+                    <div 
+                        key={dayName} 
+                        className="bg-gray-50 py-2 text-center"
+                    >
+                        <span className="text-sm font-medium text-gray-700">
+                            {dayName}
+                        </span>
                     </div>
                 ))}
-            </div>
 
-            {/* Grid del calendario */}
-            <div className="space-y-2">
+                {/* Días del mes */}
                 {weeks.map((week, weekIndex) => (
-                    <div key={weekIndex} className="grid grid-cols-7 gap-2">
-                        {week.map((day) => {
-                            const dayStr = format(day, 'yyyy-MM-dd');
-                            const isCurrentMonth = format(day, 'M') === format(selectedDate, 'M');
-                            const isToday = isSameDay(day, new Date());
-                            const isSelected = isSameDay(day, selectedDate);
-                            const { status, reservas, occupancyPercentage } = getDayData(dayStr);
+                    week.map((day) => {
+                        const dateStr = format(day, 'yyyy-MM-dd');
+                        const dayData = monthData[dateStr] || { status: 'unavailable' };
+                        const isCurrentMonth = isSameMonth(day, selectedDate);
 
-                            return (
-                                <div 
-                                    key={dayStr}
-                                    onClick={() => handleDayClick(day, isCurrentMonth)}
-                                    className={`p-2 border rounded cursor-pointer transition-all
-                                        ${!isCurrentMonth && 'opacity-40 cursor-not-allowed'}
-                                        ${isToday && 'bg-blue-50 border-blue-200'}
-                                        ${isSelected
-                                            ? 'border-blue-500 ring-2 ring-blue-200 shadow-sm'
-                                            : 'border-gray-200 hover:border-gray-300'
-                                        }
-                                    `}
-                                >
-                                    {/* Número del día */}
-                                    <div className="text-right mb-2">
-                                        <span className={`text-sm font-medium ${
-                                            isToday ? 'text-blue-700' : 'text-gray-700'
-                                        }`}>
-                                            {format(day, 'd')}
-                                        </span>
-                                    </div>
-
-                                    {/* Indicador de estado */}
-                                    <div className="relative h-1.5 bg-gray-200 rounded-full overflow-hidden">
-                                        <div 
-                                            className={`absolute top-0 left-0 h-full ${getStatusColor(status)}`}
-                                            style={{ 
-                                                width: '100%'
-                                            }}
-                                            title={getStatusText(status, occupancyPercentage, reservas)}
+                        return (
+                            <button
+                                key={dateStr}
+                                onClick={() => onDayClick(day)}
+                                disabled={!isCurrentMonth}
+                                className={`
+                                    p-2 bg-white transition-all duration-200 relative
+                                    hover:z-10 focus:z-10
+                                    ${!isCurrentMonth ? 'opacity-50' : 'hover:shadow-lg'}
+                                    ${selectedDate === day ? 'ring-2 ring-indigo-500 z-10' : ''}
+                                `}
+                            >
+                                <div className="space-y-1">
+                                    <p className={`
+                                        text-sm font-medium
+                                        ${isCurrentMonth ? 'text-gray-900' : 'text-gray-400'}
+                                    `}>
+                                        {format(day, 'd')}
+                                    </p>
+                                    <div className="flex justify-center">
+                                        <StatusBadge 
+                                            status={dayData.status}
+                                            interactive={false}
                                         />
                                     </div>
-
-                                    {/* Indicador de ocupación */}
-                                    {isCurrentMonth && status === 'partial' && (
-                                        <div className="mt-1 text-xs text-yellow-600 text-center">
-                                            {Math.round(occupancyPercentage)}%
-                                        </div>
-                                    )}
-
-                                    {/* Contador de reservas activas */}
-                                    {isCurrentMonth && reservas.filter(r => 
-                                        ['confirmada', 'pendiente'].includes(r?.estado)
-                                    ).length > 0 && (
-                                        <div className="mt-1 text-xs text-gray-500 text-center">
-                                            {reservas.filter(r => 
-                                                ['confirmada', 'pendiente'].includes(r?.estado)
-                                            ).length} reserva(s)
-                                        </div>
-                                    )}
                                 </div>
-                            );
-                        })}
-                    </div>
+                            </button>
+                        );
+                    })
                 ))}
             </div>
         </div>

@@ -1,19 +1,28 @@
 import React from 'react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import CreateReserva from '../ReservasCrud/CreateReserva';
-import ReservaList from '../ReservasCrud/ReservasList';
 import { Head } from '@inertiajs/react';
+import CalendarContainer from '@/Components/Availability/CalendarContainer';
 
-export default function Index() {
+const ReservasIndex = ({ auth, escritorios, weekData, monthData }) => {
     return (
-        <AuthenticatedLayout>
+        <AuthenticatedLayout user={auth.user}>
             <Head title="Reservas" />
+
             <div className="py-12">
                 <div className="max-w-7xl mx-auto sm:px-6 lg:px-8">
-                    <CreateReserva />
-                    <ReservaList />
+                    <div className="bg-white overflow-hidden shadow-sm sm:rounded-lg">
+                        <div className="p-6">
+                            <CalendarContainer 
+                                escritorios={escritorios}
+                                weekData={weekData}
+                                monthData={monthData}
+                            />
+                        </div>
+                    </div>
                 </div>
             </div>
         </AuthenticatedLayout>
     );
-}
+};
+
+export default ReservasIndex;

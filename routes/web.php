@@ -25,7 +25,11 @@ Route::get('/dashboard', function () {
 
 //------------------------------- USUARIOS ----------------------------------//
 Route::prefix('v1/user')->middleware(['auth'])->group(function () {
-    // Solo mantener las rutas necesarias para usuario
+    // Ruta del calendario (debe ir antes de las rutas con parámetros)
+    Route::get('/reservas/calendario', [ReservaController::class, 'calendario'])
+        ->name('user.reservas.calendario');
+        
+    // Rutas existentes
     Route::get('/reservas', [ReservaController::class, 'index'])->name('user.reservas.index');
     Route::get('/reservas/create', [ReservaController::class, 'create'])->name('user.reservas.create');
     Route::post('/reservas', [ReservaController::class, 'store'])->name('user.reservas.store');
