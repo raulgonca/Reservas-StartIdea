@@ -122,41 +122,80 @@ const CalendarContainer = ({
     };
 
     return (
-        <div className="space-y-6">
-            {/* Navegador de fechas */}
-            <DateNavigator 
-                currentDate={selectedDate.toISOString().split('T')[0]}
-                view={viewType}
-                onDateChange={handleDateChange}
-            />
-            
-            {/* Selector de tipo de vista */}
-            <div className="flex justify-center space-x-4">
-                {['day', 'week', 'month'].map((type) => (
-                    <button
-                        key={type}
-                        onClick={() => setViewType(type)}
-                        className={`
-                            px-4 py-2 rounded-lg transition-all duration-200
-                            ${viewType === type 
-                                ? 'bg-indigo-100 text-indigo-700 font-medium'
-                                : 'text-gray-600 hover:bg-gray-100'}
-                        `}
-                    >
-                        {type === 'day' ? 'Día' : type === 'week' ? 'Semana' : 'Mes'}
-                    </button>
-                ))}
+        <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+            {/* Cabecera con navegación y selección de vista */}
+            <div className="border-b border-gray-200">
+                {/* Navegador de fechas con estilo mejorado */}
+                <div className="p-4 border-b border-gray-100">
+                    <DateNavigator 
+                        currentDate={selectedDate.toISOString().split('T')[0]}
+                        view={viewType}
+                        onDateChange={handleDateChange}
+                    />
+                </div>
+                
+                {/* Selector de tipo de vista con mejor contraste */}
+                <div className="flex justify-center py-3 px-4 bg-gray-50">
+                    <div className="inline-flex rounded-md shadow-sm bg-gray-200 p-1" role="group" aria-label="Selección de vista">
+                        {[
+                            { key: 'day', label: 'Día', icon: '📅' },
+                            { key: 'week', label: 'Semana', icon: '📆' },
+                            { key: 'month', label: 'Mes', icon: '📋' }
+                        ].map(({ key, label, icon }) => (
+                            <button
+                                key={key}
+                                onClick={() => setViewType(key)}
+                                className={`
+                                    relative px-4 py-2 text-sm font-medium rounded-md
+                                    focus:z-10 focus:outline-none focus:ring-2 focus:ring-indigo-500 
+                                    transition-all duration-200 flex items-center
+                                    ${viewType === key 
+                                        ? 'bg-white text-indigo-700 shadow'
+                                        : 'text-gray-700 hover:bg-gray-100'}
+                                `}
+                                aria-current={viewType === key ? 'page' : undefined}
+                            >
+                                <span className="mr-1.5" aria-hidden="true">{icon}</span>
+                                {label}
+                            </button>
+                        ))}
+                    </div>
+                </div>
             </div>
 
-            {/* Estado de cargando */}
-            {loading && (
-                <div className="absolute inset-0 bg-white bg-opacity-50 flex items-center justify-center z-10">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-500"></div>
-                </div>
-            )}
+            {/* Contenedor principal con padding consistente */}
+            <div className="relative p-4">
+                {/* Estado de carga con animación mejorada */}
+                {loading && (
+                    <div className="absolute inset-0 bg-white bg-opacity-75 backdrop-blur-sm flex items-center justify-center z-10 transition-opacity duration-200">
+                        <div className="flex flex-col items-center">
+                            <div className="animate-spin rounded-full h-12 w-12 border-4 border-gray-200 border-t-indigo-600"></div>
+                            <span className="mt-3 text-sm text-gray-600 font-medium">Cargando...</span>
+                        </div>
+                    </div>
+                )}
 
-            {/* Vista actual del calendario */}
-            {renderCurrentView()}
+                {/* Vista actual del calendario con sombra suave */}
+                <div className={`transition-opacity duration-200 ${loading ? 'opacity-25' : 'opacity-100'}`}>
+                    {renderCurrentView()}
+                </div>
+                
+                {/* Leyenda de colores (opcional) */}
+                <div className="mt-6 flex flex-wrap justify-center gap-4 text-sm border-t border-gray-100 pt-4">
+                    <div className="flex items-center">
+                        <span className="w-4 h-4 inline-block bg-green-100 border border-green-200 rounded-sm mr-2"></span>
+                        <span className="text-gray-600">Disponible</span>
+                    </div>
+                    <div className="flex items-center">
+                        <span className="w-4 h-4 inline-block bg-yellow-100 border border-yellow-200 rounded-sm mr-2"></span>
+                        <span className="text-gray-600">Parcialmente ocupado</span>
+                    </div>
+                    <div className="flex items-center">
+                        <span className="w-4 h-4 inline-block bg-red-100 border border-red-200 rounded-sm mr-2"></span>
+                        <span className="text-gray-600">No disponible</span>
+                    </div>
+                </div>
+            </div>
         </div>
     );
 };
