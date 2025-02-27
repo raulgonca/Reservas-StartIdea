@@ -91,7 +91,19 @@ class EspacioController extends Controller
     {
         try {
             $espacio = Espacio::findOrFail($id);
-            $fecha = Carbon::parse($request->fecha);
+            
+            // CORRECCIÓN: Parseo explícito de la fecha con validación
+            try {
+                $fecha = Carbon::parse($request->fecha);
+            } catch (\Exception $e) {
+                // Si hay error al parsear la fecha, usar la fecha actual
+                $fecha = Carbon::today();
+                Log::warning('Fecha inválida en la solicitud, usando fecha actual', [
+                    'fecha_solicitada' => $request->fecha,
+                    'fecha_usada' => $fecha->format('Y-m-d')
+                ]);
+            }
+            
             $vista = $request->vista ?? 'day';
             $escritorio_id = $request->escritorio;
 
@@ -130,10 +142,15 @@ class EspacioController extends Controller
         try {
             // Para espacios coworking
             if ($espacio->tipo === 'coworking') {
-                // Mantener la implementación actual para coworking
+                // CORRECCIÓN: Consulta mejorada para coworking
                 $query = Reserva::where('espacio_id', $espacio->id)
-                    ->whereDate('fecha_inicio', '<=', $fecha)
-                    ->whereDate('fecha_fin', '>=', $fecha)
+                    ->where(function($q) use ($fecha) {
+                        $q->whereDate('fecha_inicio', '=', $fecha->format('Y-m-d'))
+                          ->orWhere(function($q2) use ($fecha) {
+                              $q2->whereDate('fecha_inicio', '<=', $fecha->format('Y-m-d'))
+                                 ->whereDate('fecha_fin', '>=', $fecha->format('Y-m-d'));
+                          });
+                    })
                     ->whereIn('estado', ['confirmada', 'pendiente']);
 
                 if ($escritorio_id) {
@@ -141,15 +158,56 @@ class EspacioController extends Controller
                 }
 
                 $reservas = $query->get();
+                
+                // Log para depuración
+                Log::debug('Reservas coworking para disponibilidad diaria', [
+                    'espacio_id' => $espacio->id,
+                    'espacio_nombre' => $espacio->nombre,
+                    'fecha' => $fecha->format('Y-m-d'),
+                    'cantidad_reservas' => $reservas->count(),
+                    'reservas' => $reservas->map(function($r) {
+                        return [
+                            'id' => $r->id,
+                            'escritorio_id' => $r->escritorio_id,
+                            'fecha_inicio' => $r->fecha_inicio,
+                            'fecha_fin' => $r->fecha_fin
+                        ];
+                    })
+                ]);
+                
                 return $this->getCoworkingDayAvailability($espacio, $fecha, $reservas);
             }
 
             // Para otros tipos de espacios
             $reservas = Reserva::where('espacio_id', $espacio->id)
-                ->whereDate('fecha_inicio', '<=', $fecha)
-                ->whereDate('fecha_fin', '>=', $fecha)
+                ->where(function($query) use ($fecha) {
+                    // CORRECCIÓN: Exactamente la misma fecha para la vista diaria
+                    $query->whereDate('fecha_inicio', '=', $fecha->format('Y-m-d'))
+                    // O reservas que abarcan este día
+                    ->orWhere(function($q) use ($fecha) {
+                        $q->whereDate('fecha_inicio', '<', $fecha->format('Y-m-d'))
+                          ->whereDate('fecha_fin', '>=', $fecha->format('Y-m-d'));
+                    });
+                })
                 ->whereIn('estado', ['confirmada', 'pendiente'])
                 ->get();
+            
+            // Log detallado para depuración
+            Log::debug('Reservas encontradas para disponibilidad diaria', [
+                'espacio_id' => $espacio->id, 
+                'espacio_nombre' => $espacio->nombre,
+                'fecha' => $fecha->format('Y-m-d'),
+                'cantidad_reservas' => $reservas->count(),
+                'reservas' => $reservas->map(function($r) {
+                    return [
+                        'id' => $r->id,
+                        'fecha_inicio' => $r->fecha_inicio,
+                        'fecha_fin' => $r->fecha_fin,
+                        'estado' => $r->estado,
+                        'tipo_reserva' => $r->tipo_reserva
+                    ];
+                })
+            ]);
 
             $slots = $this->generateTimeSlots($fecha, $reservas);
 
@@ -180,32 +238,134 @@ class EspacioController extends Controller
     }
 
     /**
-     * Determina el estado general del espacio en una fecha
+     * Obtiene la disponibilidad diaria para espacios coworking
+     * CORREGIDO: Verificación apropiada de ocupación por slots horarios
      *
-     * @param \Illuminate\Database\Eloquent\Collection $reservas
+     * @param Espacio $espacio
      * @param Carbon $fecha
-     * @return string
+     * @param \Illuminate\Database\Eloquent\Collection $reservas
+     * @return JsonResponse
      */
-    private function getSpaceStatus($reservas, $fecha): string
+    private function getCoworkingDayAvailability($espacio, $fecha, $reservas): JsonResponse     
     {
-        if ($reservas->isEmpty()) {
-            return self::STATUS_FREE;
+        $escritorios = $espacio->escritorios()->get();
+        $escritoriosData = [];
+        
+        // Contador para depuración
+        $escritoriosConReservas = 0;
+
+        foreach ($escritorios as $escritorio) {
+            // Filtrar reservas para este escritorio específico
+            $escritorioReservas = $reservas->filter(function($reserva) use ($escritorio) {      
+                return $reserva->escritorio_id == $escritorio->id;
+            });
+            
+            // Si hay reservas para este escritorio, incrementar contador
+            if ($escritorioReservas->isNotEmpty()) {
+                $escritoriosConReservas++;
+            }
+
+            // Inicializar slots horarios para este día
+            $inicio = Carbon::parse($fecha->format('Y-m-d') . ' ' . self::HORA_INICIO);
+            $fin = Carbon::parse($fecha->format('Y-m-d') . ' ' . self::HORA_FIN);
+            $slots = [];
+
+            // Verificar cada slot horario
+            while ($inicio < $fin) {
+                $slotFin = $inicio->copy()->addMinutes(self::INTERVALO_MINUTOS);
+                $slotOcupado = false;
+
+                // CORRECCIÓN: Para cada reserva de este escritorio, verificar si ocupa este slot
+                foreach ($escritorioReservas as $reserva) {
+                    if ($reserva->estado !== 'confirmada' && $reserva->estado !== 'pendiente') {
+                        continue; // Solo considerar reservas activas
+                    }
+
+                    $reservaInicio = Carbon::parse($reserva->fecha_inicio);
+                    $reservaFin = Carbon::parse($reserva->fecha_fin);
+
+                    // Verificar si es reserva de día completo, semana o mes para este día
+                    if (in_array($reserva->tipo_reserva, ['dia_completo', 'semana', 'mes']) &&
+                        $reservaInicio->format('Y-m-d') <= $fecha->format('Y-m-d') &&
+                        $reservaFin->format('Y-m-d') >= $fecha->format('Y-m-d')) {
+                        $slotOcupado = true;
+                        break;
+                    }
+
+                    // CORRECCIÓN: Para reservas por hora, verificación precisa de superposición
+                    if ($reserva->tipo_reserva === 'hora' || $reserva->tipo_reserva === 'medio_dia') {
+                        // Crear objetos Carbon completos (fecha + hora)
+                        $slotInicioFull = Carbon::parse($fecha->format('Y-m-d') . ' ' . $inicio->format('H:i:s'));
+                        $slotFinFull = Carbon::parse($fecha->format('Y-m-d') . ' ' . $slotFin->format('H:i:s'));
+                        
+                        // Verificar superposición real (no solo bordes)
+                        // Un slot está ocupado si la reserva empieza antes de que termine el slot
+                        // Y la reserva termina después de que empieza el slot
+                        if ($reservaInicio < $slotFinFull && $reservaFin > $slotInicioFull) {
+                            $slotOcupado = true;
+                            
+                            Log::debug('Slot coworking ocupado', [
+                                'reserva_id' => $reserva->id,
+                                'escritorio_id' => $escritorio->id,
+                                'slot_inicio' => $inicio->format('H:i'),
+                                'slot_fin' => $slotFin->format('H:i'),
+                                'reserva_inicio' => $reservaInicio->format('H:i'),
+                                'reserva_fin' => $reservaFin->format('H:i')
+                            ]);
+                            
+                            break;
+                        }
+                    }
+                }
+
+                // Añadir el slot con su estado correcto
+                $slots[] = [
+                    'hora_inicio' => $inicio->format('H:i'),
+                    'hora_fin' => $slotFin->format('H:i'),
+                    'disponible' => !$slotOcupado
+                ];
+
+                $inicio = $slotFin;
+            }
+
+            // Determinar el estado general del escritorio basado en sus slots
+            $slotsOcupados = array_filter($slots, function($slot) {
+                return !$slot['disponible'];
+            });
+
+            $status = self::STATUS_FREE;
+            if (count($slotsOcupados) > 0) {
+                $status = (count($slotsOcupados) === count($slots)) ? 
+                    self::STATUS_OCCUPIED : self::STATUS_PARTIAL;
+            }
+
+            // Añadir datos completos del escritorio
+            $escritoriosData[] = [
+                'id' => $escritorio->id,
+                'numero' => $escritorio->numero,
+                'tipo_espacio' => 'escritorio',
+                'status' => $status, // Estado actualizado según slots ocupados
+                'slots' => $slots,
+                'reservas' => $this->formatReservas($escritorioReservas)
+            ];
         }
 
-        $diaCubierto = $reservas->contains(function($reserva) {
-            return in_array($reserva->tipo_reserva, ['dia_completo', 'semana', 'mes']);
-        });
+        // Registrar información para depuración
+        Log::debug('Vista diaria de escritorios', [
+            'fecha' => $fecha->format('Y-m-d'),
+            'espacio_id' => $espacio->id,
+            'total_escritorios' => count($escritorios),
+            'escritorios_con_reservas' => $escritoriosConReservas
+        ]);
 
-        if ($diaCubierto) {
-            return self::STATUS_OCCUPIED;
-        }
-
-        return self::STATUS_PARTIAL;
+        return response()->json([
+            'escritorios' => $escritoriosData
+        ]);
     }
 
     /**
      * Genera los slots horarios para un día
-     * CORRECCIÓN: Mejorada la lógica para determinar ocupación
+     * CORRECCIÓN: Lógica mejorada para determinar ocupación
      *
      * @param Carbon $fecha
      * @param \Illuminate\Database\Eloquent\Collection $reservas
@@ -221,29 +381,46 @@ class EspacioController extends Controller
             $slotFin = $inicio->copy()->addMinutes(self::INTERVALO_MINUTOS);
             $slotOcupado = false;
 
-            // Verificar cada reserva individualmente
             foreach ($reservas as $reserva) {
-                if ($reserva->estado !== 'confirmada' && $reserva->estado !== 'pendiente') {    
-                    continue; // Ignorar reservas no activas
+                if ($reserva->estado !== 'confirmada' && $reserva->estado !== 'pendiente') {
+                    continue;
                 }
 
                 $reservaInicio = Carbon::parse($reserva->fecha_inicio);
                 $reservaFin = Carbon::parse($reserva->fecha_fin);
 
                 // Para reservas de día completo, semana o mes en la fecha actual
-                if (in_array($reserva->tipo_reserva, ['dia_completo', 'semana', 'mes']) &&      
+                if (in_array($reserva->tipo_reserva, ['dia_completo', 'semana', 'mes']) &&
                     $reservaInicio->format('Y-m-d') <= $fecha->format('Y-m-d') &&
                     $reservaFin->format('Y-m-d') >= $fecha->format('Y-m-d')) {
                     $slotOcupado = true;
                     break;
                 }
 
-                // Para reservas por horas, verificar superposición
-                if ($reservaInicio->format('Y-m-d') === $fecha->format('Y-m-d') &&
-                    $reservaInicio->format('H:i') <= $slotFin->format('H:i') &&
-                    $reservaFin->format('H:i') >= $inicio->format('H:i')) {
-                    $slotOcupado = true;
-                    break;
+                // CORRECCIÓN: Para reservas por hora o medio día
+                if ($reserva->tipo_reserva === 'hora' || $reserva->tipo_reserva === 'medio_dia') {
+                    // Solo verificar reservas de la fecha correcta
+                    if ($reservaInicio->format('Y-m-d') === $fecha->format('Y-m-d')) {
+                        // Crear objetos Carbon completos para el slot actual y la reserva
+                        $slotInicioFull = Carbon::parse($fecha->format('Y-m-d') . ' ' . $inicio->format('H:i:s'));
+                        $slotFinFull = Carbon::parse($fecha->format('Y-m-d') . ' ' . $slotFin->format('H:i:s'));
+                        
+                        // Un slot está ocupado si hay superposición real
+                        // La reserva empieza antes de que termine el slot Y termina después de que empieza el slot
+                        if ($reservaInicio < $slotFinFull && $reservaFin > $slotInicioFull) {
+                            $slotOcupado = true;
+                            
+                            Log::debug('Slot marcado como ocupado', [
+                                'reserva_id' => $reserva->id,
+                                'slot_inicio' => $inicio->format('H:i'),
+                                'slot_fin' => $slotFin->format('H:i'),
+                                'reserva_inicio' => $reservaInicio->format('H:i'),
+                                'reserva_fin' => $reservaFin->format('H:i')
+                            ]);
+                            
+                            break;
+                        }
+                    }
                 }
             }
 
@@ -514,105 +691,30 @@ class EspacioController extends Controller
     }
 
     /**
-     * Obtiene la disponibilidad diaria para espacios coworking
-     * CORREGIDO: Verificación apropiada de ocupación por slots horarios
+     * Determina el estado de un espacio basado en sus reservas
      *
-     * @param Espacio $espacio
-     * @param Carbon $fecha
      * @param \Illuminate\Database\Eloquent\Collection $reservas
-     * @return JsonResponse
+     * @param Carbon $fecha
+     * @return string
      */
-    private function getCoworkingDayAvailability($espacio, $fecha, $reservas): JsonResponse     
+    private function getSpaceStatus($reservas, $fecha)
     {
-        $escritorios = $espacio->escritorios()->get();
-        $escritoriosData = [];
-
-        foreach ($escritorios as $escritorio) {
-            // Filtrar reservas para este escritorio específico
-            $escritorioReservas = $reservas->filter(function($reserva) use ($escritorio) {      
-                return $reserva->escritorio_id == $escritorio->id;
-            });
-
-            // Inicializar slots horarios para este día
-            $inicio = Carbon::parse($fecha->format('Y-m-d') . ' ' . self::HORA_INICIO);
-            $fin = Carbon::parse($fecha->format('Y-m-d') . ' ' . self::HORA_FIN);
-            $slots = [];
-
-            // Verificar cada slot horario
-            while ($inicio < $fin) {
-                $slotFin = $inicio->copy()->addMinutes(self::INTERVALO_MINUTOS);
-                $slotOcupado = false;
-
-                // CORRECCIÓN: Para cada reserva de este escritorio, verificar si ocupa este slot
-                foreach ($escritorioReservas as $reserva) {
-                    if ($reserva->estado !== 'confirmada' && $reserva->estado !== 'pendiente') {
-                        continue; // Solo considerar reservas activas
-                    }
-
-                    $reservaInicio = Carbon::parse($reserva->fecha_inicio);
-                    $reservaFin = Carbon::parse($reserva->fecha_fin);
-
-                    // Verificar si es reserva de día completo, semana o mes para este día
-                    if (in_array($reserva->tipo_reserva, ['dia_completo', 'semana', 'mes']) &&
-                        $reservaInicio->format('Y-m-d') <= $fecha->format('Y-m-d') &&
-                        $reservaFin->format('Y-m-d') >= $fecha->format('Y-m-d')) {
-                        $slotOcupado = true;
-                        break;
-                    }
-
-                    // Verificar si la reserva por horas se superpone con este slot
-                    if ($reservaInicio->format('H:i') <= $slotFin->format('H:i') &&
-                        $reservaFin->format('H:i') >= $inicio->format('H:i')) {
-                        $slotOcupado = true;
-                        break;
-                    }
-                }
-
-                // Añadir el slot con su estado correcto
-                $slots[] = [
-                    'hora_inicio' => $inicio->format('H:i'),
-                    'hora_fin' => $slotFin->format('H:i'),
-                    'disponible' => !$slotOcupado
-                ];
-
-                $inicio = $slotFin;
-            }
-
-            // Determinar el estado general del escritorio basado en sus slots
-            $slotsOcupados = array_filter($slots, function($slot) {
-                return !$slot['disponible'];
-            });
-
-            $status = self::STATUS_FREE;
-            if (count($slotsOcupados) > 0) {
-                $status = (count($slotsOcupados) === count($slots)) ? 
-                    self::STATUS_OCCUPIED : self::STATUS_PARTIAL;
-            }
-
-            // Añadir datos completos del escritorio
-            $escritoriosData[] = [
-                'id' => $escritorio->id,
-                'numero' => $escritorio->numero,
-                'tipo_espacio' => 'escritorio',
-                'status' => $status, // Estado actualizado según slots ocupados
-                'slots' => $slots,
-                'reservas' => $this->formatReservas($escritorioReservas)
-            ];
+        if ($reservas->isEmpty()) {
+            return self::STATUS_FREE;
         }
 
-        // Registrar información para depuración
-        Log::debug('Vista diaria de escritorios', [
-            'fecha' => $fecha->format('Y-m-d'),
-            'espacio_id' => $espacio->id,
-            'total_escritorios' => count($escritorios),
-            'escritorios_con_reservas' => count(array_filter($escritoriosData, function($e) {
-                return $e['status'] !== self::STATUS_FREE;
-            }))
-        ]);
+        $reservaDiaCompleto = $reservas->whereIn('tipo_reserva', ['dia_completo', 'semana', 'mes'])
+            ->filter(function($reserva) use ($fecha) {
+                return Carbon::parse($reserva->fecha_inicio)->startOfDay() <= $fecha &&
+                       Carbon::parse($reserva->fecha_fin)->endOfDay() >= $fecha;
+            })
+            ->isNotEmpty();
 
-        return response()->json([
-            'escritorios' => $escritoriosData
-        ]);
+        if ($reservaDiaCompleto) {
+            return self::STATUS_OCCUPIED;
+        }
+
+        return self::STATUS_PARTIAL;
     }
 
     /**
