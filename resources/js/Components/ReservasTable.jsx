@@ -67,84 +67,86 @@ export default function ReservasTable({ reservas, onDelete }) {
     };
 
     return (
-        <div className="overflow-x-auto mt-6">
-            <table className="min-w-full bg-white shadow-md rounded-lg overflow-hidden">
-                {/* Encabezado de la tabla */}
-                <thead className="bg-gray-200 dark:bg-gray-700">
-                    <tr>
-                        <th className="py-3 px-4 text-left text-sm font-medium text-gray-700 dark:text-gray-300">ID</th>
-                        <th className="py-3 px-4 text-left text-sm font-medium text-gray-700 dark:text-gray-300">Usuario</th>
-                        <th className="py-3 px-4 text-left text-sm font-medium text-gray-700 dark:text-gray-300">Espacio</th>
-                        <th className="py-3 px-4 text-left text-sm font-medium text-gray-700 dark:text-gray-300">Escritorio</th>
-                        <th className="py-3 px-4 text-left text-sm font-medium text-gray-700 dark:text-gray-300">Fecha Inicio</th>
-                        <th className="py-3 px-4 text-left text-sm font-medium text-gray-700 dark:text-gray-300">Hora Inicio</th>
-                        <th className="py-3 px-4 text-left text-sm font-medium text-gray-700 dark:text-gray-300">Fecha Fin</th>
-                        <th className="py-3 px-4 text-left text-sm font-medium text-gray-700 dark:text-gray-300">Hora Fin</th>
-                        <th className="py-3 px-4 text-left text-sm font-medium text-gray-700 dark:text-gray-300">Tipo de Reserva</th>
-                        <th className="py-3 px-4 text-left text-sm font-medium text-gray-700 dark:text-gray-300">Estado</th>
-                        <th className="py-3 px-4 text-left text-sm font-medium text-gray-700 dark:text-gray-300">Acciones</th>
-                    </tr>
-                </thead>
-                {/* Cuerpo de la tabla */}
-                <tbody className="bg-white dark:bg-gray-800">
-                    {reservas.length === 0 ? (
-                        // Mensaje cuando no hay reservas
+        <div className="w-full overflow-hidden mt-6">
+            <div className="w-full overflow-x-auto">
+                <table className="w-full table-auto bg-white shadow-md rounded-lg overflow-hidden">
+                    {/* Encabezado de la tabla */}
+                    <thead className="bg-gray-200 dark:bg-gray-700">
                         <tr>
-                            <td colSpan="11" className="py-6 px-4 text-center text-gray-500 dark:text-gray-400">
-                                No se encontraron reservas
-                            </td>
+                            <th className="py-3 px-2 text-left text-xs font-medium text-gray-700 dark:text-gray-300 w-14">ID</th>
+                            <th className="py-3 px-2 text-left text-xs font-medium text-gray-700 dark:text-gray-300 w-32">Usuario</th>
+                            <th className="py-3 px-2 text-left text-xs font-medium text-gray-700 dark:text-gray-300 w-28">Espacio</th>
+                            <th className="py-3 px-2 text-left text-xs font-medium text-gray-700 dark:text-gray-300 w-24">Escritorio</th>
+                            <th className="py-3 px-2 text-left text-xs font-medium text-gray-700 dark:text-gray-300 w-24">F. Inicio</th>
+                            <th className="py-3 px-2 text-left text-xs font-medium text-gray-700 dark:text-gray-300 w-20">H. Inicio</th>
+                            <th className="py-3 px-2 text-left text-xs font-medium text-gray-700 dark:text-gray-300 w-24">F. Fin</th>
+                            <th className="py-3 px-2 text-left text-xs font-medium text-gray-700 dark:text-gray-300 w-20">H. Fin</th>
+                            <th className="py-3 px-2 text-left text-xs font-medium text-gray-700 dark:text-gray-300 w-24">Tipo</th>
+                            <th className="py-3 px-2 text-left text-xs font-medium text-gray-700 dark:text-gray-300 w-24">Estado</th>
+                            <th className="py-3 px-2 text-left text-xs font-medium text-gray-700 dark:text-gray-300 w-28">Acciones</th>
                         </tr>
-                    ) : (
-                        // Mapeo de las reservas existentes
-                        reservas.map((reserva) => (
-                            <tr key={reserva.id} className="border-b last:border-none dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700">
-                                <td className="py-3 px-4 text-sm text-gray-700 dark:text-gray-300">{reserva.id}</td>
-                                <td className="py-3 px-4 text-sm text-gray-700 dark:text-gray-300">
-                                    <div>{reserva.user.name}</div>
-                                    <div className="text-xs text-gray-500">{reserva.user.email}</div>
-                                </td>
-                                <td className="py-3 px-4 text-sm text-gray-700 dark:text-gray-300">{reserva.espacio.nombre}</td>
-                                <td className="py-3 px-4 text-sm text-gray-700 dark:text-gray-300">
-                                    {reserva.espacio.tipo === 'coworking' ? 
-                                        (reserva.escritorio?.nombre || 'Sin asignar') : 
-                                        'N/A'}
-                                </td>
-                                <td className="py-3 px-4 text-sm text-gray-700 dark:text-gray-300">{formatDate(reserva.fecha_inicio)}</td>
-                                <td className="py-3 px-4 text-sm text-gray-700 dark:text-gray-300">{formatTime(reserva.fecha_inicio)}</td>
-                                <td className="py-3 px-4 text-sm text-gray-700 dark:text-gray-300">{formatDate(reserva.fecha_fin)}</td>
-                                <td className="py-3 px-4 text-sm text-gray-700 dark:text-gray-300">{formatTime(reserva.fecha_fin)}</td>
-                                <td className="py-3 px-4 text-sm text-gray-700 dark:text-gray-300">
-                                    {getTipoReservaText(reserva.tipo_reserva)}
-                                </td>
-                                <td className="py-3 px-4">
-                                    <span className={`text-sm font-medium ${getStatusClass(reserva.estado)}`}>
-                                        {reserva.estado.charAt(0).toUpperCase() + reserva.estado.slice(1)}
-                                    </span>
-                                </td>
-                                {/* Botones de acción condicionados por el rol del usuario */}
-                                <td className="py-3 px-4 text-sm text-gray-700 dark:text-gray-300">
-                                    {canManageReserva() && (
-                                        <div className="flex space-x-2">
-                                            <PrimaryButton
-                                                onClick={() => handleEdit(reserva)}
-                                                className="text-xs px-3 py-1"
-                                            >
-                                                Editar
-                                            </PrimaryButton>
-                                            <DangerButton
-                                                onClick={() => onDelete(reserva)}
-                                                className="text-xs px-3 py-1"
-                                            >
-                                                Eliminar
-                                            </DangerButton>
-                                        </div>
-                                    )}
+                    </thead>
+                    {/* Cuerpo de la tabla */}
+                    <tbody className="bg-white dark:bg-gray-800">
+                        {reservas.length === 0 ? (
+                            // Mensaje cuando no hay reservas
+                            <tr>
+                                <td colSpan="11" className="py-6 px-2 text-center text-gray-500 dark:text-gray-400">
+                                    No se encontraron reservas
                                 </td>
                             </tr>
-                        ))
-                    )}
-                </tbody>
-            </table>
+                        ) : (
+                            // Mapeo de las reservas existentes
+                            reservas.map((reserva) => (
+                                <tr key={reserva.id} className="border-b last:border-none dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700">
+                                    <td className="py-2 px-2 text-xs text-gray-700 dark:text-gray-300">{reserva.id}</td>
+                                    <td className="py-2 px-2 text-xs text-gray-700 dark:text-gray-300">
+                                        <div className="truncate">{reserva.user.name}</div>
+                                        <div className="text-xs text-gray-500 truncate">{reserva.user.email}</div>
+                                    </td>
+                                    <td className="py-2 px-2 text-xs text-gray-700 dark:text-gray-300 truncate">{reserva.espacio.nombre}</td>
+                                    <td className="py-2 px-2 text-xs text-gray-700 dark:text-gray-300">
+                                        {reserva.espacio.tipo === 'coworking' ? 
+                                            (reserva.escritorio?.numero || 'Sin asignar') : 
+                                            'N/A'}
+                                    </td>
+                                    <td className="py-2 px-2 text-xs text-gray-700 dark:text-gray-300">{formatDate(reserva.fecha_inicio)}</td>
+                                    <td className="py-2 px-2 text-xs text-gray-700 dark:text-gray-300">{formatTime(reserva.fecha_inicio)}</td>
+                                    <td className="py-2 px-2 text-xs text-gray-700 dark:text-gray-300">{formatDate(reserva.fecha_fin)}</td>
+                                    <td className="py-2 px-2 text-xs text-gray-700 dark:text-gray-300">{formatTime(reserva.fecha_fin)}</td>
+                                    <td className="py-2 px-2 text-xs text-gray-700 dark:text-gray-300">
+                                        {getTipoReservaText(reserva.tipo_reserva)}
+                                    </td>
+                                    <td className="py-2 px-2">
+                                        <span className={`text-xs font-medium ${getStatusClass(reserva.estado)}`}>
+                                            {reserva.estado.charAt(0).toUpperCase() + reserva.estado.slice(1)}
+                                        </span>
+                                    </td>
+                                    {/* Botones de acción condicionados por el rol del usuario */}
+                                    <td className="py-2 px-2 text-xs text-gray-700 dark:text-gray-300">
+                                        {canManageReserva() && (
+                                            <div className="flex space-x-1">
+                                                <PrimaryButton
+                                                    onClick={() => handleEdit(reserva)}
+                                                    className="text-xs px-2 py-1"
+                                                >
+                                                    Editar
+                                                </PrimaryButton>
+                                                <DangerButton
+                                                    onClick={() => onDelete(reserva)}
+                                                    className="text-xs px-2 py-1"
+                                                >
+                                                    Eliminar
+                                                </DangerButton>
+                                            </div>
+                                        )}
+                                    </td>
+                                </tr>
+                            ))
+                        )}
+                    </tbody>
+                </table>
+            </div>
         </div>
     );
 }

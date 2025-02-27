@@ -50,15 +50,25 @@ const CreateReserva = () => {
         
         if (selectedEspacio && selectedEspacio.tipo === 'coworking') {
             setShowEscritorio(true);
-            const libres = escritorios.filter(
-                escritorio => 
-                    escritorio.espacio_id === Number(data.espacio_id) && 
-                    escritorio.is_active === 1
-            );
+            
+            // CORRECCIÓN: Mejorar la forma de filtrar escritorios activos
+            const libres = escritorios.filter(escritorio => {
+                // Comprobar que pertenece al espacio seleccionado
+                if (escritorio.espacio_id !== Number(data.espacio_id)) {
+                    return false;
+                }
+                
+                // Verificar is_active de forma más robusta (acepta 1, true, "1", etc.)
+                return escritorio.is_active === true || 
+                       escritorio.is_active === 1 || 
+                       escritorio.is_active === '1';
+            });
+            
+            console.log('Escritorios disponibles:', libres);
             setEscritoriosLibres(libres);
         } else {
             setShowEscritorio(false);
-            setData('escritorio_id', '');
+            setData('escritorio_id', null);
         }
     }, [data.espacio_id, escritorios, espacios]);
 
@@ -177,6 +187,7 @@ const CreateReserva = () => {
                             value={data.espacio_id}
                             onChange={e => setData('espacio_id', e.target.value)}
                         >
+                            <option value="">Seleccione un espacio</option>
                             {espacios.map(espacio => (
                                 <option key={espacio.id} value={espacio.id}>
                                     {espacio.nombre}
@@ -194,14 +205,25 @@ const CreateReserva = () => {
                                 className="mt-1 block w-full"
                                 value={data.escritorio_id}
                                 onChange={e => setData('escritorio_id', e.target.value)}
+                                required
                             >
-                                {escritoriosLibres.map(escritorio => (
-                                    <option key={escritorio.id} value={escritorio.id}>
-                                        {escritorio.numero}
-                                    </option>
-                                ))}
+                                <option value="">Seleccione un escritorio</option>
+                                {escritoriosLibres.length > 0 ? (
+                                    escritoriosLibres.map(escritorio => (
+                                        <option key={escritorio.id} value={escritorio.id}>
+                                            {escritorio.numero}
+                                        </option>
+                                    ))
+                                ) : (
+                                    <option value="" disabled>No hay escritorios disponibles</option>
+                                )}
                             </SelectInput>
                             <InputError message={errors.escritorio_id} className="mt-2" />
+                            {escritoriosLibres.length === 0 && data.espacio_id && (
+                                <p className="mt-2 text-sm text-red-600">
+                                    No hay escritorios disponibles para este espacio.
+                                </p>
+                            )}
                         </div>
                     )}
 
@@ -250,6 +272,7 @@ const CreateReserva = () => {
                             value={data.fecha_inicio}
                             onChange={e => setData('fecha_inicio', e.target.value)}
                             min={today}
+                            required
                         />
                         <InputError message={errors.fecha_inicio} className="mt-2" />
                         {fechaFinCalculada && (
@@ -270,7 +293,9 @@ const CreateReserva = () => {
                                             className="mt-1 block w-full"
                                             value={data.hora_inicio}
                                             onChange={e => setData('hora_inicio', e.target.value)}
+                                            required
                                         >
+                                            <option value="">Seleccione un horario</option>
                                             {horariosDisponibles.map((horario, index) => (
                                                 <option key={index} value={horario.inicio}>
                                                     {horario.label}
@@ -289,6 +314,7 @@ const CreateReserva = () => {
                                         className="mt-1 block w-full"
                                         value={data.hora_inicio}
                                         onChange={e => setData('hora_inicio', e.target.value)}
+                                        required
                                     />
                                 )}
                                 <InputError message={errors.hora_inicio} className="mt-2" />
@@ -302,6 +328,7 @@ const CreateReserva = () => {
                                         className="mt-1 block w-full"
                                         value={data.hora_fin}
                                         onChange={e => setData('hora_fin', e.target.value)}
+                                        required
                                     />
                                     <InputError message={errors.hora_fin} className="mt-2" />
                                 </div>

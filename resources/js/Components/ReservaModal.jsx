@@ -72,11 +72,21 @@ export default function ReservaModal({
         const selectedEspacio = espacios.find(espacio => espacio.id === Number(data.espacio_id));
         if (selectedEspacio && selectedEspacio.tipo === 'coworking') {
             setShowEscritorio(true);
-            // Corregimos el filtro para usar is_active
-            const libres = escritorios.filter(escritorio =>
-                escritorio.espacio_id === Number(data.espacio_id) &&
-                escritorio.is_active === 1
-            );
+            
+            // CORRECCIÓN: Mejorar la forma de filtrar escritorios activos
+            const libres = escritorios.filter(escritorio => {
+                // Comprobar que pertenece al espacio seleccionado
+                if (escritorio.espacio_id !== Number(data.espacio_id)) {
+                    return false;
+                }
+                
+                // Verificar is_active de forma más robusta (acepta 1, true, "1", etc.)
+                return escritorio.is_active === true || 
+                       escritorio.is_active === 1 || 
+                       escritorio.is_active === '1';
+            });
+            
+            console.log('Escritorios disponibles (edición):', libres);
             setEscritoriosLibres(libres);
         } else {
             setShowEscritorio(false);
@@ -272,6 +282,7 @@ export default function ReservaModal({
                             onChange={e => setData('escritorio_id', e.target.value)}
                             className="mt-1 block w-full"
                             disabled={processing}
+                            required
                         >
                             <option value="">Seleccione un escritorio</option>
                             {escritoriosLibres.map(escritorio => (
@@ -281,6 +292,11 @@ export default function ReservaModal({
                             ))}
                         </SelectInput>
                         <InputError message={errors.escritorio_id} className="mt-2" />
+                        {escritoriosLibres.length === 0 && data.espacio_id && (
+                            <p className="mt-2 text-sm text-red-600">
+                                No hay escritorios disponibles para este espacio.
+                            </p>
+                        )}
                     </div>
                 )}
 
