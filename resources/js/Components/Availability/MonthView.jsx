@@ -9,6 +9,7 @@ import {
     isSameMonth,
     isSameDay,
     isAfter,
+    isBefore,
     startOfDay
 } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -100,10 +101,12 @@ const MonthView = ({ selectedDate, onDayClick, monthData = {} }) => {
                             const dayData = monthData[dateStr] || { status: 'free' };
                             const isCurrentMonth = isSameMonth(day, selectedDate);
                             const isSelectedDay = isSameDay(day, selectedDate);
+                            const isToday = isSameDay(day, today);
                             
-                            // NUEVO: Verificar si es un día pasado
-                            const isPastDay = !isAfter(day, today);
-                            // NUEVO: Para días pasados, forzamos un estado específico
+                            // CORREGIDO: Verificar si es un día pasado, excluyendo el día actual
+                            const isPastDay = isBefore(day, today) && !isToday;
+                            
+                            // Para días pasados, forzamos un estado específico
                             const effectiveStatus = isPastDay ? 'past' : dayData.status;
 
                             return (
@@ -116,6 +119,7 @@ const MonthView = ({ selectedDate, onDayClick, monthData = {} }) => {
                                         hover:z-10 focus:z-10
                                         ${!isCurrentMonth ? 'opacity-75 bg-gray-50' : 'hover:shadow-lg'}
                                         ${isSelectedDay ? 'ring-2 ring-indigo-500 z-10' : ''}
+                                        ${isToday ? 'border-2 border-indigo-300 bg-indigo-50' : ''}
                                         ${isPastDay ? 'cursor-not-allowed bg-gray-100' : 'cursor-pointer'}
                                     `}
                                 >
@@ -123,8 +127,10 @@ const MonthView = ({ selectedDate, onDayClick, monthData = {} }) => {
                                         <p className={`
                                             text-sm font-medium
                                             ${isPastDay ? 'text-gray-400' : isCurrentMonth ? 'text-gray-900' : 'text-gray-500'}
+                                            ${isToday ? 'text-indigo-700 font-bold' : ''}
                                         `}>
                                             {format(day, 'd')}
+                                            {isToday && <span className="text-xs ml-1 text-indigo-600">(hoy)</span>}
                                         </p>
                                         <div className="flex justify-center flex-col items-center">
                                             {/* Pasamos el estado que corresponde según la fecha */}

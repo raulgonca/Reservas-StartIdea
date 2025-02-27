@@ -1,5 +1,5 @@
 import React from 'react';
-import { format, eachDayOfInterval, startOfWeek, endOfWeek, isSameMonth, isAfter, startOfDay, isSameDay } from 'date-fns';
+import { format, eachDayOfInterval, startOfWeek, endOfWeek, isSameMonth, isBefore, startOfDay, isSameDay } from 'date-fns';
 import { es } from 'date-fns/locale';
 import StatusBadge from './StatusBadge';
 
@@ -65,8 +65,8 @@ const WeekView = ({ selectedDate, onDayClick, weekData = {} }) => {
                     const isCurrentMonth = isSameMonth(day, selectedDate);
                     const isToday = isSameDay(day, today);
                     
-                    // Verificar si es un día pasado (anterior a hoy)
-                    const isPastDay = !isAfter(day, today);
+                    // CORREGIDO: Verificar si es un día pasado (anterior a hoy, pero NO hoy)
+                    const isPastDay = isBefore(day, today) && !isToday;
                     
                     // Para días pasados, forzamos un estado específico
                     const effectiveStatus = isPastDay ? 'past' : dayData.status;
