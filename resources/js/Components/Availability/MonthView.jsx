@@ -7,7 +7,9 @@ import {
     startOfWeek,
     endOfWeek,
     isSameMonth,
-    isSameDay
+    isSameDay,
+    isAfter,
+    startOfDay
 } from 'date-fns';
 import { es } from 'date-fns/locale';
 import StatusBadge from './StatusBadge';
@@ -27,6 +29,9 @@ const MonthView = ({ selectedDate, onDayClick, monthData = {} }) => {
     // Info de depuración
     const hasData = monthData && Object.keys(monthData).length > 0;
     const debugInfo = monthData?.debug || null;
+    
+    // Fecha actual para comparar días pasados
+    const today = startOfDay(new Date());
     
     // Obtener el primer y último día del mes
     const monthStart = startOfMonth(selectedDate);
@@ -91,36 +96,43 @@ const MonthView = ({ selectedDate, onDayClick, monthData = {} }) => {
                     <React.Fragment key={`week-${weekIndex}`}>
                         {week.map((day) => {
                             const dateStr = format(day, 'yyyy-MM-dd');
-                            const dayData = monthData[dateStr] || { status: 'unavailable' };        
+                            // Usar el estado real si existe, o 'free' como valor predeterminado
+                            const dayData = monthData[dateStr] || { status: 'free' };
                             const isCurrentMonth = isSameMonth(day, selectedDate);
                             const isSelectedDay = isSameDay(day, selectedDate);
+                            
+                            // NUEVO: Verificar si es un día pasado
+                            const isPastDay = !isAfter(day, today);
+                            // NUEVO: Para días pasados, forzamos un estado específico
+                            const effectiveStatus = isPastDay ? 'past' : dayData.status;
 
                             return (
                                 <button
                                     key={dateStr}
                                     onClick={() => onDayClick(day)}
-                                    disabled={!isCurrentMonth}
+                                    disabled={isPastDay} // Desactivar botón para días pasados
                                     className={`
                                         p-2 bg-white transition-all duration-200 relative
                                         hover:z-10 focus:z-10
-                                        ${!isCurrentMonth ? 'opacity-50' : 'hover:shadow-lg'}       
-                                        ${isSelectedDay ? 'ring-2 ring-indigo-500 z-10' : ''}       
+                                        ${!isCurrentMonth ? 'opacity-75 bg-gray-50' : 'hover:shadow-lg'}
+                                        ${isSelectedDay ? 'ring-2 ring-indigo-500 z-10' : ''}
+                                        ${isPastDay ? 'cursor-not-allowed bg-gray-100' : 'cursor-pointer'}
                                     `}
                                 >
                                     <div className="space-y-1">
                                         <p className={`
                                             text-sm font-medium
-                                            ${isCurrentMonth ? 'text-gray-900' : 'text-gray-400'}   
+                                            ${isPastDay ? 'text-gray-400' : isCurrentMonth ? 'text-gray-900' : 'text-gray-500'}
                                         `}>
                                             {format(day, 'd')}
                                         </p>
                                         <div className="flex justify-center flex-col items-center">
+                                            {/* Pasamos el estado que corresponde según la fecha */}
                                             <StatusBadge
-                                                status={dayData.status}
+                                                status={effectiveStatus}
                                                 interactive={false}
+                                                dimmed={!isCurrentMonth || isPastDay}
                                             />
-                                            
-                            
                                         </div>
                                     </div>
                                 </button>

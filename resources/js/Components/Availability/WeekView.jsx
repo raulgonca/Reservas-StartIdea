@@ -1,5 +1,5 @@
 import React from 'react';
-import { format, eachDayOfInterval, startOfWeek, endOfWeek } from 'date-fns';
+import { format, eachDayOfInterval, startOfWeek, endOfWeek, isSameMonth, isAfter, startOfDay, isSameDay } from 'date-fns';
 import { es } from 'date-fns/locale';
 import StatusBadge from './StatusBadge';
 
@@ -19,11 +19,17 @@ const WeekView = ({ selectedDate, onDayClick, weekData = {} }) => {
     const hasData = Object.keys(weekData).length > 0;
     const debugInfo = weekData?.debug || null;
     
+    // Fecha actual para comparar días pasados
+    const today = startOfDay(new Date());
+    
     // Obtener todos los días de la semana actual
     const weekDays = eachDayOfInterval({
         start: startOfWeek(selectedDate, { locale: es }),
         end: endOfWeek(selectedDate, { locale: es })
     });
+
+    // Obtener el mes actual para comparación
+    const currentMonth = selectedDate.getMonth();
 
     return (
         <div className="space-y-4">
@@ -52,34 +58,68 @@ const WeekView = ({ selectedDate, onDayClick, weekData = {} }) => {
             <div className="grid grid-cols-7 gap-2">
                 {weekDays.map((day) => {
                     const dateStr = format(day, 'yyyy-MM-dd');
-                    const dayData = weekData[dateStr] || { status: 'unavailable' };
+                    // Usar disponibilidad real o 'free' como predeterminado
+                    const dayData = weekData[dateStr] || { status: 'free' };
+                    
+                    // Verificar si es día de otro mes o día actual
+                    const isCurrentMonth = isSameMonth(day, selectedDate);
+                    const isToday = isSameDay(day, today);
+                    
+                    // Verificar si es un día pasado (anterior a hoy)
+                    const isPastDay = !isAfter(day, today);
+                    
+                    // Para días pasados, forzamos un estado específico
+                    const effectiveStatus = isPastDay ? 'past' : dayData.status;
 
                     return (
                         <button
                             key={dateStr}
                             onClick={() => onDayClick(day)}
+                            disabled={isPastDay} // Desactivar botón para días pasados
                             className={`
                                 p-4 border rounded-lg transition-all duration-200
-                                hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500
-                                ${format(selectedDate, 'yyyy-MM-dd') === dateStr ? 'border-indigo-200 shadow-sm' : 'hover:border-gray-300'}
+                                focus:outline-none focus:ring-2 focus:ring-indigo-500
+                                ${isPastDay ? 'cursor-not-allowed bg-gray-50' : 'hover:shadow-sm hover:border-gray-300'}
+                                ${format(selectedDate, 'yyyy-MM-dd') === dateStr ? 'border-indigo-200 shadow-sm' : ''}
+                                ${isToday ? 'border-indigo-300 bg-indigo-50' : ''}
+                                ${!isCurrentMonth && !isPastDay ? 'border-dashed border-gray-200' : ''}
                             `}
                         >
                             <div className="space-y-2">
                                 <div className="text-center">
-                                    <p className="text-sm font-medium text-gray-900">
+                                    <p className={`
+                                        text-sm font-medium capitalize
+                                        ${isPastDay ? 'text-gray-400' : isCurrentMonth ? 'text-gray-900' : 'text-gray-500'}
+                                    `}>
                                         {format(day, 'EEEE', { locale: es })}
                                     </p>
-                                    <p className="text-2xl font-bold text-gray-900">
+                                    <p className={`
+                                        text-2xl font-bold
+                                        ${isPastDay ? 'text-gray-400' : isCurrentMonth ? 'text-gray-900' : 'text-gray-500'}
+                                    `}>
                                         {format(day, 'd')}
                                     </p>
+                                    
+                                    {/* Mostrar el mes para días de otro mes */}
+                                    {!isCurrentMonth && (
+                                        <p className="text-xs text-gray-500 mt-1">
+                                            {format(day, 'MMMM', { locale: es })}
+                                        </p>
+                                    )}
+                                    
+                                    {/* Etiqueta especial para "Hoy" */}
+                                    {isToday && (
+                                        <span className="inline-flex items-center justify-center px-2 py-1 text-xs font-bold rounded-full bg-indigo-100 text-indigo-800 mt-1">
+                                            Hoy
+                                        </span>
+                                    )}
                                 </div>
                                 <div className="flex justify-center flex-col items-center">
                                     <StatusBadge
-                                        status={dayData.status}
+                                        status={effectiveStatus}
                                         interactive={false}
+                                        dimmed={!isCurrentMonth && !isPastDay} // Días de otro mes se atenúan, pero los pasados tienen su propio estilo
                                     />
-                                    
-                                    
                                 </div>
                             </div>
                         </button>
