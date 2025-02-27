@@ -30,7 +30,7 @@ const DayView = ({ escritorios, slots, selectedDate }) => {
                 </h3>
 
                 {/* Grid mejorado con mejor espaciado y responsive */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 auto-rows-start">
+                <div className="grid grid-cols-1 sm:grid-cols-1 lg:grid-cols-1 gap-6 auto-rows-start">
                     {escritorios.map((escritorio) => (
                         <Disclosure key={escritorio.id} as="div" className="group h-fit">
                             {({ open }) => (
