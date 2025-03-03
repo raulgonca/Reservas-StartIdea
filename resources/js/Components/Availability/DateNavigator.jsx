@@ -1,12 +1,12 @@
 import React from 'react';
 import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
-import { format, parseISO, startOfWeek, endOfWeek } from 'date-fns';
+import { format, parseISO, startOfWeek, endOfWeek, isValid } from 'date-fns';
 import { es } from 'date-fns/locale';
 
 /**
  * Componente que maneja la navegación de fechas en el calendario
  * @param {Object} props
- * @param {string} props.currentDate - Fecha actual en formato ISO (YYYY-MM-DD)
+ * @param {Date|string} props.currentDate - Fecha actual (Date o formato ISO YYYY-MM-DD)
  * @param {string} props.view - Tipo de vista actual ('day', 'week', 'month')
  * @param {Function} props.onDateChange - Función para cambiar directamente a una fecha específica
  * @param {Function} props.onPrevious - Función para navegar a la fecha anterior
@@ -22,8 +22,30 @@ export default function DateNavigator({
     onNext = null, 
     onToday = null
 }) {
-    // Parsear la fecha actual a objeto Date
-    const date = currentDate ? parseISO(currentDate) : new Date();
+    // Parsear la fecha actual a objeto Date, manejando diferentes formatos posibles
+    const date = React.useMemo(() => {
+        console.log("DateNavigator recibió fecha:", currentDate);
+        
+        // Si ya es un objeto Date, usarlo directamente
+        if (currentDate instanceof Date && isValid(currentDate)) {
+            return currentDate;
+        }
+        
+        // Si es una string en formato ISO, parsearla
+        if (typeof currentDate === 'string') {
+            try {
+                const parsedDate = parseISO(currentDate);
+                if (isValid(parsedDate)) {
+                    return parsedDate;
+                }
+            } catch (error) {
+                console.error('Error al parsear fecha:', error);
+            }
+        }
+        
+        // Por defecto, usar la fecha actual
+        return new Date();
+    }, [currentDate]);
 
     // Función para formatear la fecha según el tipo de vista
     const getFormattedDate = () => {
@@ -79,7 +101,7 @@ export default function DateNavigator({
                     break;
             }
             
-            onDateChange(newDate.toISOString().split('T')[0]);
+            onDateChange(newDate);
         }
     };
 
@@ -102,7 +124,7 @@ export default function DateNavigator({
                     break;
             }
             
-            onDateChange(newDate.toISOString().split('T')[0]);
+            onDateChange(newDate);
         }
     };
 
@@ -111,8 +133,7 @@ export default function DateNavigator({
             onToday();
         } else {
             // Fallback a la implementación anterior si no se proporciona onToday
-            const today = new Date();
-            onDateChange(today.toISOString().split('T')[0]);
+            onDateChange(new Date());
         }
     };
 

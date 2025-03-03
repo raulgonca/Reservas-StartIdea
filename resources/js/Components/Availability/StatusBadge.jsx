@@ -3,7 +3,7 @@ import React from 'react';
 /**
  * Componente StatusBadge - Muestra el estado de disponibilidad con colores intuitivos
  * @param {Object} props
- * @param {string} props.status - Estado de disponibilidad: 'free', 'partial', 'occupied', 'unavailable', 'past'
+ * @param {string} props.status - Estado de disponibilidad: 'free', 'partial', 'occupied', 'unavailable', 'past', 'reserved'
  * @param {boolean} props.interactive - Si el badge debe tener efectos de hover
  * @param {boolean} props.dimmed - Si el badge debe mostrarse con estilo atenuado (para días fuera del mes actual)
  * @returns {JSX.Element}
@@ -26,6 +26,7 @@ const StatusBadge = ({ status, interactive = true, dimmed = false }) => {
             label = 'Parcialmente ocupado';
             break;
         case 'occupied':
+        case 'reserved': // Añadido para manejar el estado "Reservado" de la vista diaria
             bgColor = 'bg-red-200';
             textColor = 'text-red-800';
             hoverBg = 'hover:bg-red-200';
