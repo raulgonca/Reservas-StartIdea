@@ -153,7 +153,6 @@ const DayView = ({ escritorios = [], slots = [], selectedDate, tipoEspacio = 'co
                     
                     {/* Leyenda integrada */}
                     <div className="bg-white p-3 border border-gray-200 rounded-lg shadow-sm sm:w-auto w-full">
-                        <h4 className="text-sm font-medium text-gray-700 mb-2">Leyenda:</h4>
                         <Legend />
                     </div>
                 </div>
