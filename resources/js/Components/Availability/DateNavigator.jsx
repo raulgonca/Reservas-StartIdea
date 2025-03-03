@@ -1,76 +1,119 @@
 import React from 'react';
 import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
+import { format, parseISO, startOfWeek, endOfWeek } from 'date-fns';
+import { es } from 'date-fns/locale';
 
-export default function DateNavigator({ currentDate, view, onDateChange }) {
+/**
+ * Componente que maneja la navegación de fechas en el calendario
+ * @param {Object} props
+ * @param {string} props.currentDate - Fecha actual en formato ISO (YYYY-MM-DD)
+ * @param {string} props.view - Tipo de vista actual ('day', 'week', 'month')
+ * @param {Function} props.onDateChange - Función para cambiar directamente a una fecha específica
+ * @param {Function} props.onPrevious - Función para navegar a la fecha anterior
+ * @param {Function} props.onNext - Función para navegar a la fecha siguiente
+ * @param {Function} props.onToday - Función para navegar a la fecha actual
+ * @returns {JSX.Element}
+ */
+export default function DateNavigator({ 
+    currentDate, 
+    view, 
+    onDateChange,
+    onPrevious = null,
+    onNext = null, 
+    onToday = null
+}) {
+    // Parsear la fecha actual a objeto Date
+    const date = currentDate ? parseISO(currentDate) : new Date();
+
     // Función para formatear la fecha según el tipo de vista
     const getFormattedDate = () => {
-        const date = new Date(currentDate);
-
-        // Opciones para formatear fechas en español
-        const dayOptions = { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' };
-        const monthOptions = { month: 'long', year: 'numeric' };
-        
-        switch (view) {
-            case 'day':
-                return date.toLocaleDateString('es-ES', dayOptions);
-            case 'week':
-                // Para vista semanal, mostrar el rango de la semana
-                const weekStart = new Date(date);
-                weekStart.setDate(date.getDate() - date.getDay() + 1); // Lunes
-                
-                const weekEnd = new Date(weekStart);
-                weekEnd.setDate(weekStart.getDate() + 6); // Domingo
-                
-                return `Semana del ${weekStart.getDate()} de ${weekStart.toLocaleDateString('es-ES', { month: 'long' })}`;
-            case 'month':
-                return date.toLocaleDateString('es-ES', monthOptions);
-            default:
-                return date.toLocaleDateString('es-ES');
+        try {
+            switch (view) {
+                case 'day':
+                    // Formato: "Lunes, 10 de enero de 2023"
+                    return format(date, "EEEE, d 'de' MMMM 'de' yyyy", { locale: es });
+                    
+                case 'week':
+                    // Para vista semanal, mostrar el rango de la semana
+                    const weekStart = startOfWeek(date, { weekStartsOn: 1 }); // Lunes
+                    const weekEnd = endOfWeek(date, { weekStartsOn: 1 }); // Domingo
+                    
+                    // Si el inicio y fin están en el mismo mes
+                    if (format(weekStart, 'MMMM', { locale: es }) === format(weekEnd, 'MMMM', { locale: es })) {
+                        return `${format(weekStart, "d", { locale: es })} - ${format(weekEnd, "d 'de' MMMM 'de' yyyy", { locale: es })}`;
+                    }
+                    
+                    // Si están en meses diferentes
+                    return `${format(weekStart, "d 'de' MMMM", { locale: es })} - ${format(weekEnd, "d 'de' MMMM 'de' yyyy", { locale: es })}`;
+                    
+                case 'month':
+                    // Formato: "Enero 2023"
+                    return format(date, "MMMM 'de' yyyy", { locale: es });
+                    
+                default:
+                    return format(date, "d MMMM yyyy", { locale: es });
+            }
+        } catch (error) {
+            console.error('Error al formatear fecha:', error);
+            return 'Fecha no válida';
         }
     };
 
-    // Navegar al día, semana o mes anterior
+    // Manejadores de eventos que utilizan las funciones pasadas como props
     const handlePrevious = () => {
-        const date = new Date(currentDate);
-        
-        switch (view) {
-            case 'day':
-                date.setDate(date.getDate() - 1);
-                break;
-            case 'week':
-                date.setDate(date.getDate() - 7);
-                break;
-            case 'month':
-                date.setMonth(date.getMonth() - 1);
-                break;
+        if (onPrevious) {
+            onPrevious();
+        } else {
+            // Fallback a la implementación anterior si no se proporciona onPrevious
+            const newDate = new Date(date);
+            
+            switch (view) {
+                case 'day':
+                    newDate.setDate(newDate.getDate() - 1);
+                    break;
+                case 'week':
+                    newDate.setDate(newDate.getDate() - 7);
+                    break;
+                case 'month':
+                    newDate.setMonth(newDate.getMonth() - 1);
+                    break;
+            }
+            
+            onDateChange(newDate.toISOString().split('T')[0]);
         }
-        
-        onDateChange(date.toISOString().split('T')[0]);
     };
 
-    // Navegar al día, semana o mes siguiente
     const handleNext = () => {
-        const date = new Date(currentDate);
-        
-        switch (view) {
-            case 'day':
-                date.setDate(date.getDate() + 1);
-                break;
-            case 'week':
-                date.setDate(date.getDate() + 7);
-                break;
-            case 'month':
-                date.setMonth(date.getMonth() + 1);
-                break;
+        if (onNext) {
+            onNext();
+        } else {
+            // Fallback a la implementación anterior si no se proporciona onNext
+            const newDate = new Date(date);
+            
+            switch (view) {
+                case 'day':
+                    newDate.setDate(newDate.getDate() + 1);
+                    break;
+                case 'week':
+                    newDate.setDate(newDate.getDate() + 7);
+                    break;
+                case 'month':
+                    newDate.setMonth(newDate.getMonth() + 1);
+                    break;
+            }
+            
+            onDateChange(newDate.toISOString().split('T')[0]);
         }
-        
-        onDateChange(date.toISOString().split('T')[0]);
     };
 
-    // Navegar al día actual
     const handleToday = () => {
-        const today = new Date();
-        onDateChange(today.toISOString().split('T')[0]);
+        if (onToday) {
+            onToday();
+        } else {
+            // Fallback a la implementación anterior si no se proporciona onToday
+            const today = new Date();
+            onDateChange(today.toISOString().split('T')[0]);
+        }
     };
 
     return (

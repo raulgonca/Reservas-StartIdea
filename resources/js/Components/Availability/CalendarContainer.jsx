@@ -1,117 +1,54 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import DayView from './DayView';
 import WeekView from './WeekView';
 import MonthView from './MonthView';
 import DateNavigator from './DateNavigator';
-import axios from 'axios';
 
 /**
  * Componente CalendarContainer - Gestiona las diferentes vistas del calendario
  * @param {Object} props
- * @param {Object} props.escritorios - Datos iniciales de escritorios
- * @param {Object} props.weekData - Datos iniciales de disponibilidad semanal
- * @param {Object} props.monthData - Datos iniciales de disponibilidad mensual
- * @param {number} props.espacioId - ID del espacio para consultar disponibilidad
+ * @param {Array} props.escritorios - Datos de escritorios para la vista diaria
+ * @param {Array} props.slots - Datos de slots para la vista diaria
+ * @param {Object} props.weekData - Datos de disponibilidad semanal
+ * @param {Object} props.monthData - Datos de disponibilidad mensual
+ * @param {Date} props.selectedDate - Fecha seleccionada actualmente
+ * @param {string} props.viewType - Tipo de vista actual ('day', 'week', 'month')
+ * @param {Function} props.onDateChange - Función para cambiar la fecha seleccionada
+ * @param {Function} props.onViewChange - Función para cambiar el tipo de vista
+ * @param {Function} props.onNavigateNext - Función para navegar a la siguiente fecha
+ * @param {Function} props.onNavigatePrevious - Función para navegar a la fecha anterior
+ * @param {Function} props.onNavigateToday - Función para navegar a la fecha actual
+ * @param {Function} props.onDayClick - Función para manejar el clic en un día
+ * @param {boolean} props.loading - Indica si los datos están cargando
  * @param {string} props.tipoEspacio - Tipo de espacio (coworking, sala, etc.)
  * @returns {JSX.Element}
  */
 const CalendarContainer = ({ 
-    escritorios: initialEscritorios, 
-    weekData: initialWeekData, 
-    monthData: initialMonthData,
-    espacioId,
-    tipoEspacio
-}) => {
-    // Estado para la fecha seleccionada y el tipo de vista
-    const [selectedDate, setSelectedDate] = useState(new Date());
-    const [viewType, setViewType] = useState('day'); // 'day', 'week', 'month'
+    // Datos
+    escritorios = [],
+    slots = [],
+    weekData = {},
+    monthData = {},
     
-    // Estados para los datos de disponibilidad
-    const [escritorios, setEscritorios] = useState(initialEscritorios);
-    const [weekData, setWeekData] = useState(initialWeekData);
-    const [monthData, setMonthData] = useState(initialMonthData);
-    const [loading, setLoading] = useState(true); // Comenzamos con loading=true para mostrar skeleton inmediatamente
-    const [initialized, setInitialized] = useState(false);
-
-    // Manejador para cambio de día
-    const handleDayClick = (date) => {
-        setSelectedDate(date);
-        setViewType('day');
-    };
-
-    // Función para cargar datos de disponibilidad según la fecha y tipo de vista
-    const loadAvailabilityData = async (date, view) => {
-        if (!espacioId) return;
-        
-        setLoading(true);
-        const formattedDate = formatDateForAPI(date);
-        
-        try {
-            const response = await axios.get(route('api.espacios.availability', espacioId), {
-                params: {
-                    fecha: formattedDate,
-                    vista: view,
-                    tipo_espacio: tipoEspacio
-                }
-            });
-            
-            // Añadir un pequeño delay para asegurar que se vea el skeleton (solo para demostración)
-            // En producción puedes quitar este timeout
-            setTimeout(() => {
-                // Actualizar estados según el tipo de vista
-                if (view === 'day') {
-                    setEscritorios(response.data.escritorios || []);
-                } else if (view === 'week') {
-                    setWeekData(response.data.data || {});
-                } else if (view === 'month') {
-                    setMonthData(response.data.data || {});
-                }
-                setLoading(false);
-                setInitialized(true);
-            }, 1000);
-        } catch (error) {
-            console.error('Error al obtener disponibilidad:', error);
-            setLoading(false);
-            setInitialized(true);
-        }
-    };
-
-    // Función para formatear la fecha para la API
-    const formatDateForAPI = (date) => {
-        return date.toISOString().split('T')[0];
-    };
-
-    // Efecto para cargar datos cuando cambia la fecha o vista
-    useEffect(() => {
-        // Solo cargar datos si tenemos un espacioId válido
-        if (espacioId) {
-            loadAvailabilityData(selectedDate, viewType);
-        } else {
-            // Si no tenemos espacioId, no intentar cargar y quitar el estado de loading
-            setLoading(false);
-            setInitialized(true);
-        }
-    }, [selectedDate, viewType, espacioId]);
-
-    // Verificar si ya tenemos datos iniciales, para salir del estado de loading
-    useEffect(() => {
-        // Si tenemos datos iniciales y aún no nos hemos inicializado
-        if (!initialized && (
-            (viewType === 'day' && initialEscritorios?.length > 0) ||
-            (viewType === 'week' && Object.keys(initialWeekData || {}).length > 0) ||
-            (viewType === 'month' && Object.keys(initialMonthData || {}).length > 0)
-        )) {
-            setLoading(false);
-            setInitialized(true);
-        }
-    }, [initialized, initialEscritorios, initialWeekData, initialMonthData, viewType]);
-
-    // Manejador para cambio de fecha desde DateNavigator
-    const handleDateChange = (dateString) => {
-        setSelectedDate(new Date(dateString));
-    };
-
-    // Componentes de skeleton para cada tipo de vista
+    // Estados
+    selectedDate = new Date(),
+    viewType = 'day',
+    loading = false,
+    
+    // Información del espacio
+    espacioId,
+    tipoEspacio = 'common',
+    
+    // Funciones de control
+    onDateChange = () => {},
+    onViewChange = () => {},
+    onNavigateNext = () => {},
+    onNavigatePrevious = () => {},
+    onNavigateToday = () => {},
+    onDayClick = () => {},
+    onRefresh = () => {}
+}) => {
+    // Componentes de skeleton para cada tipo de vista (sin cambios)
     const DayViewSkeleton = () => (
         <div className="animate-pulse">
             {/* Simulación de un escritorio/espacio */}
@@ -245,7 +182,7 @@ const CalendarContainer = ({
                 return (
                     <WeekView 
                         selectedDate={selectedDate}
-                        onDayClick={handleDayClick}
+                        onDayClick={onDayClick}
                         weekData={weekData}
                     />
                 );
@@ -253,7 +190,7 @@ const CalendarContainer = ({
                 return (
                     <MonthView 
                         selectedDate={selectedDate}
-                        onDayClick={handleDayClick}
+                        onDayClick={onDayClick}
                         monthData={monthData}
                     />
                 );
@@ -262,9 +199,18 @@ const CalendarContainer = ({
                     <DayView 
                         selectedDate={selectedDate}
                         escritorios={escritorios}
+                        slots={slots}
+                        tipoEspacio={tipoEspacio}
                     />
                 );
         }
+    };
+
+    // Función auxiliar para formatear la fecha para DateNavigator
+    const formatDateForNavigator = () => {
+        return selectedDate instanceof Date 
+            ? selectedDate.toISOString().split('T')[0]
+            : (typeof selectedDate === 'string' ? selectedDate : new Date().toISOString().split('T')[0]);
     };
 
     return (
@@ -274,9 +220,12 @@ const CalendarContainer = ({
                 {/* Navegador de fechas con estilo mejorado */}
                 <div className="p-4 border-b border-gray-100">
                     <DateNavigator 
-                        currentDate={selectedDate.toISOString().split('T')[0]}
+                        currentDate={formatDateForNavigator()}
                         view={viewType}
-                        onDateChange={handleDateChange}
+                        onDateChange={onDateChange}
+                        onPrevious={onNavigatePrevious}
+                        onNext={onNavigateNext}
+                        onToday={onNavigateToday}
                     />
                 </div>
                 
@@ -290,7 +239,7 @@ const CalendarContainer = ({
                         ].map(({ key, label, icon }) => (
                             <button
                                 key={key}
-                                onClick={() => setViewType(key)}
+                                onClick={() => onViewChange(key)}
                                 className={`
                                     relative px-4 py-2 text-sm font-medium rounded-md
                                     focus:z-10 focus:outline-none focus:ring-2 focus:ring-indigo-500 
