@@ -2,6 +2,7 @@ import React from 'react';
 import { format, eachDayOfInterval, startOfWeek, endOfWeek, isSameMonth, isBefore, startOfDay, isSameDay } from 'date-fns';
 import { es } from 'date-fns/locale';
 import StatusBadge from './StatusBadge';
+import Legend from './Legend';
 
 /**
  * Componente WeekView - Muestra la disponibilidad semanal
@@ -30,12 +31,20 @@ const WeekView = ({ selectedDate, onDayClick, weekData = {} }) => {
 
     return (
         <div className="space-y-4">
-            {/* Título de la semana con mejor formato */}
-            <h3 className="text-lg font-medium text-gray-900 capitalize">
-                {format(weekDays[0], "'Semana del' d 'de' MMMM", { locale: es })}
-                {format(weekDays[0], 'MMM', { locale: es }) !== format(weekDays[6], 'MMM', { locale: es }) && 
-                    ` al ${format(weekDays[6], "d 'de' MMMM", { locale: es })}`}
-            </h3>
+            {/* Título de la semana y leyenda - Con layout flexible */}
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-4">
+                <h3 className="text-lg font-medium text-gray-900 capitalize py-2 px-3 bg-gray-50 rounded-lg shadow-sm border border-gray-100">
+                    {format(weekDays[0], "'Semana del' d 'de' MMMM", { locale: es })}
+                    {format(weekDays[0], 'MMM', { locale: es }) !== format(weekDays[6], 'MMM', { locale: es }) && 
+                        ` al ${format(weekDays[6], "d 'de' MMMM", { locale: es })}`}
+                </h3>
+                
+                {/* Leyenda integrada */}
+                <div className="bg-white p-3 border border-gray-200 rounded-lg shadow-sm sm:w-auto w-full">
+                    <h4 className="text-sm font-medium text-gray-700 mb-2">Leyenda:</h4>
+                    <Legend />
+                </div>
+            </div>
             
             {/* Mostrar advertencia si no hay datos */}
             {!hasData && (
@@ -151,8 +160,6 @@ const WeekView = ({ selectedDate, onDayClick, weekData = {} }) => {
                     );
                 })}
             </div>
-            
-            
             
             {/* Panel de depuración (solo visible en desarrollo) */}
             {process.env.NODE_ENV === 'development' && debugInfo && (

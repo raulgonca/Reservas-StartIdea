@@ -15,6 +15,7 @@ import {
 } from 'date-fns';
 import { es } from 'date-fns/locale';
 import StatusBadge from './StatusBadge';
+import Legend from './Legend';
 
 /**
  * Componente MonthView - Muestra el calendario mensual con estados de disponibilidad
@@ -61,46 +62,97 @@ const MonthView = ({ selectedDate, onDayClick, monthData = {} }) => {
         start: monthStart,
         end: monthEnd
     };
+    
+    // Función para obtener el color de fondo según el estado
+    const getStatusBackgroundColor = (status, isCurrentMonth) => {
+        // Para días fuera del mes actual, usar un tono más claro
+        const opacity = isCurrentMonth ? '' : '/30';
+        
+        switch (status) {
+            case 'free':
+                return `bg-green-100${opacity}`;
+            case 'partial':
+                return `bg-yellow-100${opacity}`;
+            case 'occupied':
+            case 'unavailable':
+                return `bg-red-100${opacity}`;
+            case 'past':
+                return 'bg-gray-100';
+            default:
+                return '';
+        }
+    };
+    
+    // Función para obtener el color de borde según el estado
+    const getStatusBorderColor = (status, isCurrentMonth) => {
+        // Para días fuera del mes actual, usar un borde más claro
+        const opacity = isCurrentMonth ? '' : '/50';
+        
+        switch (status) {
+            case 'free':
+                return `border-green-200${opacity}`;
+            case 'partial':
+                return `border-yellow-200${opacity}`;
+            case 'occupied':
+            case 'unavailable':
+                return `border-red-200${opacity}`;
+            case 'past':
+                return 'border-gray-200';
+            default:
+                return 'border-gray-100';
+        }
+    };
 
     return (
         <div className="space-y-4">
-            {/* Mostrar información del mes */}
-            <h3 className="text-lg font-medium text-gray-900 capitalize">
-                {format(selectedDate, "MMMM 'de' yyyy", { locale: es })}
-            </h3>
+            {/* Encabezado del mes y leyenda en flex para pantallas medianas o mayores */}
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
+                <h3 className="text-xl font-semibold text-gray-800 capitalize py-2 px-3 bg-gray-50 rounded-lg shadow-sm border border-gray-100">
+                    {format(selectedDate, "MMMM 'de' yyyy", { locale: es })}
+                </h3>
+                
+                {/* Usando el componente Legend existente */}
+                <div className="bg-white p-3 border border-gray-200 rounded-lg shadow-sm sm:w-auto w-full">
+                    <Legend />
+                </div>
+            </div>
 
-            {/* Mostrar advertencia si no hay datos */}
+            {/* Mostrar advertencia si no hay datos - Mejorado con iconografía y contraste */}
             {!hasData && (
-                <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg flex items-center mb-4">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-yellow-400 mr-2" viewBox="0 0 20 20" fill="currentColor">
-                        <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                <div className="p-4 bg-yellow-50 border-l-4 border-yellow-400 rounded-lg flex items-center mb-4 shadow-sm">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-yellow-500 mr-3 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                     </svg>
-                    <span className="text-sm text-yellow-800">
+                    <span className="text-sm font-medium text-yellow-800">
                         No hay datos de disponibilidad para este mes
                     </span>
                 </div>
             )}
 
-            {/* Calendario mejorado con mejor separación entre celdas */}
-            <div className="rounded-lg overflow-hidden border border-gray-200 bg-white">    
-                {/* Cabecera con los días de la semana */}
-                <div className="grid grid-cols-7 divide-x divide-gray-200 bg-gray-50 border-b">
-                    {['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'].map((dayName) => (
+            {/* Calendario mejorado con mejor separación, sombras y bordes redondeados */}
+            <div className="rounded-xl overflow-hidden border border-gray-200 bg-white shadow-md">    
+                {/* Cabecera con los días de la semana - Mejorada con mejor contraste y responsividad */}
+                <div className="grid grid-cols-7 bg-gradient-to-r from-indigo-50 to-blue-50 border-b border-gray-200">
+                    {['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'].map((dayName, index) => (
                         <div
                             key={dayName}
-                            className="py-2 text-center"
+                            className={`py-3 text-center border-r border-gray-100 
+                                      ${index === 6 ? 'border-r-0' : ''}`}
                         >
-                            <span className="text-sm font-medium text-gray-700">
+                            <span className="text-sm font-semibold text-gray-700 hidden sm:inline">
                                 {dayName}
+                            </span>
+                            <span className="text-xs font-semibold text-gray-700 sm:hidden">
+                                {dayName.substring(0, 1)}
                             </span>
                         </div>
                     ))}
                 </div>
 
-                {/* Cuadrícula de semanas */}
+                {/* Cuadrícula de semanas - Mejorada con espacio y responsividad */}
                 <div className="divide-y divide-gray-200">
                     {weeks.map((week, weekIndex) => (
-                        <div key={`week-${weekIndex}`} className="grid grid-cols-7 divide-x divide-gray-200">
+                        <div key={`week-${weekIndex}`} className="grid grid-cols-7 divide-x divide-gray-100">
                             {week.map((day) => {
                                 // Formatear la fecha para buscar datos
                                 const dateStr = format(day, 'yyyy-MM-dd');
@@ -116,6 +168,10 @@ const MonthView = ({ selectedDate, onDayClick, monthData = {} }) => {
                                 
                                 // Estado efectivo considerando fechas pasadas
                                 const effectiveStatus = isPastDay ? 'past' : dayData.status;
+                                
+                                // Obtener colores para móvil según el estado
+                                const statusBgColor = getStatusBackgroundColor(effectiveStatus, isCurrentMonth);
+                                const statusBorderColor = getStatusBorderColor(effectiveStatus, isCurrentMonth);
 
                                 return (
                                     <button
@@ -124,40 +180,58 @@ const MonthView = ({ selectedDate, onDayClick, monthData = {} }) => {
                                         disabled={isPastDay}
                                         aria-label={`Ver disponibilidad para ${format(day, "d 'de' MMMM", { locale: es })}`}
                                         className={`
-                                            p-3 relative h-20 w-full text-left transition-all duration-200
-                                            ${!isCurrentMonth ? 'bg-gray-50' : 'hover:bg-gray-50'}
-                                            ${isSelectedDay ? 'ring-2 ring-inset ring-indigo-500 z-10' : ''}
+                                            p-2 sm:p-3 relative h-16 sm:h-20 w-full text-left transition-all duration-200
+                                            ${!isCurrentMonth ? 'bg-gray-50' : 'hover:bg-blue-50 hover:shadow-inner'}
+                                            ${isSelectedDay ? 'ring-2 ring-inset ring-indigo-500 z-10 shadow-inner' : ''}
                                             ${isToday ? 'bg-indigo-50' : ''}
-                                            ${isPastDay ? 'cursor-not-allowed' : 'cursor-pointer focus:z-10'}
+                                            ${isPastDay ? 'cursor-not-allowed' : 'cursor-pointer focus:z-10 focus:outline-none focus:ring-1 focus:ring-indigo-400'}
                                         `}
                                     >
-                                        <div className="space-y-1">
-                                            {/* Número del día */}
+                                        <div className="flex flex-col h-full">
+                                            {/* Número del día - Mejorado con diseño más limpio */}
                                             <div 
                                                 className={`
-                                                    text-sm font-medium w-7 h-7 flex items-center justify-center rounded-full
+                                                    text-sm font-medium w-6 h-6 sm:w-7 sm:h-7 flex items-center justify-center rounded-full
                                                     ${!isCurrentMonth ? 'text-gray-400' : 'text-gray-900'}
-                                                    ${isToday ? 'bg-indigo-600 text-white' : ''}
+                                                    ${isToday ? 'bg-indigo-600 text-white shadow-sm' : ''}
                                                     ${isSelectedDay && !isToday ? 'bg-indigo-100' : ''}
                                                 `}
                                             >
                                                 {format(day, 'd')}
                                             </div>
                                             
-                                            {/* Información de disponibilidad */}
-                                            <div className="mt-1 flex flex-col items-center">
-                                                <StatusBadge
-                                                    status={effectiveStatus}
-                                                    interactive={false}
-                                                    dimmed={!isCurrentMonth || isPastDay}
-                                                />
+                                            {/* Información de disponibilidad - En dos versiones: desktop y móvil */}
+                                            <div className="mt-auto flex flex-col items-center justify-end">
+                                                {/* Versión desktop - Texto completo (visible en pantallas medianas o mayores) */}
+                                                <div className="hidden md:block">
+                                                    <StatusBadge
+                                                        status={effectiveStatus}
+                                                        interactive={false}
+                                                        dimmed={!isCurrentMonth || isPastDay}
+                                                    />
+                                                    
+                                                    {/* Contador de reservas (solo en desktop) */}
+                                                    {dayData.reservas_count && isCurrentMonth && !isPastDay && (
+                                                        <span className="text-xs text-gray-500 mt-1 text-center block">
+                                                            {dayData.reservas_count} {dayData.reservas_count === 1 ? 'reserva' : 'reservas'}
+                                                        </span>
+                                                    )}
+                                                </div>
                                                 
-                                                {/* Contador de reservas si está disponible */}
-                                                {dayData.reservas_count && isCurrentMonth && !isPastDay && (
-                                                    <span className="text-xs text-gray-500 mt-1">
-                                                        {dayData.reservas_count} {dayData.reservas_count === 1 ? 'reserva' : 'reservas'}
-                                                    </span>
-                                                )}
+                                                {/* Versión móvil - Solo indicador de color (visible en pantallas pequeñas) */}
+                                                <div className={`
+                                                    md:hidden w-full h-2 mt-1 rounded-full ${statusBgColor} border ${statusBorderColor}
+                                                    ${dayData.reservas_count ? 'h-3' : 'h-2'}
+                                                `}>
+                                                    {/* Si hay reservas, mostrar un pequeño indicador numérico */}
+                                                    {dayData.reservas_count > 0 && isCurrentMonth && !isPastDay && (
+                                                        <div className="flex justify-center items-center w-full h-full">
+                                                            <span className="text-[10px] font-medium">
+                                                                {dayData.reservas_count}
+                                                            </span>
+                                                        </div>
+                                                    )}
+                                                </div>
                                             </div>
                                         </div>
                                     </button>
@@ -168,17 +242,15 @@ const MonthView = ({ selectedDate, onDayClick, monthData = {} }) => {
                 </div>
             </div>
             
-            
-            
-            {/* Panel de depuración (solo visible en desarrollo) */}
+            {/* Panel de depuración (solo visible en desarrollo) - Mejorado con estilo de card */}
             {process.env.NODE_ENV === 'development' && debugInfo && (
-                <div className="p-2 mt-4 bg-blue-50 text-blue-700 rounded text-xs">
+                <div className="p-3 mt-4 bg-blue-50 text-blue-700 rounded-lg shadow-sm border border-blue-100 text-xs">
                     <details>
-                        <summary className="font-bold cursor-pointer">Información de Depuración</summary>
-                        <div className="mt-1 pl-2">
-                            <div>Fecha de consulta: {debugInfo.fecha_consulta}</div>
-                            <div>Tipo de espacio: {debugInfo.espacio_tipo}</div>
-                            <div>Datos disponibles: {debugInfo.data_count}</div>
+                        <summary className="font-bold cursor-pointer hover:text-blue-800">Información de Depuración</summary>
+                        <div className="mt-2 pl-3 border-l-2 border-blue-200">
+                            <div className="py-1">Fecha de consulta: {debugInfo.fecha_consulta}</div>
+                            <div className="py-1">Tipo de espacio: {debugInfo.espacio_tipo}</div>
+                            <div className="py-1">Datos disponibles: {debugInfo.data_count}</div>
                         </div>
                     </details>
                 </div>

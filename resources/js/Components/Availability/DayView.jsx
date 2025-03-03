@@ -3,6 +3,7 @@ import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Disclosure, Transition } from '@headlessui/react';
 import { ChevronUpIcon } from '@heroicons/react/24/outline';
+import Legend from './Legend';
 
 /**
  * Componente DayView - Muestra la disponibilidad diaria de espacios
@@ -33,10 +34,18 @@ const DayView = ({ escritorios = [], slots = [], selectedDate, tipoEspacio = 'co
     if (isCoworkingSpace && escritorios?.length > 0) {
         return (
             <div className="space-y-4">
-                {/* Título con la fecha */}
-                <h3 className="text-lg font-medium text-gray-900 capitalize">
-                    {formattedDate}
-                </h3>
+                {/* Título con fecha y leyenda en layout responsive */}
+                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-4">
+                    <h3 className="text-lg font-medium text-gray-900 capitalize py-2 px-3 bg-gray-50 rounded-lg shadow-sm border border-gray-100">
+                        {formattedDate}
+                    </h3>
+                    
+                    {/* Leyenda integrada */}
+                    <div className="bg-white p-3 border border-gray-200 rounded-lg shadow-sm sm:w-auto w-full">
+                        <h4 className="text-sm font-medium text-gray-700 mb-2">Leyenda:</h4>
+                        <Legend />
+                    </div>
+                </div>
 
                 {/* Grid mejorado con mejor espaciado y responsive */}
                 <div className="grid grid-cols-1 sm:grid-cols-1 lg:grid-cols-1 gap-6 auto-rows-start">
@@ -136,9 +145,19 @@ const DayView = ({ escritorios = [], slots = [], selectedDate, tipoEspacio = 'co
     if (!isCoworkingSpace && slots?.length > 0) {
         return (
             <div className="space-y-4">
-                <h3 className="text-lg font-medium text-gray-900 capitalize">
-                    {formattedDate}
-                </h3>
+                {/* Título con fecha y leyenda en layout responsive */}
+                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-4">
+                    <h3 className="text-lg font-medium text-gray-900 capitalize py-2 px-3 bg-gray-50 rounded-lg shadow-sm border border-gray-100">
+                        {formattedDate}
+                    </h3>
+                    
+                    {/* Leyenda integrada */}
+                    <div className="bg-white p-3 border border-gray-200 rounded-lg shadow-sm sm:w-auto w-full">
+                        <h4 className="text-sm font-medium text-gray-700 mb-2">Leyenda:</h4>
+                        <Legend />
+                    </div>
+                </div>
+                
                 {/* Lista de slots con diseño simplificado */}
                 <div className="max-w-3xl mx-auto space-y-2">
                     {slots.map((slot, index) => (

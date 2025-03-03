@@ -108,80 +108,100 @@ const CalendarContainer = ({
     const formattedDate = format(selectedDate, 'yyyy-MM-dd');
 
     return (
-        <div className="space-y-4">
-            <DateNavigator 
-                currentDate={selectedDate}
-                view={viewType}
-                onDateChange={onDateChange}
-                onPrevious={onNavigatePrevious}
-                onNext={onNavigateNext}
-                onToday={onNavigateToday}
-            />
-            
-            {/* Botones para cambiar el tipo de vista */}
-            <div className="flex justify-end space-x-2 mb-4">
-                <div className="flex bg-gray-100 p-1 rounded-lg">
-                    <button 
-                        onClick={() => handleViewChange('day')}
-                        className={`px-3 py-1 rounded-md text-sm ${
-                            viewType === 'day' 
-                                ? 'bg-white shadow text-indigo-700 font-medium' 
-                                : 'text-gray-600 hover:text-gray-800'
-                        }`}
-                        disabled={loading}
-                    >
-                        Día
-                    </button>
-                    
-                    <button 
-                        onClick={() => handleViewChange('week')}
-                        className={`px-3 py-1 rounded-md text-sm ${
-                            viewType === 'week' 
-                                ? 'bg-white shadow text-indigo-700 font-medium' 
-                                : 'text-gray-600 hover:text-gray-800'
-                        }`}
-                        disabled={loading}
-                    >
-                        Semana
-                    </button>
-                    
-                    <button 
-                        onClick={() => handleViewChange('month')}
-                        className={`px-3 py-1 rounded-md text-sm ${
-                            viewType === 'month' 
-                                ? 'bg-white shadow text-indigo-700 font-medium' 
-                                : 'text-gray-600 hover:text-gray-800'
-                        }`}
-                        disabled={loading}
-                    >
-                        Mes
-                    </button>
+        <div className="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden">
+            {/* Cabecera del calendario con acciones */}
+            <div className="border-b border-gray-100">
+                {/* DateNavigator con efectos visuales mejorados */}
+                <div className="bg-gradient-to-r from-indigo-50/50 to-blue-50/50">
+                    <DateNavigator 
+                        currentDate={selectedDate}
+                        view={viewType}
+                        onDateChange={onDateChange}
+                        onPrevious={onNavigatePrevious}
+                        onNext={onNavigateNext}
+                        onToday={onNavigateToday}
+                    />
                 </div>
                 
-                {/* Botón para refrescar datos */}
-                <button 
-                    onClick={() => onRefresh && onRefresh(true)}
-                    className={`p-2 text-gray-500 hover:text-indigo-600 rounded-md ${loading ? 'animate-spin' : ''}`}
-                    title="Refrescar datos"
-                    disabled={loading}
-                >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                        <path fillRule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clipRule="evenodd" />
-                    </svg>
-                </button>
+                {/* Barra de acciones con mejor organización */}
+                <div className="flex flex-col sm:flex-row items-center justify-between px-4 py-2 bg-white">
+                    {/* Indicador de carga */}
+                    <div className={`order-2 sm:order-1 mt-2 sm:mt-0 ${loading ? 'opacity-100' : 'opacity-0'} transition-opacity duration-200`}>
+                        <div className="flex items-center text-sm text-gray-600">
+                            <div className="mr-2 h-2 w-2 bg-indigo-500 rounded-full animate-ping"></div>
+                            <span className="text-xs">Cargando datos...</span>
+                        </div>
+                    </div>
+                    
+                    {/* Controles de vista en el lado derecho */}
+                    <div className="order-1 sm:order-2 flex items-center space-x-2">
+                        {/* Selector de vistas mejorado visualmente */}
+                        <div className="flex bg-gray-100 p-1 rounded-lg shadow-inner">
+                            <button 
+                                onClick={() => handleViewChange('day')}
+                                className={`px-3 py-1 rounded-md text-sm transition-all duration-200 ${
+                                    viewType === 'day' 
+                                        ? 'bg-white shadow text-indigo-700 font-medium' 
+                                        : 'text-gray-600 hover:text-gray-800 hover:bg-gray-200/50'
+                                }`}
+                                disabled={loading}
+                            >
+                                Día
+                            </button>
+                            
+                            <button 
+                                onClick={() => handleViewChange('week')}
+                                className={`px-3 py-1 rounded-md text-sm transition-all duration-200 ${
+                                    viewType === 'week' 
+                                        ? 'bg-white shadow text-indigo-700 font-medium' 
+                                        : 'text-gray-600 hover:text-gray-800 hover:bg-gray-200/50'
+                                }`}
+                                disabled={loading}
+                            >
+                                Semana
+                            </button>
+                            
+                            <button 
+                                onClick={() => handleViewChange('month')}
+                                className={`px-3 py-1 rounded-md text-sm transition-all duration-200 ${
+                                    viewType === 'month' 
+                                        ? 'bg-white shadow text-indigo-700 font-medium' 
+                                        : 'text-gray-600 hover:text-gray-800 hover:bg-gray-200/50'
+                                }`}
+                                disabled={loading}
+                            >
+                                Mes
+                            </button>
+                        </div>
+                        
+                        {/* Botón para refrescar datos con tooltip */}
+                        <div className="relative">
+                            <button 
+                                onClick={() => onRefresh && onRefresh(true)}
+                                className={`p-2 text-gray-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-md transition-colors ${loading ? 'animate-spin' : ''}`}
+                                title="Refrescar datos"
+                                disabled={loading}
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fillRule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clipRule="evenodd" />
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
             </div>
             
-            {/* Indicador de carga pequeño (opcional) */}
-            {loading && (
-                <div className="flex items-center justify-center text-sm text-gray-600 mb-2">
-                    <div className="mr-2 h-2 w-2 bg-indigo-500 rounded-full animate-ping"></div>
-                    Cargando datos de disponibilidad...
-                </div>
-            )}
-            
-            {/* Vista de disponibilidad actual */}
-            <div className="mt-4">
+            {/* Contenido principal del calendario */}
+            <div className="p-4 bg-white">
                 {renderAvailabilityView()}
+            </div>
+            
+            {/* Leyenda e información adicional (solo en desktop) */}
+            <div className="border-t border-gray-100 px-4 py-2 bg-gray-50 text-xs text-gray-500 hidden sm:block">
+                <div className="flex justify-between">
+                    <span>Última actualización: {format(new Date(), 'dd/MM/yyyy HH:mm')}</span>
+                    <span>ID Espacio: {espacioId} · Tipo: {tipoEspacio}</span>
+                </div>
             </div>
         </div>
     );
