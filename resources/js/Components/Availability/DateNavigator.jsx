@@ -4,15 +4,20 @@ import { format, parseISO, startOfWeek, endOfWeek, isValid } from 'date-fns';
 import { es } from 'date-fns/locale';
 
 /**
- * Componente que maneja la navegación de fechas en el calendario
- * @param {Object} props
- * @param {Date|string} props.currentDate - Fecha actual (Date o formato ISO YYYY-MM-DD)
+ * Componente DateNavigator - Maneja la navegación de fechas en el calendario
+ * 
+ * Este componente proporciona una interfaz de navegación para moverse entre diferentes
+ * fechas en el calendario. Muestra la fecha actual formateada según el tipo de vista
+ * (día, semana, mes) y botones para navegar hacia adelante, atrás o ir a hoy.
+ * 
+ * @param {Object} props - Propiedades del componente
+ * @param {Date|string} props.currentDate - Fecha actual (objeto Date o string formato ISO YYYY-MM-DD)
  * @param {string} props.view - Tipo de vista actual ('day', 'week', 'month')
  * @param {Function} props.onDateChange - Función para cambiar directamente a una fecha específica
  * @param {Function} props.onPrevious - Función para navegar a la fecha anterior
  * @param {Function} props.onNext - Función para navegar a la fecha siguiente
  * @param {Function} props.onToday - Función para navegar a la fecha actual
- * @returns {JSX.Element}
+ * @returns {JSX.Element} - Componente de navegación de fechas
  */
 export default function DateNavigator({ 
     currentDate, 
@@ -24,8 +29,6 @@ export default function DateNavigator({
 }) {
     // Parsear la fecha actual a objeto Date, manejando diferentes formatos posibles
     const date = React.useMemo(() => {
-        console.log("DateNavigator recibió fecha:", currentDate);
-        
         // Si ya es un objeto Date, usarlo directamente
         if (currentDate instanceof Date && isValid(currentDate)) {
             return currentDate;
@@ -39,7 +42,7 @@ export default function DateNavigator({
                     return parsedDate;
                 }
             } catch (error) {
-                console.error('Error al parsear fecha:', error);
+                // Silenciar error, usar fecha actual como fallback
             }
         }
         
@@ -47,7 +50,10 @@ export default function DateNavigator({
         return new Date();
     }, [currentDate]);
 
-    // Función para formatear la fecha según el tipo de vista
+    /**
+     * Formatea la fecha según el tipo de vista (día, semana o mes)
+     * @returns {string} Fecha formateada para mostrar en la interfaz
+     */
     const getFormattedDate = () => {
         try {
             switch (view) {
@@ -69,24 +75,27 @@ export default function DateNavigator({
                     return `${format(weekStart, "d 'de' MMMM", { locale: es })} - ${format(weekEnd, "d 'de' MMMM 'de' yyyy", { locale: es })}`;
                     
                 case 'month':
-                    // Formato: "Enero 2023"
+                    // Formato: "Enero de 2023"
                     return format(date, "MMMM 'de' yyyy", { locale: es });
                     
                 default:
                     return format(date, "d MMMM yyyy", { locale: es });
             }
         } catch (error) {
-            console.error('Error al formatear fecha:', error);
+            // En caso de error de formateo, mostrar mensaje genérico
             return 'Fecha no válida';
         }
     };
 
-    // Manejadores de eventos que utilizan las funciones pasadas como props
+    /**
+     * Maneja la navegación hacia la fecha anterior
+     * Usa la función proporcionada o implementa un comportamiento predeterminado
+     */
     const handlePrevious = () => {
         if (onPrevious) {
             onPrevious();
         } else {
-            // Fallback a la implementación anterior si no se proporciona onPrevious
+            // Fallback a la implementación interna si no se proporciona onPrevious
             const newDate = new Date(date);
             
             switch (view) {
@@ -105,11 +114,15 @@ export default function DateNavigator({
         }
     };
 
+    /**
+     * Maneja la navegación hacia la fecha siguiente
+     * Usa la función proporcionada o implementa un comportamiento predeterminado
+     */
     const handleNext = () => {
         if (onNext) {
             onNext();
         } else {
-            // Fallback a la implementación anterior si no se proporciona onNext
+            // Fallback a la implementación interna si no se proporciona onNext
             const newDate = new Date(date);
             
             switch (view) {
@@ -128,18 +141,24 @@ export default function DateNavigator({
         }
     };
 
+    /**
+     * Maneja la navegación hacia la fecha actual (hoy)
+     * Usa la función proporcionada o implementa un comportamiento predeterminado
+     */
     const handleToday = () => {
         if (onToday) {
             onToday();
         } else {
-            // Fallback a la implementación anterior si no se proporciona onToday
+            // Fallback a la implementación interna si no se proporciona onToday
             onDateChange(new Date());
         }
     };
 
     return (
         <div className="flex items-center justify-between mb-4 px-2 py-3 bg-white rounded-lg shadow">
+            {/* Botones de navegación */}
             <div className="flex space-x-2">
+                {/* Botón para ir a la fecha anterior */}
                 <button
                     onClick={handlePrevious}
                     className="p-2 rounded-full hover:bg-gray-100 transition-colors"
@@ -148,6 +167,7 @@ export default function DateNavigator({
                     <ChevronLeftIcon className="h-5 w-5 text-gray-600" />
                 </button>
                 
+                {/* Botón para ir a la fecha siguiente */}
                 <button
                     onClick={handleNext}
                     className="p-2 rounded-full hover:bg-gray-100 transition-colors"
@@ -156,6 +176,7 @@ export default function DateNavigator({
                     <ChevronRightIcon className="h-5 w-5 text-gray-600" />
                 </button>
                 
+                {/* Botón para ir a la fecha actual (hoy) */}
                 <button
                     onClick={handleToday}
                     className="px-3 py-1 text-sm bg-gray-100 hover:bg-gray-200 rounded-md transition-colors"
@@ -164,11 +185,13 @@ export default function DateNavigator({
                 </button>
             </div>
             
+            {/* Título con fecha formateada */}
             <h2 className="text-lg font-medium text-gray-800 capitalize">
                 {getFormattedDate()}
             </h2>
             
-            <div className="w-24">
+            {/* Espacio vacío para equilibrar el diseño en flexbox */}
+            <div className="w-24" aria-hidden="true">
                 {/* Espacio vacío para equilibrar el diseño */}
             </div>
         </div>

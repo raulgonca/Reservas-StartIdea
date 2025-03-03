@@ -2,19 +2,29 @@ import React from 'react';
 
 /**
  * Componente LoadingState - Muestra estados de carga (skeletons) para las diferentes vistas del calendario
- * @param {Object} props
+ * 
+ * Este componente renderiza diferentes esqueletos de carga según el tipo de vista que
+ * esté activa en el calendario. Proporciona feedback visual al usuario mientras se cargan
+ * los datos reales de disponibilidad, manteniendo la estructura visual general de la UI.
+ * 
+ * @param {Object} props - Propiedades del componente
  * @param {string} props.viewMode - Tipo de vista ('day', 'week', 'month')
- * @returns {JSX.Element}
+ * @returns {JSX.Element} - Componente skeleton correspondiente a la vista
  */
 const LoadingState = ({ viewMode = 'day' }) => {
-  // Skeleton para vista diaria
+  /**
+   * Componente interno que renderiza un esqueleto de carga para la vista diaria
+   * Simula una lista de slots horarios con sus estados
+   * 
+   * @returns {JSX.Element} - Esqueleto de la vista diaria
+   */
   const DaySkeleton = () => (
-    <div className="animate-pulse">
+    <div className="animate-pulse" role="status" aria-label="Cargando vista diaria">
       <div className="space-y-4">
-        {/* Encabezado del día */}
+        {/* Esqueleto del encabezado del día */}
         <div className="h-8 bg-gray-200 rounded-md w-2/3 mb-6"></div>
         
-        {/* Slots de hora - Repetir para crear efecto de lista */}
+        {/* Esqueletos de slots horarios - Repetir para crear efecto de lista */}
         {[...Array(10)].map((_, index) => (
           <div key={index} className="flex items-center space-x-4 border-b pb-3">
             <div className="h-6 bg-gray-200 rounded-md w-24"></div>
@@ -24,14 +34,20 @@ const LoadingState = ({ viewMode = 'day' }) => {
           </div>
         ))}
       </div>
+      <span className="sr-only">Cargando información de disponibilidad diaria</span>
     </div>
   );
 
-  // Skeleton para vista semanal
+  /**
+   * Componente interno que renderiza un esqueleto de carga para la vista semanal
+   * Simula los 7 días de la semana con sus estados de disponibilidad
+   * 
+   * @returns {JSX.Element} - Esqueleto de la vista semanal
+   */
   const WeekSkeleton = () => (
-    <div className="animate-pulse">
+    <div className="animate-pulse" role="status" aria-label="Cargando vista semanal">
       <div className="grid grid-cols-7 gap-2">
-        {/* Cabecera de días de la semana */}
+        {/* Esqueletos de cabeceras de días de la semana */}
         {[...Array(7)].map((_, index) => (
           <div key={`header-${index}`} className="flex flex-col items-center">
             <div className="h-5 bg-gray-200 rounded-md w-16 mb-2"></div>
@@ -39,7 +55,7 @@ const LoadingState = ({ viewMode = 'day' }) => {
           </div>
         ))}
         
-        {/* Tarjetas del día */}
+        {/* Esqueletos de tarjetas de días */}
         {[...Array(7)].map((_, index) => (
           <div key={`day-${index}`} className="bg-white rounded-lg p-3 border border-gray-100 shadow-sm h-28 flex flex-col">
             <div className="flex-1 flex items-center justify-center">
@@ -48,21 +64,27 @@ const LoadingState = ({ viewMode = 'day' }) => {
           </div>
         ))}
       </div>
+      <span className="sr-only">Cargando información de disponibilidad semanal</span>
     </div>
   );
 
-  // Skeleton para vista mensual
+  /**
+   * Componente interno que renderiza un esqueleto de carga para la vista mensual
+   * Simula una cuadrícula con todos los días del mes y sus estados
+   * 
+   * @returns {JSX.Element} - Esqueleto de la vista mensual
+   */
   const MonthSkeleton = () => (
-    <div className="animate-pulse">
+    <div className="animate-pulse" role="status" aria-label="Cargando vista mensual">
       <div className="grid grid-cols-7 gap-1">
-        {/* Nombres de los días de la semana */}
+        {/* Nombres abreviados de los días de la semana */}
         {['L', 'M', 'X', 'J', 'V', 'S', 'D'].map((day, index) => (
           <div key={`header-${index}`} className="text-center py-2 text-sm font-medium text-gray-500">
             {day}
           </div>
         ))}
         
-        {/* Días del mes (6 semanas x 7 días) */}
+        {/* Esqueletos de celdas para los días del mes (6 semanas x 7 días) */}
         {[...Array(42)].map((_, index) => (
           <div 
             key={`day-${index}`} 
@@ -73,6 +95,7 @@ const LoadingState = ({ viewMode = 'day' }) => {
           </div>
         ))}
       </div>
+      <span className="sr-only">Cargando información de disponibilidad mensual</span>
     </div>
   );
 

@@ -4,7 +4,11 @@ import { format, addDays, addWeeks, addMonths, subDays, subWeeks, subMonths } fr
 import { es } from 'date-fns/locale';
 
 /**
- * Hook personalizado para gestionar datos de disponibilidad
+ * Hook personalizado para gestionar datos de disponibilidad de espacios
+ * 
+ * Este hook maneja el estado, la navegación y la carga de datos para el calendario
+ * de disponibilidad de espacios, soportando diferentes vistas (día, semana, mes)
+ * y tipos de espacios (coworking, salas, etc).
  * 
  * @param {number|string} espacioId - ID del espacio para el cual consultar disponibilidad
  * @param {Object} options - Opciones de configuración
@@ -19,8 +23,8 @@ export const useAvailabilityData = (espacioId, options = {}) => {
   const { 
     initialDate = new Date(), 
     initialView = 'day',
-    tipoEspacio = 'common', // Parámetro para tipo de espacio
-    useCache = true // Parámetro para habilitar/deshabilitar caché
+    tipoEspacio = 'common',
+    useCache = true
   } = options;
   
   // Estados principales
@@ -40,16 +44,21 @@ export const useAvailabilityData = (espacioId, options = {}) => {
   // Referencia para cancelar peticiones anteriores
   const cancelTokenRef = useRef(null);
   
-  // Cache para almacenar respuestas previas
+  // Cache para almacenar respuestas previas y evitar peticiones repetidas
   const cacheRef = useRef({});
   
-  // Clave para identificar peticiones en caché
+  /**
+   * Genera una clave única para identificar peticiones en caché
+   * @param {Date} date - Fecha de la consulta
+   * @param {string} view - Tipo de vista (day, week, month)
+   * @returns {string} - Clave única para el caché
+   */
   const getCacheKey = useCallback((date, view) => {
     return `${espacioId}_${format(date, 'yyyy-MM-dd')}_${view}_${tipoEspacio}`;
   }, [espacioId, tipoEspacio]);
 
   /**
-   * Formatea la fecha para la API
+   * Formatea la fecha para la API en formato ISO
    * @param {Date} date - Fecha a formatear
    * @returns {string} - Fecha formateada YYYY-MM-DD
    */
@@ -58,21 +67,20 @@ export const useAvailabilityData = (espacioId, options = {}) => {
   }, []);
 
   /**
-   * Limpia la caché almacenada
+   * Limpia la caché almacenada cuando se necesita refrescar datos
    */
   const clearCache = useCallback(() => {
     cacheRef.current = {};
   }, []);
 
   /**
-   * Procesa los datos según el tipo de espacio y vista
+   * Procesa los datos según el tipo de espacio y vista actual
+   * Normaliza la respuesta de la API para mantener una estructura consistente
+   * 
    * @param {Object} responseData - Datos recibidos de la API
    * @returns {Object} - Datos procesados en formato unificado
    */
   const processDataByTipoEspacio = useCallback((responseData) => {
-    // Log para debugging
-    console.log('Raw API response:', responseData);
-    
     // Si no hay datos, devolver estructura base
     if (!responseData) return {
       escritorios: [],
@@ -128,14 +136,12 @@ export const useAvailabilityData = (espacioId, options = {}) => {
         break;
     }
     
-    // Log de datos procesados para debugging
-    console.log('Processed data:', processedData);
-    
     return processedData;
   }, [viewMode, tipoEspacio]);
 
   /**
-   * Función principal para cargar datos de disponibilidad
+   * Función principal para cargar datos de disponibilidad desde la API
+   * Gestiona la carga, cancelación de peticiones previas y el cacheo
    */
   const fetchData = useCallback(async () => {
     if (!espacioId) return;
@@ -165,13 +171,6 @@ export const useAvailabilityData = (espacioId, options = {}) => {
       // Usar un endpoint unificado para todos los tipos de espacio
       const endpoint = `/v1/espacios/${espacioId}/availability`;
       
-      console.log('Fetching availability data:', {
-        endpoint,
-        fecha: formattedDate,
-        vista: viewMode,
-        tipo_espacio: tipoEspacio
-      });
-      
       const response = await axios.get(endpoint, {
         params: {
           fecha: formattedDate,
@@ -198,13 +197,8 @@ export const useAvailabilityData = (espacioId, options = {}) => {
     } catch (err) {
       // Ignorar errores de cancelación
       if (axios.isCancel(err)) {
-        console.log('Petición cancelada:', err.message);
         return;
       }
-      
-      console.error('Error al cargar disponibilidad:', err);
-      console.error('URL de la petición:', err.config?.url);
-      console.error('Parámetros:', err.config?.params);
       
       setError('Error al cargar los datos de disponibilidad');
     } finally {
@@ -212,7 +206,10 @@ export const useAvailabilityData = (espacioId, options = {}) => {
     }
   }, [espacioId, selectedDate, viewMode, formatDateForAPI, getCacheKey, useCache, tipoEspacio, processDataByTipoEspacio]);
 
-  // Cargar datos cuando cambie la fecha, vista o el ID del espacio
+  /**
+   * Efecto para cargar datos cuando cambie la fecha, vista o el ID del espacio
+   * También maneja la limpieza de peticiones pendientes al desmontar
+   */
   useEffect(() => {
     fetchData();
     
@@ -233,14 +230,12 @@ export const useAvailabilityData = (espacioId, options = {}) => {
   }, []);
 
   /**
-   * Cambiar el modo de visualización
+   * Cambiar el modo de visualización (día, semana, mes)
    * @param {string} mode - Modo de vista (day, week, month)
    */
   const changeViewMode = useCallback((mode) => {
     if (['day', 'week', 'month'].includes(mode)) {
       setViewMode(mode);
-    } else {
-      console.warn(`Modo de vista no válido: ${mode}. Usar 'day', 'week', o 'month'`);
     }
   }, []);
 
@@ -288,7 +283,7 @@ export const useAvailabilityData = (espacioId, options = {}) => {
   }, []);
 
   /**
-   * Cambiar fecha y vista al mismo tiempo
+   * Cambiar fecha y vista al mismo tiempo (operación combinada)
    * @param {Date|string} date - Nueva fecha
    * @param {string} view - Nuevo modo de vista
    */
@@ -301,6 +296,7 @@ export const useAvailabilityData = (espacioId, options = {}) => {
 
   /**
    * Refrescar los datos de disponibilidad manualmente
+   * Útil para actualizar datos después de crear o modificar reservas
    * @param {boolean} bypassCache - Si debe ignorar la caché
    */
   const refreshData = useCallback((bypassCache = true) => {

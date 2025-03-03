@@ -8,7 +8,6 @@ import {
     endOfWeek,
     isSameMonth,
     isSameDay,
-    isAfter,
     isBefore,
     startOfDay,
     isWithinInterval
@@ -19,11 +18,17 @@ import Legend from './Legend';
 
 /**
  * Componente MonthView - Muestra el calendario mensual con estados de disponibilidad
- * @param {Object} props
- * @param {Date} props.selectedDate - Fecha seleccionada
+ * 
+ * Este componente renderiza una vista mensual completa del calendario, mostrando
+ * todos los días del mes seleccionado y su estado de disponibilidad. Incluye
+ * información visual diferenciada para días del mes actual, días de otros meses,
+ * fechas pasadas y el día de hoy.
+ * 
+ * @param {Object} props - Propiedades del componente
+ * @param {Date} props.selectedDate - Fecha seleccionada que determina el mes a mostrar
  * @param {Function} props.onDayClick - Función a ejecutar al hacer clic en un día
- * @param {Object} props.monthData - Datos de disponibilidad del mes
- * @returns {JSX.Element}
+ * @param {Object} props.monthData - Datos de disponibilidad indexados por fecha YYYY-MM-DD
+ * @returns {JSX.Element} - Componente de visualización mensual
  */
 const MonthView = ({ selectedDate, onDayClick, monthData = {} }) => {
     // Fecha actual para comparar días pasados
@@ -33,13 +38,13 @@ const MonthView = ({ selectedDate, onDayClick, monthData = {} }) => {
     const monthStart = startOfMonth(selectedDate);
     const monthEnd = endOfMonth(selectedDate);
 
-    // Obtener todos los días que se mostrarán en el calendario
+    // Obtener todos los días que se mostrarán en el calendario (incluyendo días de meses adyacentes)
     const calendarDays = eachDayOfInterval({
         start: startOfWeek(monthStart, { weekStartsOn: 1 }), // Semana empieza el lunes (1)
         end: endOfWeek(monthEnd, { weekStartsOn: 1 })
     });
 
-    // Agrupar los días en semanas
+    // Agrupar los días en semanas para estructura de cuadrícula
     const weeks = [];
     let week = [];
 
@@ -51,11 +56,8 @@ const MonthView = ({ selectedDate, onDayClick, monthData = {} }) => {
         }
     });
 
-    // Verificar si tenemos datos disponibles
+    // Verificar si tenemos datos disponibles para mostrar
     const hasData = monthData && Object.keys(monthData).length > 0;
-    
-    // Información de depuración si está disponible
-    const debugInfo = monthData?.debug || null;
     
     // Rango del mes seleccionado para verificar días fuera del mes
     const monthRange = {
@@ -63,7 +65,12 @@ const MonthView = ({ selectedDate, onDayClick, monthData = {} }) => {
         end: monthEnd
     };
     
-    // Función para obtener el color de fondo según el estado
+    /**
+     * Obtiene la clase de color de fondo según el estado de disponibilidad
+     * @param {string} status - Estado de disponibilidad ('free', 'partial', etc.)
+     * @param {boolean} isCurrentMonth - Si el día pertenece al mes actual
+     * @returns {string} - Clase CSS de Tailwind para el color de fondo
+     */
     const getStatusBackgroundColor = (status, isCurrentMonth) => {
         // Para días fuera del mes actual, usar un tono más claro
         const opacity = isCurrentMonth ? '' : '/30';
@@ -83,7 +90,12 @@ const MonthView = ({ selectedDate, onDayClick, monthData = {} }) => {
         }
     };
     
-    // Función para obtener el color de borde según el estado
+    /**
+     * Obtiene la clase de color de borde según el estado de disponibilidad
+     * @param {string} status - Estado de disponibilidad ('free', 'partial', etc.)
+     * @param {boolean} isCurrentMonth - Si el día pertenece al mes actual
+     * @returns {string} - Clase CSS de Tailwind para el color de borde
+     */
     const getStatusBorderColor = (status, isCurrentMonth) => {
         // Para días fuera del mes actual, usar un borde más claro
         const opacity = isCurrentMonth ? '' : '/50';
@@ -105,19 +117,19 @@ const MonthView = ({ selectedDate, onDayClick, monthData = {} }) => {
 
     return (
         <div className="space-y-4">
-            {/* Encabezado del mes y leyenda en flex para pantallas medianas o mayores */}
+            {/* Encabezado del mes y leyenda con layout responsive */}
             <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
                 <h3 className="text-xl font-semibold text-gray-800 capitalize py-2 px-3 bg-gray-50 rounded-lg shadow-sm border border-gray-100">
                     {format(selectedDate, "MMMM 'de' yyyy", { locale: es })}
                 </h3>
                 
-                {/* Usando el componente Legend existente */}
+                {/* Leyenda de estados de disponibilidad */}
                 <div className="bg-white p-3 border border-gray-200 rounded-lg shadow-sm sm:w-auto w-full">
                     <Legend />
                 </div>
             </div>
 
-            {/* Mostrar advertencia si no hay datos - Mejorado con iconografía y contraste */}
+            {/* Mensaje de advertencia cuando no hay datos disponibles */}
             {!hasData && (
                 <div className="p-4 bg-yellow-50 border-l-4 border-yellow-400 rounded-lg flex items-center mb-4 shadow-sm">
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-yellow-500 mr-3 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -129,9 +141,9 @@ const MonthView = ({ selectedDate, onDayClick, monthData = {} }) => {
                 </div>
             )}
 
-            {/* Calendario mejorado con mejor separación, sombras y bordes redondeados */}
+            {/* Calendario con estructura de cuadrícula */}
             <div className="rounded-xl overflow-hidden border border-gray-200 bg-white shadow-md">    
-                {/* Cabecera con los días de la semana - Mejorada con mejor contraste y responsividad */}
+                {/* Cabecera con nombres de los días de la semana */}
                 <div className="grid grid-cols-7 bg-gradient-to-r from-indigo-50 to-blue-50 border-b border-gray-200">
                     {['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'].map((dayName, index) => (
                         <div
@@ -139,9 +151,11 @@ const MonthView = ({ selectedDate, onDayClick, monthData = {} }) => {
                             className={`py-3 text-center border-r border-gray-100 
                                       ${index === 6 ? 'border-r-0' : ''}`}
                         >
+                            {/* Nombre completo en pantallas medianas o mayores */}
                             <span className="text-sm font-semibold text-gray-700 hidden sm:inline">
                                 {dayName}
                             </span>
+                            {/* Inicial en pantallas pequeñas */}
                             <span className="text-xs font-semibold text-gray-700 sm:hidden">
                                 {dayName.substring(0, 1)}
                             </span>
@@ -149,27 +163,27 @@ const MonthView = ({ selectedDate, onDayClick, monthData = {} }) => {
                     ))}
                 </div>
 
-                {/* Cuadrícula de semanas - Mejorada con espacio y responsividad */}
+                {/* Cuadrícula con las semanas y días del mes */}
                 <div className="divide-y divide-gray-200">
                     {weeks.map((week, weekIndex) => (
                         <div key={`week-${weekIndex}`} className="grid grid-cols-7 divide-x divide-gray-100">
                             {week.map((day) => {
-                                // Formatear la fecha para buscar datos
+                                // Formatear la fecha para buscar datos en el objeto monthData
                                 const dateStr = format(day, 'yyyy-MM-dd');
                                 
-                                // Obtener datos de disponibilidad para este día
+                                // Obtener datos de disponibilidad para este día (o usar valor predeterminado)
                                 const dayData = monthData[dateStr] || { status: 'unavailable' };
                                 
-                                // Determinar varios estados del día
+                                // Determinar varios estados visuales del día
                                 const isCurrentMonth = isWithinInterval(day, monthRange);
                                 const isSelectedDay = isSameDay(day, selectedDate);
                                 const isToday = isSameDay(day, today);
                                 const isPastDay = isBefore(day, today) && !isToday;
                                 
-                                // Estado efectivo considerando fechas pasadas
+                                // Estado efectivo considerando fechas pasadas (prioridad al estado "past")
                                 const effectiveStatus = isPastDay ? 'past' : dayData.status;
                                 
-                                // Obtener colores para móvil según el estado
+                                // Obtener clases CSS para visualización en móvil
                                 const statusBgColor = getStatusBackgroundColor(effectiveStatus, isCurrentMonth);
                                 const statusBorderColor = getStatusBorderColor(effectiveStatus, isCurrentMonth);
 
@@ -177,7 +191,7 @@ const MonthView = ({ selectedDate, onDayClick, monthData = {} }) => {
                                     <button
                                         key={dateStr}
                                         onClick={() => onDayClick(day)}
-                                        disabled={isPastDay}
+                                        disabled={isPastDay} // Deshabilitar interacción para fechas pasadas
                                         aria-label={`Ver disponibilidad para ${format(day, "d 'de' MMMM", { locale: es })}`}
                                         className={`
                                             p-2 sm:p-3 relative h-16 sm:h-20 w-full text-left transition-all duration-200
@@ -188,7 +202,7 @@ const MonthView = ({ selectedDate, onDayClick, monthData = {} }) => {
                                         `}
                                     >
                                         <div className="flex flex-col h-full">
-                                            {/* Número del día - Mejorado con diseño más limpio */}
+                                            {/* Número del día con diseño especial para día actual y seleccionado */}
                                             <div 
                                                 className={`
                                                     text-sm font-medium w-6 h-6 sm:w-7 sm:h-7 flex items-center justify-center rounded-full
@@ -200,9 +214,9 @@ const MonthView = ({ selectedDate, onDayClick, monthData = {} }) => {
                                                 {format(day, 'd')}
                                             </div>
                                             
-                                            {/* Información de disponibilidad - En dos versiones: desktop y móvil */}
+                                            {/* Información de disponibilidad con diseño responsive */}
                                             <div className="mt-auto flex flex-col items-center justify-end">
-                                                {/* Versión desktop - Texto completo (visible en pantallas medianas o mayores) */}
+                                                {/* Versión desktop - Badge con texto completo */}
                                                 <div className="hidden md:block">
                                                     <StatusBadge
                                                         status={effectiveStatus}
@@ -210,7 +224,7 @@ const MonthView = ({ selectedDate, onDayClick, monthData = {} }) => {
                                                         dimmed={!isCurrentMonth || isPastDay}
                                                     />
                                                     
-                                                    {/* Contador de reservas (solo en desktop) */}
+                                                    {/* Contador de reservas en desktop */}
                                                     {dayData.reservas_count && isCurrentMonth && !isPastDay && (
                                                         <span className="text-xs text-gray-500 mt-1 text-center block">
                                                             {dayData.reservas_count} {dayData.reservas_count === 1 ? 'reserva' : 'reservas'}
@@ -218,12 +232,12 @@ const MonthView = ({ selectedDate, onDayClick, monthData = {} }) => {
                                                     )}
                                                 </div>
                                                 
-                                                {/* Versión móvil - Solo indicador de color (visible en pantallas pequeñas) */}
+                                                {/* Versión móvil - Indicador de color minimalista */}
                                                 <div className={`
                                                     md:hidden w-full h-2 mt-1 rounded-full ${statusBgColor} border ${statusBorderColor}
                                                     ${dayData.reservas_count ? 'h-3' : 'h-2'}
                                                 `}>
-                                                    {/* Si hay reservas, mostrar un pequeño indicador numérico */}
+                                                    {/* Número de reservas compacto para móvil */}
                                                     {dayData.reservas_count > 0 && isCurrentMonth && !isPastDay && (
                                                         <div className="flex justify-center items-center w-full h-full">
                                                             <span className="text-[10px] font-medium">
@@ -241,20 +255,6 @@ const MonthView = ({ selectedDate, onDayClick, monthData = {} }) => {
                     ))}
                 </div>
             </div>
-            
-            {/* Panel de depuración (solo visible en desarrollo) - Mejorado con estilo de card */}
-            {process.env.NODE_ENV === 'development' && debugInfo && (
-                <div className="p-3 mt-4 bg-blue-50 text-blue-700 rounded-lg shadow-sm border border-blue-100 text-xs">
-                    <details>
-                        <summary className="font-bold cursor-pointer hover:text-blue-800">Información de Depuración</summary>
-                        <div className="mt-2 pl-3 border-l-2 border-blue-200">
-                            <div className="py-1">Fecha de consulta: {debugInfo.fecha_consulta}</div>
-                            <div className="py-1">Tipo de espacio: {debugInfo.espacio_tipo}</div>
-                            <div className="py-1">Datos disponibles: {debugInfo.data_count}</div>
-                        </div>
-                    </details>
-                </div>
-            )}
         </div>
     );
 };
