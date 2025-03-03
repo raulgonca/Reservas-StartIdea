@@ -34,16 +34,6 @@ const SpaceAvailability = ({ space }) => {
         useCache: true // Habilitar caché para mejorar rendimiento
     });
 
-    // Estado de carga - muestra un skeleton
-    if (loading && Object.keys(data.escritorios).length === 0) {
-        return (
-            <div className="animate-pulse space-y-4">
-                <div className="h-8 bg-gray-200 rounded w-1/4"></div>
-                <div className="h-64 bg-gray-200 rounded"></div>
-            </div>
-        );
-    }
-
     // Estado de error - muestra mensaje y botón para reintentar
     if (error) {
         return (
@@ -91,6 +81,9 @@ const SpaceAvailability = ({ space }) => {
                     
                     // Función para actualizar datos
                     onRefresh={refreshData}
+                    
+                    // IMPORTANTE: Pasar el estado de carga al CalendarContainer
+                    loading={loading}
                 />
             </div>
         </div>
