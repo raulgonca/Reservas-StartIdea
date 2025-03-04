@@ -10,4 +10,18 @@ export default defineConfig({
         }),
         react(),
     ],
+    // Configuración del servidor de desarrollo
+    server: {
+        // Configuración para el sistema de monitoreo de archivos
+        watch: {
+            // Patrones de archivos/carpetas que serán ignorados por el watcher
+            // Esto evita errores EBADF con archivos multimedia grandes
+            ignored: [
+                '**/node_modules/**',
+                '**/vendor/**',
+                '**/storage/app/public/**',  // Carpeta original de archivos
+                '**/public/storage/**'       // Enlace simbólico a archivos multimedia
+            ]
+        }
+    },
 });
