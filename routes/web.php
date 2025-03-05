@@ -60,6 +60,14 @@ Route::prefix('v1/admin')->middleware(['auth'])->group(function () {
     Route::get('/espacios/{id}/edit', [EspacioController::class, 'edit'])->name('admin.espacios.edit');
     Route::put('/espacios/{id}', [EspacioController::class, 'update'])->name('admin.espacios.update');
     Route::delete('/espacios/{id}', [EspacioController::class, 'destroy'])->name('admin.espacios.destroy');
+    
+    // Rutas para gestionar bloqueos
+    Route::get('/bloqueos', [BloqueoController::class, 'index'])->name('admin.bloqueos.index');
+    Route::get('/bloqueos/create', [BloqueoController::class, 'create'])->name('admin.bloqueos.create');
+    Route::post('/bloqueos', [BloqueoController::class, 'store'])->name('admin.bloqueos.store');
+    Route::get('/bloqueos/{bloqueo}/edit', [BloqueoController::class, 'edit'])->name('admin.bloqueos.edit');
+    Route::put('/bloqueos/{bloqueo}', [BloqueoController::class, 'update'])->name('admin.bloqueos.update');
+    Route::delete('/bloqueos/{bloqueo}', [BloqueoController::class, 'destroy'])->name('admin.bloqueos.destroy');
 });
 
 //------------------------------- SUPERADMIN ----------------------------------//
@@ -87,6 +95,14 @@ Route::prefix('v1/superadmin')->middleware(['auth'])->group(function () {
     Route::get('/espacios/{id}/edit', [EspacioController::class, 'edit'])->name('superadmin.espacios.edit');
     Route::put('/espacios/{id}', [EspacioController::class, 'update'])->name('superadmin.espacios.update');
     Route::delete('/espacios/{id}', [EspacioController::class, 'destroy'])->name('superadmin.espacios.destroy');
+    
+    // Rutas para gestionar bloqueos
+    Route::get('/bloqueos', [BloqueoController::class, 'index'])->name('superadmin.bloqueos.index');
+    Route::get('/bloqueos/create', [BloqueoController::class, 'create'])->name('superadmin.bloqueos.create');
+    Route::post('/bloqueos', [BloqueoController::class, 'store'])->name('superadmin.bloqueos.store');
+    Route::get('/bloqueos/{bloqueo}/edit', [BloqueoController::class, 'edit'])->name('superadmin.bloqueos.edit');
+    Route::put('/bloqueos/{bloqueo}', [BloqueoController::class, 'update'])->name('superadmin.bloqueos.update');
+    Route::delete('/bloqueos/{bloqueo}', [BloqueoController::class, 'destroy'])->name('superadmin.bloqueos.destroy');
 });
 
 //------------------------------- ESPACIOS PÚBLICOS ----------------------------------//
@@ -103,19 +119,6 @@ Route::prefix('v1')->group(function () {
     Route::get('/escritorios/{id}', [EscritorioController::class, 'show'])->name('escritorios.show');
 });
 
-// Añadir estas rutas de prueba
-Route::get('/test-week-availability/{id}', function ($id) {
-    $controller = new App\Http\Controllers\EspacioController();
-    $fecha = Carbon\Carbon::now();
-    $request = new Illuminate\Http\Request(['fecha' => $fecha->format('Y-m-d'), 'vista' => 'week']);
-    return $controller->getAvailability($request, $id);
-});
 
-Route::get('/test-month-availability/{id}', function ($id) {
-    $controller = new App\Http\Controllers\EspacioController();
-    $fecha = Carbon\Carbon::now();
-    $request = new Illuminate\Http\Request(['fecha' => $fecha->format('Y-m-d'), 'vista' => 'month']);
-    return $controller->getAvailability($request, $id);
-});
 
 require __DIR__ . '/auth.php';

@@ -1,7 +1,9 @@
 <?php
+// filepath: app/Services/ReservaService.php
 
 namespace App\Services;
 
+use App\Models\Bloqueo;
 use App\Models\Reserva;
 use App\Models\Espacio;
 use Carbon\Carbon;
@@ -299,6 +301,9 @@ class ReservaService
 
         // Verificar solapamientos con otras reservas
         $this->checkReservationOverlaps($data, $fechaInicio, $fechaFin, $reservaId, $espacio);
+        
+        // Verificar solapamientos con bloqueos
+        $this->checkBlockOverlaps($data, $fechaInicio, $fechaFin);
     }
 
     /**
@@ -364,6 +369,60 @@ class ReservaService
 
             throw ValidationException::withMessages([
                 'solapamiento' => "El espacio ya está reservado en los siguientes períodos:\n" . $mensajes
+            ]);
+        }
+    }
+    
+    /**
+     * Verifica solapamientos con bloqueos existentes
+     * 
+     * @param array $data Datos de la reserva
+     * @param Carbon $fechaInicio Fecha de inicio
+     * @param Carbon $fechaFin Fecha de fin
+     * @throws ValidationException Si hay solapamientos con bloqueos
+     */
+    protected function checkBlockOverlaps($data, $fechaInicio, $fechaFin)
+    {
+        $query = Bloqueo::query();
+        
+        // Verificar solapamientos por espacio
+        if (!empty($data['espacio_id'])) {
+            $query->where(function($q) use ($data) {
+                $q->where('espacio_id', $data['espacio_id'])
+                  ->orWhereNull('espacio_id');
+            });
+        }
+        
+        // Verificar solapamientos por escritorio
+        if (!empty($data['escritorio_id'])) {
+            $query->orWhere('escritorio_id', $data['escritorio_id']);
+        }
+        
+        // Verificar solapamiento temporal
+        $query->where(function ($q) use ($fechaInicio, $fechaFin) {
+            $q->whereBetween('fecha_inicio', [$fechaInicio, $fechaFin])
+                ->orWhereBetween('fecha_fin', [$fechaInicio, $fechaFin])
+                ->orWhere(function ($q) use ($fechaInicio, $fechaFin) {
+                    $q->where('fecha_inicio', '<=', $fechaInicio)
+                        ->where('fecha_fin', '>=', $fechaFin);
+                });
+        });
+        
+        $bloqueos = $query->get();
+        
+        if ($bloqueos->isNotEmpty()) {
+            $mensajes = $bloqueos->map(function ($bloqueo) {
+                return sprintf(
+                    "• %s: %s - %s (Motivo: %s)",
+                    Carbon::parse($bloqueo->fecha_inicio)->format('d/m/Y'),
+                    Carbon::parse($bloqueo->fecha_inicio)->format('H:i'),
+                    Carbon::parse($bloqueo->fecha_fin)->format('H:i'),
+                    $bloqueo->motivo
+                );
+            })->join("\n");
+            
+            throw ValidationException::withMessages([
+                'bloqueo' => "El espacio o escritorio está bloqueado en los siguientes períodos:\n" . $mensajes
             ]);
         }
     }

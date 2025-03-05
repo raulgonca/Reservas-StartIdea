@@ -77,6 +77,21 @@ export default function AuthenticatedLayout({ header, children }) {
                                             // Otros enlaces relacionados con espacios
                                         ]}
                                     />
+                                    <DropdownMenu
+                                        title="Bloqueos"
+                                        links={[
+                                            {
+                                                href: route("admin.bloqueos.create"),
+                                                label: "Crear Bloqueo",
+                                                active: route().current("admin.bloqueos.create"),
+                                            },
+                                            {
+                                                href: route("admin.bloqueos.index"),
+                                                label: "Listar Bloqueos",
+                                                active: route().current("admin.bloqueos.index"),
+                                            },
+                                        ]}
+                                    />
                                     {/* Otros menús específicos para administradores */}
                                 </>
                             )}
@@ -128,6 +143,21 @@ export default function AuthenticatedLayout({ header, children }) {
                                                 active: route().current("superadmin.espacios.index"),
                                             },
                                             // Otros enlaces relacionados con espacios
+                                        ]}
+                                    />
+                                    <DropdownMenu
+                                        title="Bloqueos"
+                                        links={[
+                                            {
+                                                href: route("superadmin.bloqueos.create"),
+                                                label: "Crear Bloqueo",
+                                                active: route().current("superadmin.bloqueos.create"),
+                                            },
+                                            {
+                                                href: route("superadmin.bloqueos.index"),
+                                                label: "Listar Bloqueos",
+                                                active: route().current("superadmin.bloqueos.index"),
+                                            },
                                         ]}
                                     />
                                     {/* Otros menús específicos para superadministradores */}
@@ -260,7 +290,6 @@ export default function AuthenticatedLayout({ header, children }) {
                                             label: "Listar Reservas",
                                             active: route().current("admin.reservas.index"),
                                         },
-                                        // Otros enlaces relacionados con reservas
                                     ]}
                                 />
                                 <DropdownMenu
@@ -276,10 +305,23 @@ export default function AuthenticatedLayout({ header, children }) {
                                             label: "Listar Espacios",
                                             active: route().current("admin.espacios.index"),
                                         },
-                                        // Otros enlaces relacionados con espacios
                                     ]}
                                 />
-                                {/* Otros menús específicos para administradores */}
+                                <DropdownMenu
+                                    title="Bloqueos"
+                                    links={[
+                                        {
+                                            href: route("admin.bloqueos.create"),
+                                            label: "Crear Bloqueo",
+                                            active: route().current("admin.bloqueos.create"),
+                                        },
+                                        {
+                                            href: route("admin.bloqueos.index"),
+                                            label: "Listar Bloqueos",
+                                            active: route().current("admin.bloqueos.index"),
+                                        },
+                                    ]}
+                                />
                             </>
                         )}
                         {user.role === "superadmin" && (
@@ -297,7 +339,6 @@ export default function AuthenticatedLayout({ header, children }) {
                                             label: "Listar Reservas",
                                             active: route().current("superadmin.reservas.index"),
                                         },
-                                        // Otros enlaces relacionados con reservas
                                     ]}
                                 />
                                 <DropdownMenu
@@ -313,7 +354,6 @@ export default function AuthenticatedLayout({ header, children }) {
                                             label: "Listar Usuarios",
                                             active: route().current("superadmin.users.index"),
                                         },
-                                        // Otros enlaces relacionados con usuarios
                                     ]}
                                 />
                                 <DropdownMenu
@@ -329,10 +369,23 @@ export default function AuthenticatedLayout({ header, children }) {
                                             label: "Listar Espacios",
                                             active: route().current("superadmin.espacios.index"),
                                         },
-                                        // Otros enlaces relacionados con espacios
                                     ]}
                                 />
-                                {/* Otros menús específicos para superadministradores */}
+                                <DropdownMenu
+                                    title="Bloqueos"
+                                    links={[
+                                        {
+                                            href: route("superadmin.bloqueos.create"),
+                                            label: "Crear Bloqueo",
+                                            active: route().current("superadmin.bloqueos.create"),
+                                        },
+                                        {
+                                            href: route("superadmin.bloqueos.index"),
+                                            label: "Listar Bloqueos",
+                                            active: route().current("superadmin.bloqueos.index"),
+                                        },
+                                    ]}
+                                />
                             </>
                         )}
                         {user.role === "user" && (
@@ -349,7 +402,6 @@ export default function AuthenticatedLayout({ header, children }) {
                                         label: "Listar Mis Reservas",
                                         active: route().current("user.reservas.index"),
                                     },
-                                    // Otros enlaces relacionados con reservas
                                 ]}
                             />
                         )}
