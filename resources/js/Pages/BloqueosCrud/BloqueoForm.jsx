@@ -139,7 +139,7 @@ export default function BloqueoForm({ bloqueo = null, espacios = [], escritorios
 
     return (
         <div className="py-12">
-            <h2 className="text-2xl font-semibold mb-6 text-gray-800 dark:text-gray-200">{isEditing ? 'Editar Bloqueo' : 'Crear Bloqueo'}</h2>
+            <h2 className="text-4xl font-bold mb-10 text-indigo-700 text-center">{isEditing ? 'Editar Bloqueo' : 'Crear Bloqueo'}</h2>
             
             {/* Layout de dos columnas para pantallas medianas y grandes */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
