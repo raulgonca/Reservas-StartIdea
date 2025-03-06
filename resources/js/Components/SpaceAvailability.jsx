@@ -59,9 +59,9 @@ const SpaceAvailability = ({ space }) => {
     }
 
     return (
-        <div className="space-y-6">
+        <div >
             {/* Título de la sección */}
-            <h2 className="text-2xl font-semibold text-gray-800">
+            <h2 className="text-2xl font-semibold text-gray-800 dark:text-gray-600 text-center mb-4">
                 Disponibilidad
             </h2>
             
