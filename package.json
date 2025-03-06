@@ -25,6 +25,6 @@
         "date-fns": "^4.1.0",
         "framer-motion": "^12.4.4",
         "react-icons": "^5.5.0",
-        "react-toastify": "^11.0.3"
+        "react-toastify": "^9.1.3"
     }
 }

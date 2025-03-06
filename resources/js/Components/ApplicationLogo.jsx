@@ -17,18 +17,7 @@ export default function ApplicationLogo(props) {
                     className="h-14 w-18"
                 />
             </div>
-            <div 
-                onClick={() => handleClick('https://startidea.es/')}
-                className="hover:opacity-80 transition-opacity cursor-pointer"
-                role="link"
-                tabIndex={0}
-            >
-                <img
-                    src="/images/Agencia.png"
-                    alt="Logo Start Idea"
-                    className="h-20 w-20"
-                />
-            </div>
+            
         </div>
     );
 }

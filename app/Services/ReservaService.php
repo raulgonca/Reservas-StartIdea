@@ -335,6 +335,13 @@ class ReservaService
      */
     protected function checkReservationOverlaps($data, $fechaInicio, $fechaFin, $reservaId, $espacio)
     {
+        Log::debug('Iniciando verificación de solapamientos', [
+            'espacio_id' => $data['espacio_id'],
+            'fecha_inicio' => $fechaInicio,
+            'fecha_fin' => $fechaFin,
+            'tipo_reserva' => $data['tipo_reserva']
+        ]);
+
         $query = Reserva::where('espacio_id', $data['espacio_id'])
             ->where('estado', 'confirmada')
             ->where('id', '!=', $reservaId);
@@ -343,34 +350,74 @@ class ReservaService
             $query->where('escritorio_id', $data['escritorio_id']);
         }
 
-        $query->where(function ($q) use ($fechaInicio, $fechaFin) {
-            $q->whereBetween('fecha_inicio', [$fechaInicio, $fechaFin])
-                ->orWhereBetween('fecha_fin', [$fechaInicio, $fechaFin])
-                ->orWhere(function ($q) use ($fechaInicio, $fechaFin) {
-                    $q->where('fecha_inicio', '<=', $fechaInicio)
-                        ->where('fecha_fin', '>=', $fechaFin);
+        // Mejorada la lógica de verificación temporal considerando tipos de reserva
+        $query->where(function ($q) use ($fechaInicio, $fechaFin, $data) {
+            // Para reservas de día completo, semana o mes
+            if (in_array($data['tipo_reserva'], ['dia_completo', 'semana', 'mes'])) {
+                $q->where(function ($q1) use ($fechaInicio, $fechaFin) {
+                    $q1->whereDate('fecha_inicio', '<=', $fechaFin->format('Y-m-d'))
+                       ->whereDate('fecha_fin', '>=', $fechaInicio->format('Y-m-d'));
                 });
+            } else {
+                // Para reservas por hora o medio día, verificar también las horas
+                $q->where(function ($q1) use ($fechaInicio, $fechaFin) {
+                    $q1->where(function ($q2) use ($fechaInicio, $fechaFin) {
+                        // La nueva reserva está dentro de una existente
+                        $q2->where('fecha_inicio', '<=', $fechaInicio)
+                           ->where('fecha_fin', '>=', $fechaFin);
+                    })->orWhere(function ($q2) use ($fechaInicio, $fechaFin) {
+                        // La nueva reserva contiene a una existente
+                        $q2->where('fecha_inicio', '>=', $fechaInicio)
+                           ->where('fecha_fin', '<=', $fechaFin);
+                    })->orWhere(function ($q2) use ($fechaInicio, $fechaFin) {
+                        // Solapamiento parcial
+                        $q2->where('fecha_inicio', '<', $fechaFin)
+                           ->where('fecha_fin', '>', $fechaInicio);
+                    });
+                });
+            }
         });
 
         $solapamientos = $query->get();
-
+        
         if ($solapamientos->isNotEmpty()) {
-            $mensajes = $solapamientos->map(function ($reserva) use ($espacio) {
-                return sprintf(
-                    "• %s: %s - %s (%s)%s",
-                    Carbon::parse($reserva->fecha_inicio)->format('d/m/Y'),
-                    Carbon::parse($reserva->fecha_inicio)->format('H:i'),
-                    Carbon::parse($reserva->fecha_fin)->format('H:i'),
-                    ucfirst($reserva->tipo_reserva),
-                    ($espacio->tipo === 'coworking' && $reserva->escritorio_id) ?
-                        " - Escritorio: {$reserva->escritorio->nombre}" : ""
-                );
-            })->join("\n");
-
+            Log::warning('Se encontraron solapamientos', [
+                'cantidad' => $solapamientos->count(),
+                'solapamientos' => $solapamientos->map->only(['id', 'fecha_inicio', 'fecha_fin', 'tipo_reserva'])
+            ]);
+            
             throw ValidationException::withMessages([
-                'solapamiento' => "El espacio ya está reservado en los siguientes períodos:\n" . $mensajes
+                'solapamiento' => $this->formatSolapamientosMessage($solapamientos, $espacio)
             ]);
         }
+    }
+
+    protected function formatSolapamientosMessage($solapamientos, $espacio) 
+    {
+        return "El espacio ya está reservado en los siguientes períodos:\n" . 
+            $solapamientos->map(function ($reserva) use ($espacio) {
+                $fecha = Carbon::parse($reserva->fecha_inicio)->format('d/m/Y');
+                $horario = '';
+                
+                if (in_array($reserva->tipo_reserva, ['hora', 'medio_dia'])) {
+                    $horario = sprintf(" de %s a %s",
+                        Carbon::parse($reserva->fecha_inicio)->format('H:i'),
+                        Carbon::parse($reserva->fecha_fin)->format('H:i')
+                    );
+                }
+                
+                $escritorioInfo = '';
+                if ($espacio->tipo === 'coworking' && $reserva->escritorio_id) {
+                    $escritorioInfo = " - Escritorio: {$reserva->escritorio->numero}";
+                }
+                
+                return sprintf("• %s%s (%s)%s",
+                    $fecha,
+                    $horario,
+                    ucfirst($reserva->tipo_reserva),
+                    $escritorioInfo
+                );
+            })->join("\n");
     }
     
     /**

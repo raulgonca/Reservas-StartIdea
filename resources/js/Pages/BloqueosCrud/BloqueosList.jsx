@@ -1,112 +1,117 @@
-import React, { useState, useMemo } from 'react';
-import { Head, Link, usePage } from '@inertiajs/react';
-import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import TextInput from '@/Components/TextInput';
-import PrimaryButton from '@/Components/PrimaryButton';
-import SecondaryButton from '@/Components/SecondaryButton';
-import DangerButton from '@/Components/DangerButton';
-import Modal from '@/Components/Modal';
-import InputLabel from '@/Components/InputLabel';
-import SelectInput from '@/Components/SelectInput';
-import { format } from 'date-fns';
-import { es } from 'date-fns/locale';
-import axios from 'axios';
+import React, { useState, useEffect, useMemo } from "react";
+import { Head, usePage, router, Link } from "@inertiajs/react";
+import { toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
+import SelectInput from "@/Components/SelectInput";
+import TextInput from "@/Components/TextInput";
+import InputLabel from "@/Components/InputLabel";
+import PrimaryButton from "@/Components/PrimaryButton";
+import BloqueosTable from "@/Components/BloqueosTable";
+import ConfirmDeleteBloqueo from "@/Components/ConfirmDeleteBloqueo";
 
 export default function BloqueosList({ bloqueos }) {
-    const { auth } = usePage().props;
-    const [searchTerm, setSearchTerm] = useState('');
-    const [showDeleteModal, setShowDeleteModal] = useState(false);
-    const [bloqueoToDelete, setBloqueoToDelete] = useState(null);
-    const [filterType, setFilterType] = useState('all');
-    const [startDate, setStartDate] = useState('');
-    const [endDate, setEndDate] = useState('');
+    const { auth, flash, errors } = usePage().props;
+    const [filter, setFilter] = useState("all");
+    const [search, setSearch] = useState("");
+    const [startDate, setStartDate] = useState("");
+    const [endDate, setEndDate] = useState("");
+    const [selectedBloqueo, setSelectedBloqueo] = useState(null);
+    const [showConfirmDelete, setShowConfirmDelete] = useState(false);
 
-    // Lógica de filtrado - mantener igual
-    const filteredBloqueos = useMemo(() => {
-        if (filterType === 'all' && !searchTerm) return bloqueos;
+    // Manejo de mensajes flash y errores con toast - solo aquí, no en FlashMessage.jsx
+    useEffect(() => {
+        if (flash.success) {
+            toast.success(flash.success, { toastId: 'success-' + Date.now() });
+        }
         
-        return bloqueos.filter(bloqueo => {
-            // Filtrado por texto
-            if (searchTerm) {
-                const term = searchTerm.toLowerCase();
-                const matchesSearch = 
-                    (bloqueo.espacio?.nombre?.toLowerCase().includes(term)) ||
-                    (bloqueo.escritorio?.nombre?.toLowerCase().includes(term)) ||
-                    bloqueo.motivo?.toLowerCase().includes(term) ||
-                    (bloqueo.creadoPor?.name?.toLowerCase().includes(term));
-                
-                if (!matchesSearch) return false;
+        if (errors.error) {
+            toast.error(errors.error, { toastId: 'error-' + Date.now() });
+        }
+    }, [flash, errors]);
+
+    // Función para manejar el cambio de filtro
+    const handleFilterChange = (e) => {
+        setFilter(e.target.value);
+        setSearch("");
+        setStartDate("");
+        setEndDate("");
+    };
+
+    // Función para manejar la eliminación
+    const handleDelete = (bloqueo) => {
+        setSelectedBloqueo(bloqueo);
+        setShowConfirmDelete(true);
+    };
+
+    // Confirmar eliminación
+    const confirmDelete = () => {
+        const routePath = auth.user.role === 'superadmin' 
+            ? `/v1/superadmin/bloqueos/${selectedBloqueo.id}`
+            : `/v1/admin/bloqueos/${selectedBloqueo.id}`;
+        
+        router.delete(routePath, {
+            onBefore: () => {
+                toast.info("Procesando eliminación...", { 
+                    autoClose: false, 
+                    toastId: "deleting" 
+                });
+                return true;
+            },
+            onSuccess: () => {
+                setShowConfirmDelete(false);
+                setSelectedBloqueo(null);
+                toast.dismiss("deleting");
+                toast.success("Bloqueo eliminado correctamente", { 
+                    toastId: 'delete-success-' + Date.now() 
+                });
+            },
+            onError: (error) => {
+                setShowConfirmDelete(false);
+                toast.dismiss("deleting");
+                toast.error(error.message || "Error al eliminar el bloqueo", { 
+                    toastId: 'delete-error-' + Date.now() 
+                });
+            },
+        });
+    };
+
+    // Cancelar la eliminación
+    const cancelDelete = () => {
+        setShowConfirmDelete(false);
+        setSelectedBloqueo(null);
+    };
+
+    // Filtrar bloqueos según criterios seleccionados
+    const filteredBloqueos = useMemo(() => {
+        return bloqueos.filter((bloqueo) => {
+            // Filtrado por texto en todos los campos
+            if (filter === "all" && search) {
+                const term = search.toLowerCase();
+                return (bloqueo.espacio?.nombre?.toLowerCase().includes(term)) ||
+                       (bloqueo.escritorio?.numero?.toString().toLowerCase().includes(term)) ||
+                       bloqueo.motivo?.toLowerCase().includes(term) ||
+                       (bloqueo.creadoPor?.name?.toLowerCase().includes(term));
             }
             
             // Filtrado por fechas
-            if (filterType === 'date' && (startDate || endDate)) {
+            if (filter === "date") {
                 const bloqueoStart = new Date(bloqueo.fecha_inicio);
                 const bloqueoEnd = new Date(bloqueo.fecha_fin);
                 const filterStart = startDate ? new Date(startDate) : null;
                 const filterEnd = endDate ? new Date(endDate) : null;
-                
-                if (filterStart && bloqueoStart < filterStart) return false;
-                if (filterEnd && bloqueoEnd > filterEnd) return false;
+
+                return (!filterStart || bloqueoStart >= filterStart) &&
+                       (!filterEnd || bloqueoEnd <= filterEnd);
             }
             
             return true;
         });
-    }, [bloqueos, searchTerm, filterType, startDate, endDate]);
+    }, [bloqueos, filter, search, startDate, endDate]);
 
-    // Funciones de formateo de fechas
-    const formatDate = (dateString) => {
-        if (!dateString) return '';
-        const options = { 
-            day: '2-digit', 
-            month: '2-digit', 
-            year: 'numeric',
-            timeZone: 'UTC'
-        };
-        return new Date(dateString).toLocaleDateString('es-ES', options);
-    };
-
-    const formatTime = (dateString) => {
-        if (!dateString) return '';
-        const options = { 
-            hour: '2-digit', 
-            minute: '2-digit',
-            timeZone: 'UTC'
-        };
-        return new Date(dateString).toLocaleTimeString('es-ES', options);
-    };
-
-    const confirmDelete = (bloqueo) => {
-        setBloqueoToDelete(bloqueo);
-        setShowDeleteModal(true);
-    };
-
-    const handleDelete = () => {
-        if (!bloqueoToDelete) return;
-
-        const baseUrl = auth.user.role === 'superadmin' 
-            ? '/v1/superadmin/bloqueos/' 
-            : '/v1/admin/bloqueos/';
-
-        axios.delete(`${baseUrl}${bloqueoToDelete.id}`)
-            .then(() => {
-                setShowDeleteModal(false);
-                window.location.reload();
-            })
-            .catch(error => {
-                console.error('Error al eliminar el bloqueo:', error);
-                setShowDeleteModal(false);
-            });
-    };
-
+    // Función para obtener el prefijo de ruta según el rol
     const getRoutePrefix = () => {
         return auth.user.role === 'superadmin' ? '/v1/superadmin' : '/v1/admin';
-    };
-
-    const handleFilterChange = (e) => {
-        setFilterType(e.target.value);
-        setSearchTerm('');
-        setStartDate('');
-        setEndDate('');
     };
 
     return (
@@ -118,55 +123,54 @@ export default function BloqueosList({ bloqueos }) {
                     Gestión de Bloqueos
                 </h1>
 
-                {/* Panel de filtros */}
-                <div className="mb-10 mt-10 flex flex-wrap justify-around gap-4 bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md">
+                <div className="mb-10 mt-10 flex flex-wrap justify-around gap-4">
                     <div className="flex items-center space-x-2">
-                        <InputLabel htmlFor="filterType" value="Filtrar por:" className="text-gray-700 dark:text-gray-300" />
+                        <InputLabel htmlFor="filter" value="Filtrar por:" />
                         <SelectInput
-                            id="filterType"
-                            value={filterType}
+                            id="filter"
+                            value={filter}
                             onChange={handleFilterChange}
-                            className="mt-1 block w-full border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                            className="mt-1 block w-full"
                         >
                             <option value="all">Todos los campos</option>
                             <option value="date">Rango de Fecha</option>
                         </SelectInput>
                     </div>
 
-                    {filterType === 'all' && (
+                    {filter === "all" && (
                         <div className="flex items-center space-x-2">
-                            <InputLabel htmlFor="search" value="Buscar:" className="text-gray-700 dark:text-gray-300" />
+                            <InputLabel htmlFor="search" value="Buscar:" />
                             <TextInput
                                 id="search"
                                 type="text"
                                 placeholder="Buscar por espacio, escritorio, motivo..."
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                                className="mt-1 block w-full border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                                value={search}
+                                onChange={(e) => setSearch(e.target.value)}
+                                className="mt-1 block w-full"
                             />
                         </div>
                     )}
 
-                    {filterType === 'date' && (
+                    {filter === "date" && (
                         <>
                             <div className="flex items-center space-x-2">
-                                <InputLabel htmlFor="startDate" value="Fecha Inicio:" className="text-gray-700 dark:text-gray-300" />
+                                <InputLabel htmlFor="startDate" value="Fecha Inicio:" />
                                 <TextInput
                                     id="startDate"
                                     type="date"
                                     value={startDate}
                                     onChange={(e) => setStartDate(e.target.value)}
-                                    className="mt-1 block w-full border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                                    className="mt-1 block w-full"
                                 />
                             </div>
                             <div className="flex items-center space-x-2">
-                                <InputLabel htmlFor="endDate" value="Fecha Fin:" className="text-gray-700 dark:text-gray-300" />
+                                <InputLabel htmlFor="endDate" value="Fecha Fin:" />
                                 <TextInput
                                     id="endDate"
                                     type="date"
                                     value={endDate}
                                     onChange={(e) => setEndDate(e.target.value)}
-                                    className="mt-1 block w-full border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                                    className="mt-1 block w-full"
                                 />
                             </div>
                         </>
@@ -186,102 +190,20 @@ export default function BloqueosList({ bloqueos }) {
                     </div>
                 </div>
 
-                {/* Tabla de bloqueos */}
-                <div className="w-full overflow-hidden mt-6">
-                    <div className="w-full overflow-x-auto">
-                        <table className="w-full table-auto bg-white dark:bg-gray-800 shadow-md rounded-lg overflow-hidden">
-                            <thead className="bg-gray-200 dark:bg-gray-700">
-                                <tr>
-                                    <th className="py-3 px-2 text-left text-xs font-medium text-gray-700 dark:text-gray-300 w-14">ID</th>
-                                    <th className="py-3 px-2 text-left text-xs font-medium text-gray-700 dark:text-gray-300">Espacio</th>
-                                    <th className="py-3 px-2 text-left text-xs font-medium text-gray-700 dark:text-gray-300">Escritorio</th>
-                                    <th className="py-3 px-2 text-left text-xs font-medium text-gray-700 dark:text-gray-300 w-24">F. Inicio</th>
-                                    <th className="py-3 px-2 text-left text-xs font-medium text-gray-700 dark:text-gray-300 w-20">H. Inicio</th>
-                                    <th className="py-3 px-2 text-left text-xs font-medium text-gray-700 dark:text-gray-300 w-24">F. Fin</th>
-                                    <th className="py-3 px-2 text-left text-xs font-medium text-gray-700 dark:text-gray-300 w-20">H. Fin</th>
-                                    <th className="py-3 px-2 text-left text-xs font-medium text-gray-700 dark:text-gray-300">Motivo</th>
-                                    <th className="py-3 px-2 text-left text-xs font-medium text-gray-700 dark:text-gray-300">Creado por</th>
-                                    <th className="py-3 px-2 text-left text-xs font-medium text-gray-700 dark:text-gray-300">Acciones</th>
-                                </tr>
-                            </thead>
-                            <tbody className="bg-white dark:bg-gray-800">
-                                {filteredBloqueos.length > 0 ? (
-                                    filteredBloqueos.map(bloqueo => (
-                                        <tr key={bloqueo.id} className="border-b last:border-none dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700">
-                                            <td className="py-2 px-2 text-xs text-gray-700 dark:text-gray-300">{bloqueo.id}</td>
-                                            <td className="py-2 px-2 text-xs text-gray-700 dark:text-gray-300">
-                                                <div className="truncate">{bloqueo.espacio?.nombre || 'N/A'}</div>
-                                            </td>
-                                            <td className="py-2 px-2 text-xs text-gray-700 dark:text-gray-300">
-                                                {bloqueo.escritorio?.nombre || 'Todo el espacio'}
-                                            </td>
-                                            <td className="py-2 px-2 text-xs text-gray-700 dark:text-gray-300">{formatDate(bloqueo.fecha_inicio)}</td>
-                                            <td className="py-2 px-2 text-xs text-gray-700 dark:text-gray-300">{formatTime(bloqueo.fecha_inicio)}</td>
-                                            <td className="py-2 px-2 text-xs text-gray-700 dark:text-gray-300">{formatDate(bloqueo.fecha_fin)}</td>
-                                            <td className="py-2 px-2 text-xs text-gray-700 dark:text-gray-300">{formatTime(bloqueo.fecha_fin)}</td>
-                                            <td className="py-2 px-2 text-xs text-gray-700 dark:text-gray-300">
-                                                <div className="truncate max-w-[150px]">{bloqueo.motivo}</div>
-                                            </td>
-                                            <td className="py-2 px-2 text-xs text-gray-700 dark:text-gray-300">
-                                                <div className="truncate">{bloqueo.creadoPor?.name || 'N/A'}</div>
-                                            </td>
-                                            <td className="py-2 px-2">
-                                                <div className="flex space-x-1">
-                                                    <Link href={`${getRoutePrefix()}/bloqueos/${bloqueo.id}/edit`}>
-                                                        <PrimaryButton className="text-xs px-2 py-1">
-                                                            Editar
-                                                        </PrimaryButton>
-                                                    </Link>
-                                                    <DangerButton 
-                                                        onClick={() => confirmDelete(bloqueo)}
-                                                        className="text-xs px-2 py-1"
-                                                    >
-                                                        Eliminar
-                                                    </DangerButton>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    ))
-                                ) : (
-                                    <tr>
-                                        <td colSpan="10" className="py-6 px-2 text-center text-gray-500 dark:text-gray-400">
-                                            No hay bloqueos que coincidan con los criterios de búsqueda
-                                        </td>
-                                    </tr>
-                                )}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
+                <BloqueosTable
+                    bloqueos={filteredBloqueos}
+                    onDelete={handleDelete}
+                />
 
-            {/* Modal de confirmación de eliminación */}
-            <Modal show={showDeleteModal} onClose={() => setShowDeleteModal(false)}>
-                <div className="p-6">
-                    <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-4 border-b border-gray-200 dark:border-gray-700 pb-2">Confirmar eliminación</h3>
-                    <div className="my-4">
-                        <p className="text-gray-700 dark:text-gray-300">¿Está seguro que desea eliminar este bloqueo?</p>
-                        {bloqueoToDelete && (
-                            <div className="mt-4 p-3 bg-gray-50 dark:bg-gray-700 rounded-md">
-                                <p className="text-sm"><span className="font-semibold">Espacio:</span> {bloqueoToDelete.espacio?.nombre}</p>
-                                {bloqueoToDelete.escritorio?.nombre && (
-                                    <p className="text-sm"><span className="font-semibold">Escritorio:</span> {bloqueoToDelete.escritorio.nombre}</p>
-                                )}
-                                <p className="text-sm"><span className="font-semibold">Fecha inicio:</span> {formatDate(bloqueoToDelete.fecha_inicio)} {formatTime(bloqueoToDelete.fecha_inicio)}</p>
-                                <p className="text-sm"><span className="font-semibold">Fecha fin:</span> {formatDate(bloqueoToDelete.fecha_fin)} {formatTime(bloqueoToDelete.fecha_fin)}</p>
-                            </div>
-                        )}
-                    </div>
-                    <div className="flex justify-end space-x-3 mt-6">
-                        <SecondaryButton onClick={() => setShowDeleteModal(false)} className="text-sm">
-                            Cancelar
-                        </SecondaryButton>
-                        <DangerButton onClick={handleDelete} className="text-sm">
-                            Confirmar Eliminación
-                        </DangerButton>
-                    </div>
-                </div>
-            </Modal>
+                {/* Usar el componente ConfirmDeleteBloqueo en lugar del Modal directamente */}
+                {showConfirmDelete && selectedBloqueo && (
+                    <ConfirmDeleteBloqueo
+                        bloqueo={selectedBloqueo}
+                        onConfirm={confirmDelete}
+                        onCancel={cancelDelete}
+                    />
+                )}
+            </div>
         </AuthenticatedLayout>
     );
 }

@@ -36,10 +36,8 @@ class BloqueoController extends Controller
         $espacios = Espacio::all();
         $escritorios = Escritorio::all();
         
-        $role = Auth::user()->role;
-        $viewName = $role === 'superadmin' ? 'BloqueosCrud/CreateBloqueo' : 'BloqueosCrud/CreateBloqueo';
-        
-        return Inertia::render($viewName, [
+        // Usar nomenclatura completamente calificada para las páginas
+        return Inertia::render('BloqueosCrud/CreateBloqueo', [
             'espacios' => $espacios,
             'escritorios' => $escritorios
         ]);
