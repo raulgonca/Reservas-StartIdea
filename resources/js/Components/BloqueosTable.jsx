@@ -78,8 +78,7 @@ export default function BloqueosTable({ bloqueos, onDelete }) {
                                 <th className="py-3 px-2 text-left text-xs font-medium text-gray-700 dark:text-gray-300 w-24">F. Fin</th>
                                 <th className="py-3 px-2 text-left text-xs font-medium text-gray-700 dark:text-gray-300 w-20">H. Fin</th>
                                 <th className="py-3 px-2 text-left text-xs font-medium text-gray-700 dark:text-gray-300">Motivo</th>
-                                <th className="py-3 px-2 text-left text-xs font-medium text-gray-700 dark:text-gray-300 w-24">Estado</th>
-                                <th className="py-3 px-2 text-left text-xs font-medium text-gray-700 dark:text-gray-300 w-28">Creado por</th>
+                                
                                 <th className="py-3 px-2 text-left text-xs font-medium text-gray-700 dark:text-gray-300 w-28">Acciones</th>
                             </tr>
                         </thead>
@@ -103,14 +102,7 @@ export default function BloqueosTable({ bloqueos, onDelete }) {
                                             <td className="py-2 px-2 text-xs text-gray-700 dark:text-gray-300">
                                                 <div className="truncate">{bloqueo.motivo}</div>
                                             </td>
-                                            <td className="py-2 px-2">
-                                                <span className={`text-xs font-medium ${status.class}`}>
-                                                    {status.label}
-                                                </span>
-                                            </td>
-                                            <td className="py-2 px-2 text-xs text-gray-700 dark:text-gray-300">
-                                                <div className="truncate">{bloqueo.creadoPor?.name || 'N/A'}</div>
-                                            </td>
+                                            
                                             <td className="py-2 px-2 text-xs text-gray-700 dark:text-gray-300">
                                                 <div className="flex space-x-1">
                                                     <Link href={`${getRoutePrefix()}/bloqueos/${bloqueo.id}/edit`}>

@@ -12,6 +12,9 @@ import SecondaryButton from "@/Components/SecondaryButton";
 import HourSelectInput from "@/Components/HourSelectInput";
 import axios from 'axios';
 
+// Importamos la configuración centralizada de horarios
+import { HORA_INICIO, HORA_FIN, MEDIO_DIA, HORAS_DISPONIBLES } from '@/Config/horarios';
+
 export default function ReservaModal({
     reserva,
     onClose,
@@ -22,10 +25,10 @@ export default function ReservaModal({
 
     // Función para formatear hora desde string de fecha
     const formatTime = (dateString) => {
-        if (!dateString) return '';
+        if (!dateString) return HORA_INICIO; // Valor predeterminado de la configuración
         try {
             const date = new Date(dateString);
-            if (isNaN(date.getTime())) return '';
+            if (isNaN(date.getTime())) return HORA_INICIO; // Valor predeterminado
 
             return date.toLocaleTimeString('es-ES', {
                 hour: '2-digit',
@@ -34,7 +37,7 @@ export default function ReservaModal({
                 timeZone: 'UTC'  // Asegura consistencia en la zona horaria
             });
         } catch (e) {
-            return '';
+            return HORA_INICIO; // Valor predeterminado en caso de error
         }
     };
 
@@ -59,13 +62,19 @@ export default function ReservaModal({
     const [fechaFinCalculada, setFechaFinCalculada] = useState('');
     const [processing, setProcessing] = useState(false);
 
-    // Horarios predefinidos para reservas de medio día
+    // Usar configuración centralizada para horarios de medio día
     const [horariosDisponibles] = useState([
-        { inicio: '08:00', fin: '14:00', label: 'Mañana (08:00 - 14:00)' },
-        { inicio: '14:00', fin: '20:00', label: 'Tarde (14:00 - 20:00)' }
+        { 
+            inicio: MEDIO_DIA.MAÑANA.inicio, 
+            fin: MEDIO_DIA.MAÑANA.fin, 
+            label: MEDIO_DIA.MAÑANA.label 
+        },
+        { 
+            inicio: MEDIO_DIA.TARDE.inicio, 
+            fin: MEDIO_DIA.TARDE.fin, 
+            label: MEDIO_DIA.TARDE.label 
+        }
     ]);
-
-
 
     // Efecto para manejar la visibilidad del selector de escritorios
     useEffect(() => {
@@ -129,8 +138,8 @@ export default function ReservaModal({
         if (data.tipo_reserva === 'medio_dia') {
             // Si no hay hora_inicio establecida o no es válida, establecer valor por defecto
             if (!data.hora_inicio || !horariosDisponibles.some(h => h.inicio === data.hora_inicio)) {
-                setData('hora_inicio', '08:00');
-                setData('hora_fin', '14:00');
+                setData('hora_inicio', MEDIO_DIA.MAÑANA.inicio);
+                setData('hora_fin', MEDIO_DIA.MAÑANA.fin);
             } else {
                 // Establecer hora_fin según hora_inicio seleccionada
                 const horario = horariosDisponibles.find(h => h.inicio === data.hora_inicio);
@@ -143,9 +152,11 @@ export default function ReservaModal({
 
     useEffect(() => {
         if (data.tipo_reserva === 'medio_dia') {
-            // Ajustar horarios para medio día
-            const horaInicio = data.hora_inicio === '08:00' ? '08:00' : '14:00';
-            const horaFin = horaInicio === '08:00' ? '14:00' : '23:59';
+            // Ajustar horarios para medio día usando la configuración centralizada
+            const horaInicio = data.hora_inicio === MEDIO_DIA.MAÑANA.inicio ? 
+                MEDIO_DIA.MAÑANA.inicio : MEDIO_DIA.TARDE.inicio;
+            const horaFin = horaInicio === MEDIO_DIA.MAÑANA.inicio ? 
+                MEDIO_DIA.MAÑANA.fin : MEDIO_DIA.TARDE.fin;
 
             setData(data => ({
                 ...data,

@@ -18,15 +18,37 @@ use Illuminate\Http\JsonResponse;
  */
 class EspacioController extends Controller
 {
-    // Constantes para horarios
-    private const HORA_INICIO = '08:00';
-    private const HORA_FIN = '20:00';
-    private const INTERVALO_MINUTOS = 60;
-
     // Constantes para estados de disponibilidad
     private const STATUS_FREE = 'free';
     private const STATUS_PARTIAL = 'partial';
     private const STATUS_OCCUPIED = 'occupied';
+    
+    /**
+     * Obtiene la hora de inicio desde la configuración centralizada
+     * @return string
+     */
+    private function getHoraInicio(): string
+    {
+        return config('reservas.horarios.hora_inicio', '08:00');
+    }
+    
+    /**
+     * Obtiene la hora de fin desde la configuración centralizada
+     * @return string
+     */
+    private function getHoraFin(): string
+    {
+        return config('reservas.horarios.hora_fin', '22:00');
+    }
+    
+    /**
+     * Obtiene el intervalo de minutos entre slots desde la configuración centralizada
+     * @return int
+     */
+    private function getIntervaloMinutos(): int
+    {
+        return config('reservas.horarios.intervalo_minutos', 60);
+    }
 
     /**
      * Muestra la lista de espacios activos en la página principal
@@ -283,14 +305,23 @@ class EspacioController extends Controller
         }
     }
 
+    /**
+     * Genera slots para espacios de coworking usando la configuración centralizada
+     * 
+     * @param Carbon $fecha
+     * @param \Illuminate\Database\Eloquent\Collection $reservas
+     * @return array
+     */
     private function generateSlotsForCoworking($fecha, $reservas): array
     {
         $slots = [];
-        $inicio = Carbon::parse($fecha->format('Y-m-d') . ' ' . self::HORA_INICIO);
-        $fin = Carbon::parse($fecha->format('Y-m-d') . ' ' . self::HORA_FIN);
+        // Usamos los métodos para obtener los valores de la configuración
+        $inicio = Carbon::parse($fecha->format('Y-m-d') . ' ' . $this->getHoraInicio());
+        $fin = Carbon::parse($fecha->format('Y-m-d') . ' ' . $this->getHoraFin());
 
         while ($inicio < $fin) {
-            $slotFin = $inicio->copy()->addMinutes(self::INTERVALO_MINUTOS);
+            // Usamos el método para obtener el intervalo de minutos
+            $slotFin = $inicio->copy()->addMinutes($this->getIntervaloMinutos());
             $slotOcupado = false;
 
             foreach ($reservas as $reserva) {
@@ -342,9 +373,8 @@ class EspacioController extends Controller
     }
 
     /**
-     * Genera los slots horarios para un día
-     * CORRECCIÓN: Lógica mejorada para determinar ocupación
-     *
+     * Genera los slots horarios para un día usando la configuración centralizada
+     * 
      * @param Carbon $fecha
      * @param \Illuminate\Database\Eloquent\Collection $reservas
      * @return array
@@ -352,11 +382,13 @@ class EspacioController extends Controller
     private function generateTimeSlots($fecha, $reservas): array
     {
         $slots = [];
-        $inicio = Carbon::parse($fecha->format('Y-m-d') . ' ' . self::HORA_INICIO);
-        $fin = Carbon::parse($fecha->format('Y-m-d') . ' ' . self::HORA_FIN);
+        // Usamos los métodos para obtener los valores de la configuración
+        $inicio = Carbon::parse($fecha->format('Y-m-d') . ' ' . $this->getHoraInicio());
+        $fin = Carbon::parse($fecha->format('Y-m-d') . ' ' . $this->getHoraFin());
 
         while ($inicio < $fin) {
-            $slotFin = $inicio->copy()->addMinutes(self::INTERVALO_MINUTOS);
+            // Usamos el método para obtener el intervalo de minutos
+            $slotFin = $inicio->copy()->addMinutes($this->getIntervaloMinutos());
             $slotOcupado = false;
 
             foreach ($reservas as $reserva) {

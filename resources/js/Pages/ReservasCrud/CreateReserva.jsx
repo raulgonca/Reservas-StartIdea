@@ -13,6 +13,14 @@ import SpaceAvailability from '@/Components/SpaceAvailability'; // Nuevo import
 import { toast } from 'react-toastify';
 import { format, addDays, addMonths } from 'date-fns'; // Añadimos estas funciones
 
+// Importamos la configuración centralizada de horarios
+import { 
+    HORA_INICIO, 
+    HORA_FIN, 
+    MEDIO_DIA, 
+    DIA_COMPLETO 
+} from '@/Config/horarios';
+
 const CreateReserva = () => {
     // Obtener el usuario autenticado y sus datos
     const { auth, users, espacios, escritorios } = usePage().props;
@@ -28,9 +36,9 @@ const CreateReserva = () => {
         user_id: auth.user.role === 'user' ? auth.user.id : '',
         espacio_id: '',
         escritorio_id: null,
-        fecha_inicio: todayFormatted, // Ahora inicializamos con la fecha de hoy
-        fecha_fin: tomorrowFormatted, // Y mañana como fecha de fin
-        hora_inicio: '08:00',
+        fecha_inicio: todayFormatted,
+        fecha_fin: tomorrowFormatted,
+        hora_inicio: HORA_INICIO, // Usamos la configuración centralizada
         hora_fin: '18:00',
         tipo_reserva: 'hora',
         motivo: '',
@@ -43,11 +51,22 @@ const CreateReserva = () => {
     const [escritoriosLibres, setEscritoriosLibres] = useState([]);
     const [showHoras, setShowHoras] = useState(true);
     const [fechaFinCalculada, setFechaFinCalculada] = useState('');
+    
+    // Usar configuración centralizada para horarios de medio día
     const [horariosDisponibles] = useState([
-        { inicio: '08:00', fin: '14:00', label: 'Mañana (08:00 - 14:00)' },
-        { inicio: '14:00', fin: '20:00', label: 'Tarde (14:00 - 20:00)' }
+        { 
+            inicio: MEDIO_DIA.MAÑANA.inicio, 
+            fin: MEDIO_DIA.MAÑANA.fin, 
+            label: MEDIO_DIA.MAÑANA.label 
+        },
+        { 
+            inicio: MEDIO_DIA.TARDE.inicio, 
+            fin: MEDIO_DIA.TARDE.fin, 
+            label: MEDIO_DIA.TARDE.label 
+        }
     ]);
-    const [selectedSpace, setSelectedSpace] = useState(null); // Nuevo estado para el espacio seleccionado
+    
+    const [selectedSpace, setSelectedSpace] = useState(null);
 
     // Efecto para manejar la visibilidad y disponibilidad de escritorios
     useEffect(() => {
@@ -60,7 +79,7 @@ const CreateReserva = () => {
 
         const espacioId = Number(data.espacio_id);
         const espacioSeleccionado = espacios.find(espacio => espacio.id === espacioId);
-        setSelectedSpace(espacioSeleccionado); // Actualizar el espacio seleccionado
+        setSelectedSpace(espacioSeleccionado);
         
         if (espacioSeleccionado && espacioSeleccionado.tipo === 'coworking') {
             setShowEscritorio(true);
@@ -97,24 +116,24 @@ const CreateReserva = () => {
             switch (data.tipo_reserva) {
                 case 'dia_completo':
                     fechaFin = fecha.toISOString().split('T')[0];
-                    // También ajustamos las horas para día completo
-                    setData('hora_inicio', '00:00');
-                    setData('hora_fin', '23:00');
+                    // Usamos valores de la configuración centralizada
+                    setData('hora_inicio', DIA_COMPLETO.inicio);
+                    setData('hora_fin', DIA_COMPLETO.fin);
                     break;
                 case 'semana':
                     fecha.setDate(fecha.getDate() + 6);
                     fechaFin = fecha.toISOString().split('T')[0];
-                    // También ajustamos las horas para semana
-                    setData('hora_inicio', '00:00');
-                    setData('hora_fin', '23:00');
+                    // Usamos valores de la configuración centralizada
+                    setData('hora_inicio', DIA_COMPLETO.inicio);
+                    setData('hora_fin', DIA_COMPLETO.fin);
                     break;
                 case 'mes':
                     fecha.setMonth(fecha.getMonth() + 1);
                     fecha.setDate(fecha.getDate() - 1);
                     fechaFin = fecha.toISOString().split('T')[0];
-                    // También ajustamos las horas para mes
-                    setData('hora_inicio', '00:00');
-                    setData('hora_fin', '23:00');
+                    // Usamos valores de la configuración centralizada
+                    setData('hora_inicio', DIA_COMPLETO.inicio);
+                    setData('hora_fin', DIA_COMPLETO.fin);
                     break;
                 default:
                     fechaFin = fecha.toISOString().split('T')[0];
@@ -139,13 +158,24 @@ const CreateReserva = () => {
     const handleReset = () => {
         const userId = auth.user.role === 'user' ? auth.user.id : '';
         reset();
-        setData('user_id', userId);
+        setData({
+            user_id: userId,
+            espacio_id: '',
+            escritorio_id: null,
+            fecha_inicio: todayFormatted,
+            fecha_fin: tomorrowFormatted,
+            hora_inicio: HORA_INICIO, // Usar valor de configuración
+            hora_fin: '18:00',
+            tipo_reserva: 'hora',
+            motivo: '',
+            estado: 'pendiente',
+        });
         setUserSearchTerm('');
         setShowEscritorio(false);
         setEscritoriosLibres([]);
         setFechaFinCalculada('');
         setShowHoras(true);
-        setSelectedSpace(null); // Resetear el espacio seleccionado
+        setSelectedSpace(null);
     };
 
     // Función para manejar el envío del formulario
@@ -175,14 +205,14 @@ const CreateReserva = () => {
         });
     };
 
+    // El resto del componente permanece igual
     return (
         <AuthenticatedLayout>
             <Head title="Crear Reserva" />
 
-            <div className="max-w-7xl mx-auto py-12"> {/* Aumentamos el ancho máximo para acomodar el layout de columnas */}
+            <div className="max-w-7xl mx-auto py-12">
                 <h2 className="text-4xl font-bold mb-10 text-indigo-700 text-center">Crear Reserva</h2>
                 
-                {/* Layout de dos columnas similar a BloqueoForm */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                     {/* Columna izquierda: Formulario */}
                     <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md border border-gray-200 dark:border-gray-700">

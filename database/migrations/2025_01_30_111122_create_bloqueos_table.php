@@ -1,3 +1,4 @@
+table.php
 <?php
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
@@ -17,6 +18,7 @@ return new class extends Migration
             $table->dateTime('fecha_inicio');
             $table->dateTime('fecha_fin');
             $table->text('motivo');
+            $table->string('tipo_bloqueo')->default('dia_completo');
             $table->foreignId('creado_por')->constrained('users')->onDelete('cascade');
             $table->timestamps();
         });

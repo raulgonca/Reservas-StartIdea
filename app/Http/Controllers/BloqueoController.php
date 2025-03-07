@@ -14,6 +14,24 @@ use Inertia\Inertia;
 class BloqueoController extends Controller
 {
     /**
+     * Obtiene la hora de inicio de día completo desde la configuración centralizada
+     * @return string
+     */
+    protected function getHoraDiaCompletoInicio(): string
+    {
+        return config('reservas.horarios.dia_completo.inicio', '00:00');
+    }
+    
+    /**
+     * Obtiene la hora de fin de día completo desde la configuración centralizada
+     * @return string
+     */
+    protected function getHoraDiaCompletoFin(): string
+    {
+        return config('reservas.horarios.dia_completo.fin', '23:59');
+    }
+    
+    /**
      * Display a listing of the bloqueos.
      */
     public function index()
@@ -64,12 +82,24 @@ class BloqueoController extends Controller
             return back()->withErrors(['error' => 'Ya existe una reserva o bloqueo en ese horario.']);
         }
 
+        // Si el tipo de bloqueo es día_completo, semana o mes, 
+        // ajustar las horas para usar día completo
+        $fechaInicio = Carbon::parse($request->fecha_inicio);
+        $fechaFin = Carbon::parse($request->fecha_fin);
+        
+        if ($request->tipo_bloqueo && in_array($request->tipo_bloqueo, ['dia_completo', 'semana', 'mes'])) {
+            // Usar la hora de inicio/fin del día completo desde la configuración
+            $fechaInicio->setTimeFromTimeString($this->getHoraDiaCompletoInicio());
+            $fechaFin->setTimeFromTimeString($this->getHoraDiaCompletoFin());
+        }
+
         $bloqueo = new Bloqueo();
         $bloqueo->espacio_id = $request->espacio_id;
         $bloqueo->escritorio_id = $request->escritorio_id;
-        $bloqueo->fecha_inicio = $request->fecha_inicio;
-        $bloqueo->fecha_fin = $request->fecha_fin;
+        $bloqueo->fecha_inicio = $fechaInicio;
+        $bloqueo->fecha_fin = $fechaFin;
         $bloqueo->motivo = $request->motivo;
+        $bloqueo->tipo_bloqueo = $request->tipo_bloqueo ?? 'manual';
         $bloqueo->creado_por = Auth::id();
         $bloqueo->save();
 
@@ -133,11 +163,23 @@ class BloqueoController extends Controller
             return back()->withErrors(['error' => 'Ya existe una reserva o bloqueo en ese horario.']);
         }
 
+        // Si el tipo de bloqueo es día_completo, semana o mes, 
+        // ajustar las horas para usar día completo
+        $fechaInicio = Carbon::parse($request->fecha_inicio);
+        $fechaFin = Carbon::parse($request->fecha_fin);
+        
+        if ($request->tipo_bloqueo && in_array($request->tipo_bloqueo, ['dia_completo', 'semana', 'mes'])) {
+            // Usar la hora de inicio/fin del día completo desde la configuración
+            $fechaInicio->setTimeFromTimeString($this->getHoraDiaCompletoInicio());
+            $fechaFin->setTimeFromTimeString($this->getHoraDiaCompletoFin());
+        }
+
         $bloqueo->espacio_id = $request->espacio_id;
         $bloqueo->escritorio_id = $request->escritorio_id;
-        $bloqueo->fecha_inicio = $request->fecha_inicio;
-        $bloqueo->fecha_fin = $request->fecha_fin;
+        $bloqueo->fecha_inicio = $fechaInicio;
+        $bloqueo->fecha_fin = $fechaFin;
         $bloqueo->motivo = $request->motivo;
+        $bloqueo->tipo_bloqueo = $request->tipo_bloqueo ?? 'manual';
         $bloqueo->save();
 
         $role = Auth::user()->role;
@@ -168,6 +210,14 @@ class BloqueoController extends Controller
         $fechaFin = Carbon::parse($request->fecha_fin);
         $espacio_id = $request->espacio_id;
         $escritorio_id = $request->escritorio_id;
+
+        // Si el tipo de bloqueo es día_completo, semana o mes, 
+        // ajustar las horas para verificación
+        if ($request->tipo_bloqueo && in_array($request->tipo_bloqueo, ['dia_completo', 'semana', 'mes'])) {
+            // Usar la hora de inicio/fin del día completo desde la configuración
+            $fechaInicio->setTimeFromTimeString($this->getHoraDiaCompletoInicio());
+            $fechaFin->setTimeFromTimeString($this->getHoraDiaCompletoFin());
+        }
 
         // Verificar solapamientos con reservas
         $reservasQuery = Reserva::where('estado', 'confirmada')

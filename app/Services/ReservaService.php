@@ -19,23 +19,58 @@ use Illuminate\Validation\Rule;
 class ReservaService
 {
     /**
-     * Horarios predefinidos para reservas de medio día
+     * Obtiene los horarios para medio día desde la configuración centralizada
+     * 
+     * @return array
      */
-    protected const HORARIOS_MEDIO_DIA = [
-        'mañana' => ['inicio' => '08:00', 'fin' => '14:00'],
-        'tarde' => ['inicio' => '14:00', 'fin' => '20:00']
-    ];
+    protected function getHorariosMedioDia()
+    {
+        return config('reservas.horarios.medio_dia', [
+            'mañana' => ['inicio' => '08:00', 'fin' => '14:00'],
+            'tarde' => ['inicio' => '14:00', 'fin' => '20:00']
+        ]);
+    }
+
+    /**
+     * Obtiene los horarios para día completo desde la configuración centralizada
+     * 
+     * @return array
+     */
+    protected function getHorarioDiaCompleto()
+    {
+        return config('reservas.horarios.dia_completo', [
+            'inicio' => '00:00',
+            'fin' => '23:59'
+        ]);
+    }
+
+    /**
+     * Obtiene los horarios disponibles desde la configuración centralizada
+     * 
+     * @return array
+     */
+    protected function getHorasDisponibles()
+    {
+        return config('reservas.horarios.horas_disponibles', [
+            '08:00', '09:00', '10:00', '11:00', '12:00', '13:00',
+            '14:00', '15:00', '16:00', '17:00', '18:00', '19:00',
+            '20:00', '21:00', '22:00'
+        ]);
+    }
 
     /**
      * Configuración de los diferentes tipos de reserva
      */
-    protected const TIPOS_RESERVA = [
-        'hora' => ['requiere_hora' => true, 'duracion' => '1 hour'],
-        'medio_dia' => ['requiere_hora' => true, 'duracion' => '6 hours'],
-        'dia_completo' => ['requiere_hora' => false, 'duracion' => '1 day'],
-        'semana' => ['requiere_hora' => false, 'duracion' => '1 week'],
-        'mes' => ['requiere_hora' => false, 'duracion' => '1 month']
-    ];
+    protected function getTiposReserva()
+    {
+        return [
+            'hora' => ['requiere_hora' => true, 'duracion' => '1 hour'],
+            'medio_dia' => ['requiere_hora' => true, 'duracion' => '6 hours'],
+            'dia_completo' => ['requiere_hora' => false, 'duracion' => '1 day'],
+            'semana' => ['requiere_hora' => false, 'duracion' => '1 week'],
+            'mes' => ['requiere_hora' => false, 'duracion' => '1 month']
+        ];
+    }
 
     /**
      * Mensajes personalizados para las validaciones
@@ -53,7 +88,7 @@ class ReservaService
         'fecha_inicio.after_or_equal' => 'La fecha de inicio no puede ser anterior al día actual.',
         'hora_inicio.required_if' => 'La hora de inicio es requerida para reservas por hora o medio día.',
         'hora_inicio.date_format' => 'El formato de la hora de inicio debe ser HH:mm.',
-        'hora_inicio.in' => 'Para medio día solo se permiten los horarios: 08:00 (mañana) o 14:00 (tarde).',
+        'hora_inicio.in' => 'La hora de inicio seleccionada no está permitida para este tipo de reserva.',
         'hora_fin.required_if' => 'La hora final es requerida para reservas por hora.',
         'hora_fin.date_format' => 'El formato de la hora final debe ser HH:mm.',
         'hora_fin.after' => 'La hora final debe ser posterior a la hora de inicio.',
@@ -139,6 +174,13 @@ class ReservaService
             'motivo' => 'nullable|string|max:255'
         ];
 
+        // Obtenemos los valores para medio día de la configuración
+        $horariosMedioDia = $this->getHorariosMedioDia();
+        $horasInicioMedioDia = [
+            $horariosMedioDia['mañana']['inicio'],
+            $horariosMedioDia['tarde']['inicio']
+        ];
+
         // Reglas para hora_inicio según tipo de reserva
         $rules['hora_inicio'] = [
             Rule::requiredIf(function () use ($data) {
@@ -148,7 +190,7 @@ class ReservaService
             'date_format:H:i',
             Rule::when(
                 isset($data['tipo_reserva']) && $data['tipo_reserva'] === 'medio_dia',
-                ['in:08:00,14:00']
+                ['in:' . implode(',', $horasInicioMedioDia)]
             )
         ];
 
@@ -194,7 +236,7 @@ class ReservaService
     protected function calculateDates($data)
     {
         $fechaInicio = Carbon::parse($data['fecha_inicio']);
-        $tipoReserva = self::TIPOS_RESERVA[$data['tipo_reserva']];
+        $tipoReserva = $this->getTiposReserva()[$data['tipo_reserva']];
 
         if (isset($data['hora_inicio']) && $tipoReserva['requiere_hora']) {
             $fechaInicio->setTimeFromTimeString($data['hora_inicio']);
@@ -208,27 +250,55 @@ class ReservaService
                     $fechaInicio->copy()->setTimeFromTimeString($data['hora_fin']) :
                     $fechaInicio->copy()->addHour();
                 break;
+                
             case 'medio_dia':
-                // Validación específica para medio día con horarios fijos
-                if ($data['hora_inicio'] === '08:00') {
-                    $fechaFin = $fechaInicio->copy()->setTimeFromTimeString('14:00');
-                } elseif ($data['hora_inicio'] === '14:00') {
-                    $fechaFin = $fechaInicio->copy()->setTimeFromTimeString('20:00');
+                // Usar configuración centralizada para medio día
+                $horariosMedioDia = $this->getHorariosMedioDia();
+                
+                if ($data['hora_inicio'] === $horariosMedioDia['mañana']['inicio']) {
+                    $fechaFin = $fechaInicio->copy()->setTimeFromTimeString($horariosMedioDia['mañana']['fin']);
+                } elseif ($data['hora_inicio'] === $horariosMedioDia['tarde']['inicio']) {
+                    $fechaFin = $fechaInicio->copy()->setTimeFromTimeString($horariosMedioDia['tarde']['fin']);
                 } else {
                     throw ValidationException::withMessages([
-                        'hora_inicio' => 'Las reservas de medio día solo pueden ser de 08:00 a 14:00 o de 14:00 a 20:00'
+                        'hora_inicio' => 'Las reservas de medio día solo pueden ser de ' . 
+                            $horariosMedioDia['mañana']['inicio'] . ' a ' . $horariosMedioDia['mañana']['fin'] . 
+                            ' o de ' . $horariosMedioDia['tarde']['inicio'] . ' a ' . $horariosMedioDia['tarde']['fin']
                     ]);
                 }
                 break;
+                
             case 'dia_completo':
-                $fechaFin = $fechaInicio->copy()->endOfDay();
+                // Usar configuración centralizada para día completo
+                $horarioDiaCompleto = $this->getHorarioDiaCompleto();
+                
+                // Establecer inicio del día según configuración
+                $fechaInicio->setTimeFromTimeString($horarioDiaCompleto['inicio']);
+                
+                // Establecer fin del día según configuración
+                $fechaFin = $fechaInicio->copy()->setTimeFromTimeString($horarioDiaCompleto['fin']);
                 break;
+                
             case 'semana':
+                // Usar configuración centralizada para día completo
+                $horarioDiaCompleto = $this->getHorarioDiaCompleto();
+                
+                // Establecer inicio y fin con horarios de día completo
+                $fechaInicio->setTimeFromTimeString($horarioDiaCompleto['inicio']);
                 $fechaFin = $fechaInicio->copy()->addWeek()->subSecond();
                 break;
+                
             case 'mes':
-                $fechaFin = $fechaInicio->copy()->endOfMonth();
+                // Usar configuración centralizada para día completo
+                $horarioDiaCompleto = $this->getHorarioDiaCompleto();
+                
+                // Establecer inicio con horario de día completo
+                $fechaInicio->setTimeFromTimeString($horarioDiaCompleto['inicio']);
+                
+                // Establecer fin del mes con horario de día completo
+                $fechaFin = $fechaInicio->copy()->endOfMonth()->setTimeFromTimeString($horarioDiaCompleto['fin']);
                 break;
+                
             default:
                 throw ValidationException::withMessages([
                     'tipo_reserva' => 'Tipo de reserva no válido'
@@ -281,17 +351,32 @@ class ReservaService
 
         $espacio = Espacio::findOrFail($data['espacio_id']);
 
-        // Para medio día, solo verificar que sea uno de los dos horarios permitidos
+        // Para medio día, verificar que sea uno de los horarios permitidos según la configuración
         if ($data['tipo_reserva'] === 'medio_dia') {
             $horaInicio = $fechaInicio->format('H:i');
             $horaFin = $fechaFin->format('H:i');
-
-            if (
-                !($horaInicio === '08:00' && $horaFin === '14:00') &&
-                !($horaInicio === '14:00' && $horaFin === '20:00')
-            ) {
+            
+            $horariosMedioDia = $this->getHorariosMedioDia();
+            $horarioValido = false;
+            
+            foreach ($horariosMedioDia as $periodo => $horario) {
+                if ($horaInicio === $horario['inicio'] && $horaFin === $horario['fin']) {
+                    $horarioValido = true;
+                    break;
+                }
+            }
+            
+            if (!$horarioValido) {
+                $mensajeError = 'Las reservas de medio día solo pueden ser:';
+                foreach ($horariosMedioDia as $periodo => $horario) {
+                    $mensajeError .= ' de ' . $horario['inicio'] . ' a ' . $horario['fin'];
+                    if ($periodo === 'mañana') {
+                        $mensajeError .= ' o';
+                    }
+                }
+                
                 throw ValidationException::withMessages([
-                    'horario' => 'Las reservas de medio día solo pueden ser de 08:00 a 14:00 o de 14:00 a 20:00'
+                    'horario' => $mensajeError
                 ]);
             }
         }
