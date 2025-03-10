@@ -8,9 +8,9 @@ import TextInput from '@/Components/TextInput';
 import SelectInput from '@/Components/SelectInput';
 import TextareaInput from '@/Components/TextareaInput';
 import HourSelectInput from '@/Components/HourSelectInput';
-import SpaceAvailability from '@/Components/SpaceAvailability'; // Componente para visualizar disponibilidad
+import SpaceAvailability from '@/Components/SpaceAvailability'; 
 import { toast } from 'react-toastify';
-import { format, addDays, addMonths } from 'date-fns'; // Funciones para manejo de fechas
+import { format, addDays, addMonths } from 'date-fns'; 
 
 // Importamos la configuración centralizada de horarios
 import { 

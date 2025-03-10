@@ -13,7 +13,7 @@ use App\Http\Controllers\EscritorioController;
 use App\Http\Controllers\ReservaController;
 use App\Http\Controllers\BloqueoController;
 use App\Http\Controllers\ReservaRecurrenteController;
-use App\Http\Controllers\SuperAdminRegisterController;
+use App\Http\Controllers\UserController; // Cambiado de SuperAdminRegisterController a UserController
 
 // Ruta para la página de bienvenida
 Route::get('/', [EspacioController::class, 'index']);
@@ -45,6 +45,14 @@ Route::prefix('v1')->middleware('auth')->group(function () {
 
 //------------------------------- ADMINISTRADOR ----------------------------------//
 Route::prefix('v1/admin')->middleware(['auth'])->group(function () {
+    // Rutas para gestionar usuarios (NUEVAS)
+    Route::get('/users', [UserController::class, 'index'])->name('admin.users.index');
+    Route::get('/users/create', [UserController::class, 'create'])->name('admin.users.create');
+    Route::post('/users', [UserController::class, 'store'])->name('admin.users.store');
+    Route::get('/users/{id}/edit', [UserController::class, 'edit'])->name('admin.users.edit');
+    Route::patch('/users/{id}', [UserController::class, 'update'])->name('admin.users.update');
+    Route::delete('/users/{id}', [UserController::class, 'destroy'])->name('admin.users.destroy');
+    
     // Rutas para gestionar reservas
     Route::get('/reservas', [ReservaController::class, 'index'])->name('admin.reservas.index');
     Route::get('/reservas/create', [ReservaController::class, 'create'])->name('admin.reservas.create');
@@ -72,13 +80,13 @@ Route::prefix('v1/admin')->middleware(['auth'])->group(function () {
 
 //------------------------------- SUPERADMIN ----------------------------------//
 Route::prefix('v1/superadmin')->middleware(['auth'])->group(function () {
-    // Gestión de usuarios
-    Route::get('/users/create', [SuperAdminRegisterController::class, 'create'])->name('superadmin.users.create');
-    Route::post('/users', [SuperAdminRegisterController::class, 'store'])->name('superadmin.users.store');
-    Route::get('/users/{id}/edit', [SuperAdminRegisterController::class, 'edit'])->name('superadmin.users.edit');
-    Route::patch('/users/{id}', [SuperAdminRegisterController::class, 'update'])->name('superadmin.users.update');
-    Route::delete('/users/{id}', [SuperAdminRegisterController::class, 'destroy'])->name('superadmin.users.destroy');
-    Route::get('/users', [SuperAdminRegisterController::class, 'index'])->name('superadmin.users.index');
+    // Gestión de usuarios - Actualizado para usar UserController
+    Route::get('/users/create', [UserController::class, 'create'])->name('superadmin.users.create');
+    Route::post('/users', [UserController::class, 'store'])->name('superadmin.users.store');
+    Route::get('/users/{id}/edit', [UserController::class, 'edit'])->name('superadmin.users.edit');
+    Route::patch('/users/{id}', [UserController::class, 'update'])->name('superadmin.users.update');
+    Route::delete('/users/{id}', [UserController::class, 'destroy'])->name('superadmin.users.destroy');
+    Route::get('/users', [UserController::class, 'index'])->name('superadmin.users.index');
 
     // Gestión de reservas
     Route::get('/reservas', [ReservaController::class, 'index'])->name('superadmin.reservas.index');
@@ -118,7 +126,5 @@ Route::prefix('v1')->group(function () {
     Route::get('/escritorios', [EscritorioController::class, 'index'])->name('escritorios.index');
     Route::get('/escritorios/{id}', [EscritorioController::class, 'show'])->name('escritorios.show');
 });
-
-
 
 require __DIR__ . '/auth.php';

@@ -1,5 +1,5 @@
 import React from 'react';
-import { HORAS_DISPONIBLES } from '@/config/horarios';
+import { HORAS_DISPONIBLES } from '@/Config/horarios';
 
 /**
  * Componente para seleccionar una hora dentro del rango configurado (08:00-22:00)

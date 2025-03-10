@@ -6,8 +6,6 @@ import DropdownMenu from "@/Components/DropdownMenu";
 import { Link, usePage } from "@inertiajs/react";
 import { useState } from "react";
 import { HomeIcon } from '@heroicons/react/24/outline';
-
-
 import FlashMessage from "@/Components/FlashMessage";
 
 export default function AuthenticatedLayout({ header, children }) {
@@ -27,12 +25,12 @@ export default function AuthenticatedLayout({ header, children }) {
                                 <ApplicationLogo className="block h-9 w-auto fill-current text-gray-800 dark:text-gray-200" />
                             </Link>
                             <Link 
-        href="/" 
-        className="flex items-center text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 transition-colors"
-        title="Ir al inicio"
-    >
-        <HomeIcon className="ml-10 h-10 w-10" />
-    </Link>
+                                href="/" 
+                                className="flex items-center text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 transition-colors"
+                                title="Ir al inicio"
+                            >
+                                <HomeIcon className="ml-10 h-10 w-10" />
+                            </Link>
                         </div>
 
                         {/* Enlaces en el centro */}
@@ -59,6 +57,22 @@ export default function AuthenticatedLayout({ header, children }) {
                                                 active: route().current("admin.reservas.index"),
                                             },
                                             // Otros enlaces relacionados con reservas
+                                        ]}
+                                    />
+                                    {/* NUEVO: Menú de Usuarios para admin */}
+                                    <DropdownMenu
+                                        title="Usuarios"
+                                        links={[
+                                            {
+                                                href: route("admin.users.create"),
+                                                label: "Crear Usuario",
+                                                active: route().current("admin.users.create"),
+                                            },
+                                            {
+                                                href: route("admin.users.index"),
+                                                label: "Listar Usuarios",
+                                                active: route().current("admin.users.index"),
+                                            },
                                         ]}
                                     />
                                     <DropdownMenu
@@ -292,6 +306,22 @@ export default function AuthenticatedLayout({ header, children }) {
                                         },
                                     ]}
                                 />
+                                {/* NUEVO: Menú de Usuarios para admin en versión móvil */}
+                                <DropdownMenu
+                                    title="Usuarios"
+                                    links={[
+                                        {
+                                            href: route("admin.users.create"),
+                                            label: "Crear Usuario",
+                                            active: route().current("admin.users.create"),
+                                        },
+                                        {
+                                            href: route("admin.users.index"),
+                                            label: "Listar Usuarios",
+                                            active: route().current("admin.users.index"),
+                                        },
+                                    ]}
+                                />
                                 <DropdownMenu
                                     title="Espacios"
                                     links={[
@@ -404,6 +434,7 @@ export default function AuthenticatedLayout({ header, children }) {
                                     },
                                 ]}
                             />
+                            
                         )}
                     </div>
 
