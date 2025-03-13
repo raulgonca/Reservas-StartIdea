@@ -61,13 +61,18 @@ Route::prefix('v1/admin')->middleware(['auth'])->group(function () {
     Route::patch('/reservas/{id}', [ReservaController::class, 'update'])->name('admin.reservas.update');
     Route::delete('/reservas/{id}', [ReservaController::class, 'destroy'])->name('admin.reservas.destroy');
 
-    // Rutas para gestionar espacios
+    // Rutas para gestionar espacios - Índice (solo requiere autenticación)
     Route::get('/espacios', [EspacioController::class, 'index'])->name('admin.espacios.index');
-    Route::get('/espacios/create', [EspacioController::class, 'create'])->name('admin.espacios.create');
-    Route::post('/espacios', [EspacioController::class, 'store'])->name('admin.espacios.store');
-    Route::get('/espacios/{id}/edit', [EspacioController::class, 'edit'])->name('admin.espacios.edit');
-    Route::put('/espacios/{id}', [EspacioController::class, 'update'])->name('admin.espacios.update');
-    Route::delete('/espacios/{id}', [EspacioController::class, 'destroy'])->name('admin.espacios.destroy');
+    
+    // Rutas para gestionar espacios - Operaciones que requieren permiso específico
+    Route::middleware(['can:manage-espacios'])->group(function () {
+        Route::get('/espacios/create', [EspacioController::class, 'create'])->name('admin.espacios.create');
+        Route::post('/espacios', [EspacioController::class, 'store'])->name('admin.espacios.store');
+        Route::get('/espacios/{id}/edit', [EspacioController::class, 'edit'])->name('admin.espacios.edit');
+        Route::put('/espacios/{id}', [EspacioController::class, 'update'])->name('admin.espacios.update');
+        Route::delete('/espacios/{id}', [EspacioController::class, 'destroy'])->name('admin.espacios.destroy');
+        Route::patch('/espacios/{id}/toggle-active', [EspacioController::class, 'toggleActive'])->name('admin.espacios.toggle-active');
+    });
     
     // Rutas para gestionar bloqueos
     Route::get('/bloqueos', [BloqueoController::class, 'index'])->name('admin.bloqueos.index');
@@ -96,13 +101,18 @@ Route::prefix('v1/superadmin')->middleware(['auth'])->group(function () {
     Route::patch('/reservas/{id}', [ReservaController::class, 'update'])->name('superadmin.reservas.update');
     Route::delete('/reservas/{id}', [ReservaController::class, 'destroy'])->name('superadmin.reservas.destroy');
 
-    // Gestión de espacios
+    // Gestión de espacios - Índice (solo requiere autenticación)
     Route::get('/espacios', [EspacioController::class, 'index'])->name('superadmin.espacios.index');
-    Route::get('/espacios/create', [EspacioController::class, 'create'])->name('superadmin.espacios.create');
-    Route::post('/espacios', [EspacioController::class, 'store'])->name('superadmin.espacios.store');
-    Route::get('/espacios/{id}/edit', [EspacioController::class, 'edit'])->name('superadmin.espacios.edit');
-    Route::put('/espacios/{id}', [EspacioController::class, 'update'])->name('superadmin.espacios.update');
-    Route::delete('/espacios/{id}', [EspacioController::class, 'destroy'])->name('superadmin.espacios.destroy');
+    
+    // Rutas para gestionar espacios - Operaciones que requieren permiso específico
+    Route::middleware(['can:manage-espacios'])->group(function () {
+        Route::get('/espacios/create', [EspacioController::class, 'create'])->name('superadmin.espacios.create');
+        Route::post('/espacios', [EspacioController::class, 'store'])->name('superadmin.espacios.store');
+        Route::get('/espacios/{id}/edit', [EspacioController::class, 'edit'])->name('superadmin.espacios.edit');
+        Route::put('/espacios/{id}', [EspacioController::class, 'update'])->name('superadmin.espacios.update');
+        Route::delete('/espacios/{id}', [EspacioController::class, 'destroy'])->name('superadmin.espacios.destroy');
+        Route::patch('/espacios/{id}/toggle-active', [EspacioController::class, 'toggleActive'])->name('superadmin.espacios.toggle-active');
+    });
     
     // Rutas para gestionar bloqueos
     Route::get('/bloqueos', [BloqueoController::class, 'index'])->name('superadmin.bloqueos.index');
