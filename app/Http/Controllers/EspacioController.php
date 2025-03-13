@@ -76,13 +76,13 @@ class EspacioController extends Controller
                 ->paginate(10)
                 ->withQueryString();
 
-            $viewName = Str::startsWith($routeName, 'admin.')
-                ? 'Admin/Espacios/Index'
-                : 'SuperAdmin/Espacios/Index';
+            $viewPrefix = 'Admin'; // Siempre usando Admin independientemente de la ruta
+            $viewName = "{$viewPrefix}/Espacios/Index";
 
             return Inertia::render($viewName, [
                 'espacios' => $espacios,
                 'filters' => $request->only(['search', 'tipo']),
+                'routePrefix' => Str::startsWith($routeName, 'admin.') ? 'admin' : 'superadmin'
             ]);
         }
 
@@ -98,7 +98,7 @@ class EspacioController extends Controller
                     'descripcion' => $espacio->descripcion,
                     'image_url' => $espacio->image_url,
                     'gallery_media' => $espacio->gallery_media,
-                    'features' => json_decode($espacio->features, true) ?? [],
+                    'features' => is_string($espacio->features) ? json_decode($espacio->features, true) : ($espacio->features ?? []),
                     'aforo' => $espacio->aforo,
                     'price' => $espacio->price,
                     'tipo' => $espacio->tipo
@@ -124,10 +124,13 @@ class EspacioController extends Controller
     {
         // Detectar si estamos en rutas de admin o superadmin
         $routeName = request()->route()->getName();
-        $viewPrefix = Str::startsWith($routeName, 'admin.') ? 'Admin' : 'SuperAdmin';
+
+        // MODIFICACIÓN: Siempre usar Admin como prefijo de vista
+        $viewPrefix = 'Admin';
 
         return Inertia::render("{$viewPrefix}/Espacios/Create", [
             'tipos' => ['sala', 'coworking', 'radio', 'despacho'],
+            'routePrefix' => Str::startsWith($routeName, 'admin.') ? 'admin' : 'superadmin'
         ]);
     }
 
@@ -204,7 +207,9 @@ class EspacioController extends Controller
 
         // Detectar si estamos en rutas de admin o superadmin
         $routeName = request()->route()->getName();
-        $viewPrefix = Str::startsWith($routeName, 'admin.') ? 'Admin' : 'SuperAdmin';
+
+        // MODIFICACIÓN: Siempre usar Admin como prefijo de vista
+        $viewPrefix = 'Admin';
 
         return Inertia::render("{$viewPrefix}/Espacios/Edit", [
             'espacio' => $espacio,
@@ -212,7 +217,8 @@ class EspacioController extends Controller
             'media' => [
                 'image_url' => $espacio->image_url,
                 'gallery' => $espacio->gallery_media
-            ]
+            ],
+            'routePrefix' => Str::startsWith($routeName, 'admin.') ? 'admin' : 'superadmin'
         ]);
     }
 

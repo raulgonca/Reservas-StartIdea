@@ -28,7 +28,7 @@ Route::prefix('v1/user')->middleware(['auth'])->group(function () {
     // Ruta del calendario (debe ir antes de las rutas con parámetros)
     Route::get('/reservas/calendario', [ReservaController::class, 'calendario'])
         ->name('user.reservas.calendario');
-        
+
     // Rutas existentes
     Route::get('/reservas', [ReservaController::class, 'index'])->name('user.reservas.index');
     Route::get('/reservas/create', [ReservaController::class, 'create'])->name('user.reservas.create');
@@ -52,7 +52,7 @@ Route::prefix('v1/admin')->middleware(['auth'])->group(function () {
     Route::get('/users/{id}/edit', [UserController::class, 'edit'])->name('admin.users.edit');
     Route::patch('/users/{id}', [UserController::class, 'update'])->name('admin.users.update');
     Route::delete('/users/{id}', [UserController::class, 'destroy'])->name('admin.users.destroy');
-    
+
     // Rutas para gestionar reservas
     Route::get('/reservas', [ReservaController::class, 'index'])->name('admin.reservas.index');
     Route::get('/reservas/create', [ReservaController::class, 'create'])->name('admin.reservas.create');
@@ -63,17 +63,15 @@ Route::prefix('v1/admin')->middleware(['auth'])->group(function () {
 
     // Rutas para gestionar espacios - Índice (solo requiere autenticación)
     Route::get('/espacios', [EspacioController::class, 'index'])->name('admin.espacios.index');
-    
+
     // Rutas para gestionar espacios - Operaciones que requieren permiso específico
-    Route::middleware(['can:manage-espacios'])->group(function () {
-        Route::get('/espacios/create', [EspacioController::class, 'create'])->name('admin.espacios.create');
-        Route::post('/espacios', [EspacioController::class, 'store'])->name('admin.espacios.store');
-        Route::get('/espacios/{id}/edit', [EspacioController::class, 'edit'])->name('admin.espacios.edit');
-        Route::put('/espacios/{id}', [EspacioController::class, 'update'])->name('admin.espacios.update');
-        Route::delete('/espacios/{id}', [EspacioController::class, 'destroy'])->name('admin.espacios.destroy');
-        Route::patch('/espacios/{id}/toggle-active', [EspacioController::class, 'toggleActive'])->name('admin.espacios.toggle-active');
-    });
-    
+    Route::get('/espacios/create', [EspacioController::class, 'create'])->name('admin.espacios.create');
+    Route::post('/espacios', [EspacioController::class, 'store'])->name('admin.espacios.store');
+    Route::get('/espacios/{id}/edit', [EspacioController::class, 'edit'])->name('admin.espacios.edit');
+    Route::put('/espacios/{id}', [EspacioController::class, 'update'])->name('admin.espacios.update');
+    Route::delete('/espacios/{id}', [EspacioController::class, 'destroy'])->name('admin.espacios.destroy');
+    Route::patch('/espacios/{id}/toggle-active', [EspacioController::class, 'toggleActive'])->name('admin.espacios.toggle-active');
+
     // Rutas para gestionar bloqueos
     Route::get('/bloqueos', [BloqueoController::class, 'index'])->name('admin.bloqueos.index');
     Route::get('/bloqueos/create', [BloqueoController::class, 'create'])->name('admin.bloqueos.create');
@@ -103,17 +101,15 @@ Route::prefix('v1/superadmin')->middleware(['auth'])->group(function () {
 
     // Gestión de espacios - Índice (solo requiere autenticación)
     Route::get('/espacios', [EspacioController::class, 'index'])->name('superadmin.espacios.index');
-    
+
     // Rutas para gestionar espacios - Operaciones que requieren permiso específico
-    Route::middleware(['can:manage-espacios'])->group(function () {
-        Route::get('/espacios/create', [EspacioController::class, 'create'])->name('superadmin.espacios.create');
-        Route::post('/espacios', [EspacioController::class, 'store'])->name('superadmin.espacios.store');
-        Route::get('/espacios/{id}/edit', [EspacioController::class, 'edit'])->name('superadmin.espacios.edit');
-        Route::put('/espacios/{id}', [EspacioController::class, 'update'])->name('superadmin.espacios.update');
-        Route::delete('/espacios/{id}', [EspacioController::class, 'destroy'])->name('superadmin.espacios.destroy');
-        Route::patch('/espacios/{id}/toggle-active', [EspacioController::class, 'toggleActive'])->name('superadmin.espacios.toggle-active');
-    });
-    
+    Route::get('/espacios/create', [EspacioController::class, 'create'])->name('superadmin.espacios.create');
+    Route::post('/espacios', [EspacioController::class, 'store'])->name('superadmin.espacios.store');
+    Route::get('/espacios/{id}/edit', [EspacioController::class, 'edit'])->name('superadmin.espacios.edit');
+    Route::put('/espacios/{id}', [EspacioController::class, 'update'])->name('superadmin.espacios.update');
+    Route::delete('/espacios/{id}', [EspacioController::class, 'destroy'])->name('superadmin.espacios.destroy');
+    Route::patch('/espacios/{id}/toggle-active', [EspacioController::class, 'toggleActive'])->name('superadmin.espacios.toggle-active');
+
     // Rutas para gestionar bloqueos
     Route::get('/bloqueos', [BloqueoController::class, 'index'])->name('superadmin.bloqueos.index');
     Route::get('/bloqueos/create', [BloqueoController::class, 'create'])->name('superadmin.bloqueos.create');
