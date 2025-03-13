@@ -51,9 +51,45 @@ const SpaceCard = ({ space = {}, onOpenModal }) => {
      */
     const is24x7 = () => Number(space.disponible_24_7) === 1;
 
-    // Parseo de características
-    const features = typeof space.features === 'string' ? 
-        JSON.parse(space.features) : space.features || [];
+    // Procesamiento mejorado de características (features)
+    const features = (() => {
+        try {
+            // Si es array, usarlo directamente
+            if (Array.isArray(space.features)) {
+                return space.features;
+            }
+            
+            // Si es string, intentar parsearlo
+            if (typeof space.features === 'string') {
+                const parsed = JSON.parse(space.features);
+                return Array.isArray(parsed) ? parsed : [];
+            }
+            
+            // Si no es ni array ni string, o si es null/undefined
+            return [];
+        } catch (error) {
+            console.error("Error parsing features:", error);
+            return [];
+        }
+    })();
+
+    // Procesamiento mejorado de galería
+    const gallery = (() => {
+        // Si gallery_media existe y es un array, usarlo directamente
+        if (Array.isArray(space.gallery_media) && space.gallery_media.length > 0) {
+            return space.gallery_media;
+        }
+        
+        // Si tenemos imagen principal, crear un item de galería con ella
+        if (space.image_url || space.image) {
+            return [{ 
+                url: space.image_url || space.image, 
+                type: 'image' 
+            }];
+        }
+        
+        return [];
+    })();
 
     // No renderizar si no hay datos del espacio
     if (!space) return null;
@@ -66,14 +102,14 @@ const SpaceCard = ({ space = {}, onOpenModal }) => {
             {/* Sección de Galería */}
             <div className="relative aspect-video bg-gray-100">
                 {/* Visualizador principal de imagen/video */}
-                {space.gallery_media?.[currentImageIndex]?.type === 'video' ? (
+                {gallery[currentImageIndex]?.type === 'video' ? (
                     <VideoThumbnail
-                        videoUrl={space.gallery_media[currentImageIndex].url}
+                        videoUrl={gallery[currentImageIndex].url}
                         className="w-full h-full object-cover"
                     />
                 ) : (
                     <img
-                        src={space.gallery_media?.[currentImageIndex]?.url || space.image}
+                        src={gallery[currentImageIndex]?.url || space.image_url || space.image || '/placeholder.jpg'}
                         alt={space.nombre}
                         className="w-full h-full object-cover"
                         onError={handleImageError}
@@ -81,9 +117,9 @@ const SpaceCard = ({ space = {}, onOpenModal }) => {
                 )}
 
                 {/* Miniaturas de la galería */}
-                {space.gallery_media?.length > 1 && (
+                {gallery.length > 1 && (
                     <div className="absolute bottom-2 left-2 right-2 flex gap-1 overflow-x-auto p-1">
-                        {space.gallery_media.map((media, index) => (
+                        {gallery.map((media, index) => (
                             <button
                                 key={index}
                                 onClick={(e) => {
@@ -116,6 +152,11 @@ const SpaceCard = ({ space = {}, onOpenModal }) => {
                     <h3 className="text-lg font-semibold text-gray-900">
                         {space.nombre}
                     </h3>
+                    {space.tipo && (
+                        <span className="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full">
+                            {capitalize(space.tipo)}
+                        </span>
+                    )}
                 </div>
 
                 {/* Descripción del espacio */}
