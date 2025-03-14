@@ -1,4 +1,5 @@
 <?php
+// filepath: c:\Users\alber\Desktop\Start-Idea\reservas-laravel\reservas\app\Http\Requests\Espacios\EspacioRequest.php
 
 namespace App\Http\Requests\Espacios;
 
@@ -37,7 +38,20 @@ class EspacioRequest extends FormRequest
             'features' => 'nullable|array',
             'price' => 'required|numeric|min:0',
             'image' => $isUpdate ? 'nullable|image|max:2048' : 'required|image|max:2048',
-            'gallery.*' => 'nullable|image|max:2048',
+            
+            // Regla modificada para soportar imágenes y videos
+            'gallery.*' => [
+                'nullable',
+                'file',
+                'max:20480', // 20MB max para videos
+                'mimes:jpeg,png,jpg,gif,webp,mp4,webm,ogg,mov'
+            ],
+            
+            // Nueva regla para eliminar elementos de la galería
+            'gallery_items_to_remove' => 'nullable|array',
+            'gallery_items_to_remove.*' => 'string',
+            
+            // Reglas para escritorios
             'escritorios' => 'nullable|array',
             'escritorios.*.id' => [
                 'nullable', 
@@ -84,7 +98,17 @@ class EspacioRequest extends FormRequest
             'image.required' => 'Debe subir una imagen principal para el espacio.',
             'image.image' => 'El archivo debe ser una imagen.',
             'image.max' => 'La imagen no debe superar los :max kilobytes.',
-            'gallery.*.image' => 'Todos los archivos de la galería deben ser imágenes.',
+            
+            // Mensajes actualizados para la galería
+            'gallery.*.file' => 'Todos los archivos de la galería deben ser válidos.',
+            'gallery.*.max' => 'Los archivos de la galería no deben superar los :max kilobytes (20MB).',
+            'gallery.*.mimes' => 'Los archivos de la galería deben ser imágenes (jpeg, png, jpg, gif, webp) o videos (mp4, webm, ogg, mov).',
+            
+            // Mensajes para eliminación de items
+            'gallery_items_to_remove.array' => 'La lista de elementos a eliminar debe ser un array.',
+            'gallery_items_to_remove.*.string' => 'Las rutas de los elementos a eliminar deben ser cadenas de texto.',
+            
+            // Mensajes para escritorios
             'escritorios.required' => 'Los espacios de tipo coworking deben tener al menos un escritorio.',
             'escritorios.min' => 'Debe definir al menos :min escritorio.',
             'escritorios.*.numero.required_with' => 'Cada escritorio debe tener un número o identificador.',
@@ -99,11 +123,21 @@ class EspacioRequest extends FormRequest
      */
     protected function prepareForValidation()
     {
+        $mergeData = [];
+        
         // Asegurarse que features siempre es un array si está presente
         if ($this->has('features') && is_string($this->features)) {
-            $this->merge([
-                'features' => json_decode($this->features, true) ?? []
-            ]);
+            $mergeData['features'] = json_decode($this->features, true) ?? [];
+        }
+        
+        // Asegurarse que gallery_items_to_remove es un array si está presente
+        if ($this->has('gallery_items_to_remove') && is_string($this->gallery_items_to_remove)) {
+            $mergeData['gallery_items_to_remove'] = json_decode($this->gallery_items_to_remove, true) ?? [];
+        }
+        
+        // Aplicar las transformaciones si hay alguna
+        if (!empty($mergeData)) {
+            $this->merge($mergeData);
         }
     }
 }

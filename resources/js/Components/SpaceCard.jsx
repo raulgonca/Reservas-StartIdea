@@ -130,7 +130,11 @@ const SpaceCard = ({ space = {}, onOpenModal }) => {
                                     ${currentImageIndex === index ? 'border-blue-500' : 'border-white/50'}`}
                             >
                                 {media.type === 'video' ? (
-                                    <VideoThumbnail videoUrl={media.url} />
+                                    <VideoThumbnail
+                                        videoUrl={media.url}
+                                        thumbnailUrl={media.thumbnail} // Añadir esta línea
+                                        className="w-full h-full object-cover"
+                                    />
                                 ) : (
                                     <img
                                         src={media.url}

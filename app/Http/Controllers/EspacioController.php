@@ -5,7 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Espacio;
 use App\Models\Escritorio;
 use App\Models\Reserva;
-use App\Http\Requests\Espacios\EspacioRequest; // Nuevo import para el Form Request
+use App\Http\Requests\Espacios\EspacioRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Validator;
@@ -142,6 +142,16 @@ class EspacioController extends Controller
      */
     public function store(EspacioRequest $request)
     {
+        // Registrar lo que estamos recibiendo para diagnóstico con más detalle
+        Log::info('Datos recibidos para crear espacio:', [
+            'has_image' => $request->hasFile('image'),
+            'has_gallery' => $request->hasFile('gallery'),
+            'gallery_count' => $request->hasFile('gallery') ? count($request->file('gallery')) : 0,
+            'features' => $request->input('features'),
+            'features_type' => gettype($request->input('features')),
+            'request_all' => $request->all() // Ver todos los datos para diagnóstico
+        ]);
+
         // Los datos ya están validados por el Form Request
         $validated = $request->validated();
 
@@ -155,9 +165,35 @@ class EspacioController extends Controller
         $espacio->horario_fin = $validated['horario_fin'];
         $espacio->disponible_24_7 = $request->has('disponible_24_7');
         $espacio->descripcion = $validated['descripcion'];
-        $espacio->features = $validated['features'] ?? [];
+        
+        // SOLUCIÓN: Procesamiento mejorado de features
+        $features = $request->input('features');
+        if (is_null($features)) {
+            // Si es null, usar array vacío
+            $espacio->features = [];
+        } else if (is_string($features)) {
+            // Si es string (posiblemente JSON), intentar decodificar
+            try {
+                $decodedFeatures = json_decode($features, true);
+                $espacio->features = is_array($decodedFeatures) ? $decodedFeatures : [];
+            } catch (\Exception $e) {
+                Log::error('Error al decodificar features:', ['error' => $e->getMessage()]);
+                $espacio->features = [];
+            }
+        } else {
+            // Debe ser un array u otro tipo, asegurarse que sea array
+            $espacio->features = is_array($features) ? $features : [];
+        }
+        
+        // Registrar cómo quedaron procesados los features
+        Log::info('Features procesados:', [
+            'features_input_type' => gettype($request->input('features')),
+            'features_processed' => $espacio->features
+        ]);
+        
         $espacio->price = $validated['price'];
         $espacio->is_active = $request->has('is_active');
+        $espacio->gallery = []; // Inicializar gallery como array vacío
 
         // Procesar la imagen principal si se ha subido
         if ($request->hasFile('image')) {
@@ -165,16 +201,39 @@ class EspacioController extends Controller
             $espacio->image = $path;
         }
 
-        // Guardar el espacio
+        // Guardar el espacio para obtener su ID
         $espacio->save();
 
         // Procesar imágenes adicionales si se han subido
         if ($request->hasFile('gallery')) {
+            $galleryPaths = []; // Array para almacenar rutas de imágenes de la galería
+            
             foreach ($request->file('gallery') as $file) {
-                $path = $file->store('espacios/' . $espacio->slug . '/gallery', 'public');
-                // Aquí deberíamos guardar la referencia a la imagen en una tabla relacionada
-                // o en un campo JSON si el modelo lo permite
+                try {
+                    // Guardar el archivo en storage
+                    $path = $file->store('espacios/' . $espacio->slug . '/gallery', 'public');
+                    
+                    // Añadir la ruta al array de galerías
+                    $galleryPaths[] = $path;
+                    
+                    Log::info("Imagen añadida a galería:", ['path' => $path]);
+                } catch (\Exception $e) {
+                    Log::error("Error al guardar imagen de galería:", [
+                        'error' => $e->getMessage(),
+                        'espacio_id' => $espacio->id
+                    ]);
+                }
             }
+            
+            // Actualizar el campo gallery del espacio con las nuevas rutas
+            $espacio->gallery = $galleryPaths;
+            $espacio->save();
+            
+            Log::info("Gallery actualizada:", [
+                'espacio_id' => $espacio->id,
+                'gallery_count' => count($galleryPaths),
+                'gallery_data' => $espacio->gallery
+            ]);
         }
 
         // Para espacios tipo coworking, crear escritorios
@@ -231,6 +290,17 @@ class EspacioController extends Controller
      */
     public function update(EspacioRequest $request, $id)
     {
+        // Registrar lo que estamos recibiendo para diagnóstico
+        Log::info('Datos recibidos para actualizar espacio:', [
+            'espacio_id' => $id,
+            'has_image' => $request->hasFile('image'),
+            'has_gallery' => $request->hasFile('gallery'),
+            'gallery_count' => $request->hasFile('gallery') ? count($request->file('gallery')) : 0,
+            'features' => $request->input('features'),
+            'features_type' => gettype($request->input('features')),
+            'request_all' => $request->all() // Ver todos los datos para diagnóstico
+        ]);
+
         $espacio = Espacio::findOrFail($id);
 
         // Los datos ya están validados por el Form Request
@@ -245,7 +315,37 @@ class EspacioController extends Controller
         $espacio->horario_fin = $validated['horario_fin'];
         $espacio->disponible_24_7 = $request->has('disponible_24_7');
         $espacio->descripcion = $validated['descripcion'];
-        $espacio->features = $validated['features'] ?? [];
+
+        // SOLUCIÓN: Procesamiento mejorado de features (igual que en store)
+        $features = $request->input('features');
+        if (is_null($features)) {
+            // Si es null, mantener el valor existente o usar array vacío
+            if (!isset($espacio->features) || is_null($espacio->features)) {
+                $espacio->features = [];
+            }
+        } else if (is_string($features)) {
+            // Si es string (posiblemente JSON), intentar decodificar
+            try {
+                $decodedFeatures = json_decode($features, true);
+                $espacio->features = is_array($decodedFeatures) ? $decodedFeatures : [];
+            } catch (\Exception $e) {
+                Log::error('Error al decodificar features en update:', ['error' => $e->getMessage()]);
+                // Mantener valor anterior si el parsing falla
+                if (!isset($espacio->features) || is_null($espacio->features)) {
+                    $espacio->features = [];
+                }
+            }
+        } else {
+            // Debe ser un array u otro tipo, asegurarse que sea array
+            $espacio->features = is_array($features) ? $features : [];
+        }
+        
+        // Registrar cómo quedaron procesados los features
+        Log::info('Features procesados en update:', [
+            'features_input_type' => gettype($request->input('features')),
+            'features_processed' => $espacio->features
+        ]);
+        
         $espacio->price = $validated['price'];
         $espacio->is_active = $request->has('is_active');
 
@@ -260,16 +360,62 @@ class EspacioController extends Controller
             $espacio->image = $path;
         }
 
-        // Guardar el espacio
+        // Guardar el espacio con los cambios básicos
         $espacio->save();
 
         // Procesar imágenes adicionales si se han subido
         if ($request->hasFile('gallery')) {
+            // Obtener las rutas existentes de la galería o inicializar como array vacío
+            $galleryPaths = is_array($espacio->gallery) ? $espacio->gallery : [];
+            
             foreach ($request->file('gallery') as $file) {
-                $path = $file->store('espacios/' . $espacio->slug . '/gallery', 'public');
-                // Aquí deberíamos guardar la referencia a la imagen en una tabla relacionada
-                // o en un campo JSON si el modelo lo permite
+                try {
+                    // Guardar el archivo en storage
+                    $path = $file->store('espacios/' . $espacio->slug . '/gallery', 'public');
+                    
+                    // Añadir la ruta al array de galerías
+                    $galleryPaths[] = $path;
+                    
+                    Log::info("Imagen añadida a galería en actualización:", ['path' => $path]);
+                } catch (\Exception $e) {
+                    Log::error("Error al guardar imagen de galería en actualización:", [
+                        'error' => $e->getMessage(),
+                        'espacio_id' => $espacio->id
+                    ]);
+                }
             }
+            
+            // Actualizar el campo gallery del espacio con todas las rutas
+            $espacio->gallery = $galleryPaths;
+            $espacio->save();
+            
+            Log::info("Gallery actualizada en actualización:", [
+                'espacio_id' => $espacio->id,
+                'gallery_count' => count($galleryPaths),
+                'gallery_data' => $espacio->gallery
+            ]);
+        }
+
+        // Manejar la eliminación de imágenes de la galería si se especifican
+        if (isset($validated['gallery_items_to_remove']) && is_array($validated['gallery_items_to_remove'])) {
+            $currentGallery = is_array($espacio->gallery) ? $espacio->gallery : [];
+            $newGallery = [];
+            
+            foreach ($currentGallery as $path) {
+                if (!in_array($path, $validated['gallery_items_to_remove'])) {
+                    $newGallery[] = $path;
+                } else {
+                    // Eliminar el archivo físico
+                    if (Storage::disk('public')->exists($path)) {
+                        Storage::disk('public')->delete($path);
+                        Log::info("Imagen eliminada de galería:", ['path' => $path]);
+                    }
+                }
+            }
+            
+            // Actualizar la galería sin los elementos eliminados
+            $espacio->gallery = $newGallery;
+            $espacio->save();
         }
 
         // Manejar escritorios para espacios de tipo coworking
@@ -336,6 +482,15 @@ class EspacioController extends Controller
         // Eliminar imágenes asociadas
         if ($espacio->image && Storage::disk('public')->exists($espacio->image)) {
             Storage::disk('public')->delete($espacio->image);
+        }
+
+        // Eliminar imágenes de la galería
+        if (is_array($espacio->gallery)) {
+            foreach ($espacio->gallery as $path) {
+                if (Storage::disk('public')->exists($path)) {
+                    Storage::disk('public')->delete($path);
+                }
+            }
         }
 
         // Eliminar directorio de galería si existe
@@ -467,6 +622,62 @@ class EspacioController extends Controller
         } catch (\Exception $e) {
             Log::error('Error en getDesksAvailability: ' . $e->getMessage());
             return response()->json(['error' => 'Error al obtener disponibilidad de escritorios'], 500);
+        }
+    }
+
+    /**
+     * Elimina una imagen específica de la galería de un espacio
+     *
+     * @param Request $request
+     * @param int $id
+     * @return JsonResponse
+     */
+    public function removeGalleryItem(Request $request, $id): JsonResponse
+    {
+        try {
+            $espacio = Espacio::findOrFail($id);
+            $path = $request->input('path');
+
+            if (empty($path)) {
+                return response()->json(['error' => 'Ruta de imagen no especificada'], 400);
+            }
+
+            // Obtener la galería actual
+            $gallery = is_array($espacio->gallery) ? $espacio->gallery : [];
+
+            // Buscar y eliminar la ruta especificada
+            $key = array_search($path, $gallery);
+            if ($key !== false) {
+                // Eliminar el archivo físico
+                if (Storage::disk('public')->exists($path)) {
+                    Storage::disk('public')->delete($path);
+                }
+
+                // Eliminar del array de la galería
+                unset($gallery[$key]);
+                $espacio->gallery = array_values($gallery); // Reindexar array
+                $espacio->save();
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Imagen eliminada de la galería'
+                ]);
+            }
+
+            return response()->json([
+                'error' => 'Imagen no encontrada en la galería'
+            ], 404);
+
+        } catch (\Exception $e) {
+            Log::error('Error al eliminar imagen de galería:', [
+                'error' => $e->getMessage(),
+                'espacio_id' => $id,
+                'path' => $request->input('path')
+            ]);
+
+            return response()->json([
+                'error' => 'Error al eliminar imagen de la galería'
+            ], 500);
         }
     }
 }

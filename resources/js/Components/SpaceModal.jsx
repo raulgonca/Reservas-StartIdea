@@ -97,7 +97,10 @@ const SpaceModal = ({ isOpen, closeModal, space }) => {
                                                     ${currentMediaIndex === index ? 'border-blue-500' : 'border-transparent'}`}
                                                 >
                                                     {media.type === 'video' ? (
-                                                        <VideoThumbnail videoUrl={media.url} />
+                                                        <VideoThumbnail 
+                                                            videoUrl={media.url} 
+                                                            thumbnailUrl={media.thumbnail} // Añadir esta línea
+                                                        />
                                                     ) : (
                                                         <img
                                                             src={media.url}

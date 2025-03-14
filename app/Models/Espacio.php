@@ -6,6 +6,7 @@ use App\Services\MediaService;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\DB;
 
 class Espacio extends Model
 {
@@ -108,7 +109,7 @@ class Espacio extends Model
                 'espacio' => $this->nombre,
                 'error' => $e->getMessage()
             ]);
-            return asset('storage/' . config('media.placeholders.image'));
+            return asset('storage/' . config('media.placeholders.image', 'placeholders/image.jpg'));
         }
     }
 
@@ -122,8 +123,67 @@ class Espacio extends Model
     public function getGalleryMediaAttribute(): array
     {
         try {
-            // Primero intentamos procesar el campo gallery directamente
+            // DIAGNÓSTICO: Verificar datos directamente desde la base de datos
+            $rawGalleryData = DB::table('espacios')
+                ->where('id', $this->id)
+                ->value('gallery');
+            
+            Log::debug('Datos de galería de la DB directamente:', [
+                'espacio_id' => $this->id,
+                'raw_gallery_data' => $rawGalleryData,
+                'raw_gallery_type' => gettype($rawGalleryData)
+            ]);
+            
+            // Intentar procesar datos crudos de la base de datos si están disponibles
+            if ($rawGalleryData && is_string($rawGalleryData)) {
+                $decodedGallery = json_decode($rawGalleryData, true);
+                if (is_array($decodedGallery) && !empty($decodedGallery)) {
+                    Log::debug('Gallery recuperada directamente de la DB:', [
+                        'espacio_id' => $this->id,
+                        'count' => count($decodedGallery),
+                        'items' => $decodedGallery
+                    ]);
+                    
+                    // Procesar elementos de la galería desde datos crudos
+                    $galleryMedia = [];
+                    foreach ($decodedGallery as $path) {
+                        // Detectar si es imagen o video basado en la extensión
+                        $extension = strtolower(pathinfo($path, PATHINFO_EXTENSION));
+                        $isVideo = in_array($extension, ['mp4', 'webm', 'ogg', 'mov']);
+                        
+                        $galleryItem = [
+                            'type' => $isVideo ? 'video' : 'image',
+                            'url' => asset("storage/{$path}"),
+                            'thumbnail' => $isVideo ? asset('storage/placeholders/video.jpg') : asset("storage/{$path}"),
+                            'is_main' => ($path === $this->image)
+                        ];
+                        
+                        // Para videos, añadir información adicional
+                        if ($isVideo) {
+                            $galleryItem['mime_type'] = "video/{$extension}";
+                        }
+                        
+                        $galleryMedia[] = $galleryItem;
+                    }
+                    
+                    if (!empty($galleryMedia)) {
+                        return $galleryMedia;
+                    }
+                }
+            }
+            
+            // MÉTODO ORIGINAL: Intentar con el atributo gallery del modelo
             $galleryMedia = [];
+            
+            // Registro detallado para diagnóstico
+            Log::debug('Evaluando gallery attribute desde modelo:', [
+                'espacio_id' => $this->id,
+                'gallery_type' => gettype($this->gallery),
+                'gallery_value' => $this->gallery,
+                'gallery_is_array' => is_array($this->gallery),
+                'gallery_empty' => empty($this->gallery),
+                'raw_attribute' => $this->attributes['gallery'] ?? 'no_raw_attribute'
+            ]);
             
             // Verificar si tenemos datos en el campo gallery
             if (!empty($this->gallery) && is_array($this->gallery)) {
@@ -136,7 +196,7 @@ class Espacio extends Model
                         'type' => $isVideo ? 'video' : 'image',
                         'url' => asset("storage/{$path}"),
                         'thumbnail' => $isVideo ? asset('storage/placeholders/video.jpg') : asset("storage/{$path}"),
-                        'is_main' => false
+                        'is_main' => ($path === $this->image)
                     ];
                     
                     // Para videos, añadir información adicional
@@ -149,15 +209,26 @@ class Espacio extends Model
                 
                 // Si encontramos elementos en la galería, los devolvemos
                 if (!empty($galleryMedia)) {
+                    Log::debug('Gallery procesada desde atributo del modelo:', [
+                        'espacio_id' => $this->id,
+                        'count' => count($galleryMedia)
+                    ]);
                     return $galleryMedia;
                 }
             }
             
             // Si no hay datos en gallery o está vacío, delegamos al MediaService
-            return $this->mediaService->getGalleryMedia($this);
+            $serviceGallery = $this->mediaService->getGalleryMedia($this);
+            Log::debug('Gallery obtenida desde MediaService:', [
+                'espacio_id' => $this->id,
+                'count' => count($serviceGallery)
+            ]);
+            return $serviceGallery;
+            
         } catch (\Exception $e) {
             Log::error('Error procesando galería de medios:', [
-                'espacio' => $this->nombre,
+                'espacio_id' => $this->id,
+                'espacio_nombre' => $this->nombre,
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ]);
@@ -186,6 +257,13 @@ class Espacio extends Model
         if (!in_array($path, $gallery)) {
             $gallery[] = $path;
             $this->gallery = $gallery;
+            
+            // Registrar la operación para diagnóstico
+            Log::debug('Añadida imagen a galería:', [
+                'espacio_id' => $this->id,
+                'path' => $path,
+                'gallery_count' => count($this->gallery)
+            ]);
         }
     }
 
@@ -204,6 +282,13 @@ class Espacio extends Model
                     return $item !== $path;
                 }
             ));
+            
+            // Registrar la operación para diagnóstico
+            Log::debug('Eliminada imagen de galería:', [
+                'espacio_id' => $this->id,
+                'path' => $path,
+                'gallery_count' => count($this->gallery)
+            ]);
         }
     }
 
