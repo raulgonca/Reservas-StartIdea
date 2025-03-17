@@ -9,6 +9,9 @@ import TextInput from '@/Components/TextInput';
 import useToast from '@/Hooks/useToast';
 import { toast } from 'react-toastify';
 
+import Pagination from '@/Components/Pagination';
+
+
 /**
  * Vista principal para listar y gestionar usuarios
  * 
@@ -16,7 +19,7 @@ import { toast } from 'react-toastify';
  */
 export default function UsersList() {
     const { users, auth } = usePage().props;
-    
+
     // Verificar la estructura de datos de users y proporcionar un valor por defecto seguro
     const userData = users?.data || [];
     const usersPagination = {
@@ -25,35 +28,45 @@ export default function UsersList() {
         to: users?.to || 0,
         links: users?.links || []
     };
-    
+
     // Inicializar el hook de notificaciones automáticas
     useToast();
-    
+
     // Estado para usuario a eliminar
     const [userToDelete, setUserToDelete] = useState(null);
-    
+
     // Estados para filtros y búsqueda
     const [filter, setFilter] = useState("all");
     const [search, setSearch] = useState("");
-    
-    // Función para aplicar filtro
+
+    /**
+     * Maneja el cambio en el filtro de rol
+     * @param {Object} e - Evento del cambio
+     */
     const handleFilterChange = (e) => {
         setFilter(e.target.value);
         applyFilters(e.target.value, search);
     };
-    
-    // Función para aplicar búsqueda con debounce
+
+    /**
+     * Maneja el cambio en el campo de búsqueda con debounce
+     * @param {Object} e - Evento del cambio
+     */
     const handleSearchChange = (e) => {
         const value = e.target.value;
         setSearch(value);
-        
+
         clearTimeout(window.searchTimeout);
         window.searchTimeout = setTimeout(() => {
             applyFilters(filter, value);
         }, 300);
     };
-    
-    // Función para aplicar filtros y búsqueda
+
+    /**
+     * Aplica los filtros y la búsqueda haciendo una petición al servidor
+     * @param {string} filterValue - Valor del filtro de rol
+     * @param {string} searchValue - Valor de búsqueda
+     */
     const applyFilters = (filterValue, searchValue) => {
         router.get(route(`${auth.user.role}.users.index`), {
             filter: filterValue,
@@ -63,33 +76,40 @@ export default function UsersList() {
             replace: true,
         });
     };
-    
-    // Función para mostrar el modal de confirmación de eliminación
+
+    /**
+     * Muestra el modal de confirmación de eliminación
+     * @param {Object} user - Usuario a eliminar
+     */
     const confirmDelete = (user) => {
         // No permitir eliminar el propio usuario
         if (user.id === auth.user.id) {
             toast.error("No puedes eliminar tu propio usuario");
             return;
         }
-        
+
         // Validar permisos basados en rol
         if (auth.user.role === 'admin' && user.role !== 'user') {
             toast.error("No tienes permisos para eliminar usuarios con rol de administrador");
             return;
         }
-        
+
         setUserToDelete(user);
     };
-    
-    // Función para cancelar la eliminación
+
+    /**
+     * Cancela la operación de eliminación
+     */
     const cancelDelete = () => {
         setUserToDelete(null);
     };
-    
-    // Función para eliminar un usuario con notificaciones
+
+    /**
+     * Elimina un usuario con notificaciones de progreso
+     */
     const deleteUser = () => {
         const toastId = toast.loading(`Eliminando usuario ${userToDelete.name}...`);
-        
+
         router.delete(route(`${auth.user.role}.users.destroy`, userToDelete.id), {
             onSuccess: () => {
                 setUserToDelete(null);
@@ -111,8 +131,12 @@ export default function UsersList() {
             }
         });
     };
-    
-    // Función para obtener la clase CSS del badge según el rol
+
+    /**
+     * Obtiene la clase CSS del badge según el rol del usuario
+     * @param {string} role - Rol del usuario ('superadmin', 'admin', 'user')
+     * @returns {string} - Clases CSS para el badge
+     */
     const getRoleBadgeClass = (role) => {
         switch (role) {
             case 'superadmin':
@@ -122,6 +146,24 @@ export default function UsersList() {
             default:
                 return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300';
         }
+    };
+
+    /**
+     * Traduce las etiquetas de paginación al español
+     * @param {string} label - Etiqueta original del paginador
+     * @returns {string} - Etiqueta traducida al español
+     */
+    const translatePaginationLabel = (label) => {
+        // Diccionario de traducciones para la paginación
+        const translations = {
+            '&laquo; Previous': '&laquo; Anterior',
+            'Next &raquo;': 'Siguiente &raquo;',
+            'pagination.previous': '&laquo; Anterior',
+            'pagination.next': 'Siguiente &raquo;'
+        };
+
+        // Devolver la traducción o la etiqueta original
+        return translations[label] || label;
     };
 
     return (
@@ -143,7 +185,7 @@ export default function UsersList() {
                                     </PrimaryButton>
                                 </Link>
                             </div>
-                            
+
                             {/* Filtros y búsqueda */}
                             <div className="mb-6 flex flex-col md:flex-row gap-4">
                                 <div className="w-full md:w-1/3">
@@ -180,7 +222,7 @@ export default function UsersList() {
                                     />
                                 </div>
                             </div>
-                            
+
                             {/* Tabla de usuarios */}
                             <div className="overflow-x-auto">
                                 <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
@@ -232,10 +274,10 @@ export default function UsersList() {
                                                     </td>
                                                     <td className="px-6 py-4 whitespace-nowrap">
                                                         <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getRoleBadgeClass(user.role)}`}>
-                                                            {user.role === 'superadmin' 
-                                                                ? 'Superadmin' 
-                                                                : user.role === 'admin' 
-                                                                    ? 'Administrador' 
+                                                            {user.role === 'superadmin'
+                                                                ? 'Superadmin'
+                                                                : user.role === 'admin'
+                                                                    ? 'Administrador'
                                                                     : 'Usuario'}
                                                         </span>
                                                     </td>
@@ -252,7 +294,7 @@ export default function UsersList() {
                                                                             </SecondaryButton>
                                                                         </Link>
                                                                     )}
-                                                                    
+
                                                                     {/* Los admin solo pueden eliminar usuarios normales */}
                                                                     {(auth.user.role === 'superadmin' || user.role === 'user') && (
                                                                         <DangerButton onClick={() => confirmDelete(user)}>
@@ -279,41 +321,18 @@ export default function UsersList() {
                                     </tbody>
                                 </table>
                             </div>
-                            
+
                             {/* Resumen de resultados y paginación */}
                             {userData.length > 0 && (
                                 <div className="mt-4">
                                     <div className="text-sm text-gray-500 dark:text-gray-400 mb-4">
                                         Mostrando {usersPagination.from || 0} - {usersPagination.to || 0} de {usersPagination.total || 0} usuarios
                                     </div>
-                                    
-                                    {/* Paginación simple sin depender del componente Pagination */}
+
+                                    {/* Paginación simple con traducción al español */}
                                     {usersPagination.links && usersPagination.links.length > 3 && (
-                                        <div className="flex flex-wrap justify-center mt-4 gap-1">
-                                            {usersPagination.links.map((link, key) => {
-                                                if (link.url === null) {
-                                                    return (
-                                                        <span
-                                                            key={key}
-                                                            className="px-4 py-2 text-sm text-gray-500 bg-gray-100 border rounded cursor-not-allowed dark:bg-gray-700 dark:text-gray-400 dark:border-gray-600"
-                                                            dangerouslySetInnerHTML={{ __html: link.label }}
-                                                        />
-                                                    );
-                                                }
-                                                
-                                                return (
-                                                    <Link
-                                                        key={key}
-                                                        href={link.url}
-                                                        className={`px-4 py-2 text-sm border rounded ${
-                                                            link.active
-                                                                ? 'bg-blue-600 text-white border-blue-600 dark:bg-blue-700 dark:border-blue-800'
-                                                                : 'text-gray-700 bg-white hover:bg-gray-100 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-700'
-                                                        }`}
-                                                        dangerouslySetInnerHTML={{ __html: link.label }}
-                                                    />
-                                                );
-                                            })}
+                                        <div className="mt-4 flex justify-center">
+                                            <Pagination links={usersPagination.links} />
                                         </div>
                                     )}
                                 </div>
@@ -322,7 +341,7 @@ export default function UsersList() {
                     </div>
                 </div>
             </div>
-            
+
             {/* Modal de confirmación de eliminación */}
             {userToDelete && (
                 <ConfirmDeleteUser

@@ -7,6 +7,24 @@ export default function Pagination({ links }) {
         return null;
     }
 
+    /**
+     * Traduce las etiquetas de paginación al español
+     * @param {string} label - Etiqueta original del paginador
+     * @returns {string} - Etiqueta traducida
+     */
+    const translatePagination = (label) => {
+        // Diccionario de traducciones
+        const translations = {
+            '&laquo; Previous': '&laquo; Anterior',
+            'Next &raquo;': 'Siguiente &raquo;',
+            'pagination.previous': '&laquo; Anterior',
+            'pagination.next': 'Siguiente &raquo;'
+        };
+
+        // Devolver la traducción o la etiqueta original si no existe traducción
+        return translations[label] || label;
+    };
+
     return (
         <div className="flex flex-wrap -mb-1">
             {links.map((link, key) => (
@@ -14,7 +32,7 @@ export default function Pagination({ links }) {
                     {link.url === null ? (
                         <div
                             className="mr-1 mb-1 px-4 py-2 text-sm border rounded text-gray-400 dark:text-gray-600"
-                            dangerouslySetInnerHTML={{ __html: link.label }}
+                            dangerouslySetInnerHTML={{ __html: translatePagination(link.label) }}
                         />
                     ) : (
                         <Link
@@ -24,7 +42,7 @@ export default function Pagination({ links }) {
                                     'border-gray-300 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800'
                                 }`}
                             href={link.url}
-                            dangerouslySetInnerHTML={{ __html: link.label }}
+                            dangerouslySetInnerHTML={{ __html: translatePagination(link.label) }}
                         />
                     )}
                 </React.Fragment>
