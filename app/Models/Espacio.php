@@ -114,207 +114,172 @@ class Espacio extends Model
     }
 
     /**
- * Obtiene toda la galería de medios del espacio.
- * Primero intenta procesar directamente el campo gallery.
- * Si no hay datos o hay un error, delega al MediaService.
- * Asegura que la imagen principal siempre esté incluida en la galería.
- *
- * @return array Array de medios con sus propiedades
- */
-public function getGalleryMediaAttribute(): array
-{
-    try {
-        // DIAGNÓSTICO: Verificar datos directamente desde la base de datos
-        $rawGalleryData = DB::table('espacios')
-            ->where('id', $this->id)
-            ->value('gallery');
-        
-        Log::debug('Datos de galería de la DB directamente:', [
-            'espacio_id' => $this->id,
-            'raw_gallery_data' => $rawGalleryData,
-            'raw_gallery_type' => gettype($rawGalleryData)
-        ]);
-        
-        // Variable para almacenar el resultado final de la galería
-        $galleryMedia = [];
-        $mainImageIncluded = false;
-        
-        // Intentar procesar datos crudos de la base de datos si están disponibles
-        if ($rawGalleryData && is_string($rawGalleryData)) {
-            $decodedGallery = json_decode($rawGalleryData, true);
-            if (is_array($decodedGallery) && !empty($decodedGallery)) {
-                Log::debug('Gallery recuperada directamente de la DB:', [
-                    'espacio_id' => $this->id,
-                    'count' => count($decodedGallery),
-                    'items' => $decodedGallery
-                ]);
-                
-                // Procesar elementos de la galería desde datos crudos
-                foreach ($decodedGallery as $path) {
-                    // Detectar si es imagen o video basado en la extensión
-                    $extension = strtolower(pathinfo($path, PATHINFO_EXTENSION));
-                    $isVideo = in_array($extension, ['mp4', 'webm', 'ogg', 'mov']);
-                    
-                    $isMainImage = ($path === $this->image);
-                    // Marcar si la imagen principal ya está incluida
-                    if ($isMainImage) {
-                        $mainImageIncluded = true;
-                    }
-                    
-                    $galleryItem = [
-                        'type' => $isVideo ? 'video' : 'image',
-                        'url' => asset("storage/{$path}"),
-                        'thumbnail' => $isVideo ? asset('storage/placeholders/video.jpg') : asset("storage/{$path}"),
-                        'is_main' => $isMainImage
-                    ];
-                    
-                    // Para videos, añadir información adicional
-                    if ($isVideo) {
-                        $galleryItem['mime_type'] = "video/{$extension}";
-                    }
-                    
-                    $galleryMedia[] = $galleryItem;
-                }
-            }
-        }
-        
-        // Si no se encontraron elementos en la db directa, intentar con el atributo gallery del modelo
-        if (empty($galleryMedia)) {
-            // Registro detallado para diagnóstico
-            Log::debug('Evaluando gallery attribute desde modelo:', [
-                'espacio_id' => $this->id,
-                'gallery_type' => gettype($this->gallery),
-                'gallery_value' => $this->gallery,
-                'gallery_is_array' => is_array($this->gallery),
-                'gallery_empty' => empty($this->gallery),
-                'raw_attribute' => $this->attributes['gallery'] ?? 'no_raw_attribute'
-            ]);
-            
-            // Verificar si tenemos datos en el campo gallery
-            if (!empty($this->gallery) && is_array($this->gallery)) {
-                foreach ($this->gallery as $path) {
-                    // Detectar si es imagen o video basado en la extensión
-                    $extension = strtolower(pathinfo($path, PATHINFO_EXTENSION));
-                    $isVideo = in_array($extension, ['mp4', 'webm', 'ogg', 'mov']);
-                    
-                    $isMainImage = ($path === $this->image);
-                    // Marcar si la imagen principal ya está incluida
-                    if ($isMainImage) {
-                        $mainImageIncluded = true;
-                    }
-                    
-                    $galleryItem = [
-                        'type' => $isVideo ? 'video' : 'image',
-                        'url' => asset("storage/{$path}"),
-                        'thumbnail' => $isVideo ? asset('storage/placeholders/video.jpg') : asset("storage/{$path}"),
-                        'is_main' => $isMainImage
-                    ];
-                    
-                    // Para videos, añadir información adicional
-                    if ($isVideo) {
-                        $galleryItem['mime_type'] = "video/{$extension}";
-                    }
-                    
-                    $galleryMedia[] = $galleryItem;
-                }
-            }
-        }
-        
-        // Si no hay datos en gallery o está vacío, delegamos al MediaService
-        if (empty($galleryMedia)) {
-            $galleryMedia = $this->mediaService->getGalleryMedia($this);
-            
-            // Verificar si alguna imagen en la galería del servicio es la principal
-            foreach ($galleryMedia as $item) {
-                if (isset($item['is_main']) && $item['is_main']) {
-                    $mainImageIncluded = true;
-                    break;
-                }
-            }
-            
-            Log::debug('Gallery obtenida desde MediaService:', [
-                'espacio_id' => $this->id,
-                'count' => count($galleryMedia)
-            ]);
-        }
-        
-        // SOLUCIÓN: Asegurarse de que la imagen principal siempre esté incluida en la galería
-        // y aparezca como la primera imagen
-        if ($this->image && !$mainImageIncluded) {
-            $mainImageUrl = $this->image_url; // Usamos el accessor que ya maneja errores
-            
-            // Crear el elemento para la imagen principal
-            $mainImageItem = [
-                'type' => 'image',
-                'url' => $mainImageUrl,
-                'thumbnail' => $mainImageUrl,
-                'is_main' => true
-            ];
-            
-            // Insertar la imagen principal al inicio del array
-            array_unshift($galleryMedia, $mainImageItem);
-            
-            Log::debug('Imagen principal añadida a la galería:', [
-                'espacio_id' => $this->id,
-                'main_image' => $this->image,
-                'main_image_url' => $mainImageUrl
-            ]);
-        }
-        
-        return $galleryMedia;
-        
-    } catch (\Exception $e) {
-        Log::error('Error procesando galería de medios:', [
-            'espacio_id' => $this->id,
-            'espacio_nombre' => $this->nombre,
-            'error' => $e->getMessage(),
-            'trace' => $e->getTraceAsString()
-        ]);
-        
-        // En caso de error, intentar usar el MediaService como fallback
+     * Obtiene toda la galería de medios del espacio.
+     * Primero intenta procesar directamente el campo gallery.
+     * Si no hay datos o hay un error, delega al MediaService.
+     * Asegura que la imagen principal siempre esté incluida en la galería.
+     *
+     * @return array Array de medios con sus propiedades
+     */
+    public function getGalleryMediaAttribute(): array
+    {
         try {
-            $serviceGallery = $this->mediaService->getGalleryMedia($this);
-            
-            // Asegurarse de que incluso en el fallback la imagen principal esté incluida
+            // Variable para almacenar el resultado final de la galería
+            $galleryMedia = [];
             $mainImageIncluded = false;
-            foreach ($serviceGallery as $item) {
-                if (isset($item['is_main']) && $item['is_main']) {
-                    $mainImageIncluded = true;
-                    break;
+            
+            // Intentar procesar datos crudos de la base de datos si están disponibles
+            $rawGalleryData = DB::table('espacios')
+                ->where('id', $this->id)
+                ->value('gallery');
+            
+            if ($rawGalleryData && is_string($rawGalleryData)) {
+                $decodedGallery = json_decode($rawGalleryData, true);
+                if (is_array($decodedGallery) && !empty($decodedGallery)) {
+                    // Procesar elementos de la galería desde datos crudos
+                    foreach ($decodedGallery as $path) {
+                        // Detectar si es imagen o video basado en la extensión
+                        $extension = strtolower(pathinfo($path, PATHINFO_EXTENSION));
+                        $isVideo = in_array($extension, ['mp4', 'webm', 'ogg', 'mov']);
+                        
+                        $isMainImage = ($path === $this->image);
+                        // Marcar si la imagen principal ya está incluida
+                        if ($isMainImage) {
+                            $mainImageIncluded = true;
+                        }
+                        
+                        $galleryItem = [
+                            'type' => $isVideo ? 'video' : 'image',
+                            'url' => asset("storage/{$path}"),
+                            'thumbnail' => $isVideo ? asset('storage/placeholders/video.jpg') : asset("storage/{$path}"),
+                            'is_main' => $isMainImage
+                        ];
+                        
+                        // Para videos, añadir información adicional
+                        if ($isVideo) {
+                            $galleryItem['mime_type'] = "video/{$extension}";
+                        }
+                        
+                        $galleryMedia[] = $galleryItem;
+                    }
                 }
             }
             
-            // Añadir la imagen principal si no está incluida
+            // Si no se encontraron elementos en la db directa, intentar con el atributo gallery del modelo
+            if (empty($galleryMedia)) {
+                // Verificar si tenemos datos en el campo gallery
+                if (!empty($this->gallery) && is_array($this->gallery)) {
+                    foreach ($this->gallery as $path) {
+                        // Detectar si es imagen o video basado en la extensión
+                        $extension = strtolower(pathinfo($path, PATHINFO_EXTENSION));
+                        $isVideo = in_array($extension, ['mp4', 'webm', 'ogg', 'mov']);
+                        
+                        $isMainImage = ($path === $this->image);
+                        // Marcar si la imagen principal ya está incluida
+                        if ($isMainImage) {
+                            $mainImageIncluded = true;
+                        }
+                        
+                        $galleryItem = [
+                            'type' => $isVideo ? 'video' : 'image',
+                            'url' => asset("storage/{$path}"),
+                            'thumbnail' => $isVideo ? asset('storage/placeholders/video.jpg') : asset("storage/{$path}"),
+                            'is_main' => $isMainImage
+                        ];
+                        
+                        // Para videos, añadir información adicional
+                        if ($isVideo) {
+                            $galleryItem['mime_type'] = "video/{$extension}";
+                        }
+                        
+                        $galleryMedia[] = $galleryItem;
+                    }
+                }
+            }
+            
+            // Si no hay datos en gallery o está vacío, delegamos al MediaService
+            if (empty($galleryMedia)) {
+                $galleryMedia = $this->mediaService->getGalleryMedia($this);
+                
+                // Verificar si alguna imagen en la galería del servicio es la principal
+                foreach ($galleryMedia as $item) {
+                    if (isset($item['is_main']) && $item['is_main']) {
+                        $mainImageIncluded = true;
+                        break;
+                    }
+                }
+            }
+            
+            // SOLUCIÓN: Asegurarse de que la imagen principal siempre esté incluida en la galería
+            // y aparezca como la primera imagen
             if ($this->image && !$mainImageIncluded) {
-                $mainImageUrl = $this->image_url;
-                array_unshift($serviceGallery, [
+                $mainImageUrl = $this->image_url; // Usamos el accessor que ya maneja errores
+                
+                // Crear el elemento para la imagen principal
+                $mainImageItem = [
                     'type' => 'image',
                     'url' => $mainImageUrl,
                     'thumbnail' => $mainImageUrl,
                     'is_main' => true
-                ]);
+                ];
+                
+                // Insertar la imagen principal al inicio del array
+                array_unshift($galleryMedia, $mainImageItem);
             }
             
-            return $serviceGallery;
-        } catch (\Exception $innerException) {
-            Log::error('Error en fallback de MediaService:', [
-                'error' => $innerException->getMessage()
+            return $galleryMedia;
+            
+        } catch (\Exception $e) {
+            Log::error('Error procesando galería de medios:', [
+                'espacio_id' => $this->id,
+                'espacio_nombre' => $this->nombre,
+                'error' => $e->getMessage()
             ]);
             
-            // Si todo falla pero tenemos una imagen principal, al menos devolver esa
-            if ($this->image) {
-                return [[
-                    'type' => 'image',
-                    'url' => $this->image_url,
-                    'thumbnail' => $this->image_url,
-                    'is_main' => true
-                ]];
+            // En caso de error, intentar usar el MediaService como fallback
+            try {
+                $serviceGallery = $this->mediaService->getGalleryMedia($this);
+                
+                // Asegurarse de que incluso en el fallback la imagen principal esté incluida
+                $mainImageIncluded = false;
+                foreach ($serviceGallery as $item) {
+                    if (isset($item['is_main']) && $item['is_main']) {
+                        $mainImageIncluded = true;
+                        break;
+                    }
+                }
+                
+                // Añadir la imagen principal si no está incluida
+                if ($this->image && !$mainImageIncluded) {
+                    $mainImageUrl = $this->image_url;
+                    array_unshift($serviceGallery, [
+                        'type' => 'image',
+                        'url' => $mainImageUrl,
+                        'thumbnail' => $mainImageUrl,
+                        'is_main' => true
+                    ]);
+                }
+                
+                return $serviceGallery;
+            } catch (\Exception $innerException) {
+                Log::error('Error en fallback de MediaService:', [
+                    'error' => $innerException->getMessage()
+                ]);
+                
+                // Si todo falla pero tenemos una imagen principal, al menos devolver esa
+                if ($this->image) {
+                    return [[
+                        'type' => 'image',
+                        'url' => $this->image_url,
+                        'thumbnail' => $this->image_url,
+                        'is_main' => true
+                    ]];
+                }
+                
+                return [];
             }
-            
-            return [];
         }
     }
-}
 
     /**
      * Añade una imagen o video a la galería del espacio.
@@ -328,13 +293,6 @@ public function getGalleryMediaAttribute(): array
         if (!in_array($path, $gallery)) {
             $gallery[] = $path;
             $this->gallery = $gallery;
-            
-            // Registrar la operación para diagnóstico
-            Log::debug('Añadida imagen a galería:', [
-                'espacio_id' => $this->id,
-                'path' => $path,
-                'gallery_count' => count($this->gallery)
-            ]);
         }
     }
 
@@ -353,13 +311,6 @@ public function getGalleryMediaAttribute(): array
                     return $item !== $path;
                 }
             ));
-            
-            // Registrar la operación para diagnóstico
-            Log::debug('Eliminada imagen de galería:', [
-                'espacio_id' => $this->id,
-                'path' => $path,
-                'gallery_count' => count($this->gallery)
-            ]);
         }
     }
 
