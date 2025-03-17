@@ -13,7 +13,7 @@ export default function FeatureSelector({
     const availableFeatures = [
         // Características básicas
         {
-            id: 'wifi',
+            id: 'WiFi', 
             label: 'WiFi',
             icon: (
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -23,7 +23,7 @@ export default function FeatureSelector({
             group: 'tech'
         },
         {
-            id: 'projector',
+            id: 'Proyector', 
             label: 'Proyector',
             icon: (
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -33,7 +33,7 @@ export default function FeatureSelector({
             group: 'tech'
         },
         {
-            id: 'whiteboard',
+            id: 'Pizarra', 
             label: 'Pizarra',
             icon: (
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -43,7 +43,7 @@ export default function FeatureSelector({
             group: 'tech'
         },
         {
-            id: 'video_conferencing',
+            id: 'Videoconferencia', 
             label: 'Videoconferencia',
             icon: (
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -53,7 +53,7 @@ export default function FeatureSelector({
             group: 'tech'
         },
         {
-            id: 'printer',
+            id: 'Impresora', 
             label: 'Impresora',
             icon: (
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -64,7 +64,7 @@ export default function FeatureSelector({
         },
         // Características de confort
         {
-            id: 'air_conditioning',
+            id: 'Aire acondicionado', 
             label: 'Aire acondicionado',
             icon: (
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -74,7 +74,7 @@ export default function FeatureSelector({
             group: 'comfort'
         },
         {
-            id: 'natural_light',
+            id: 'Luz natural', 
             label: 'Luz natural',
             icon: (
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -85,7 +85,7 @@ export default function FeatureSelector({
         },
         // Servicios adicionales
         {
-            id: 'catering',
+            id: 'Catering', 
             label: 'Catering',
             icon: (
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -95,7 +95,7 @@ export default function FeatureSelector({
             group: 'services'
         },
         {
-            id: 'coffee',
+            id: 'Café', 
             label: 'Café',
             icon: (
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -106,7 +106,7 @@ export default function FeatureSelector({
         },
         // Accesibilidad
         {
-            id: 'wheelchair_accessible',
+            id: 'Accesible para sillas de ruedas', 
             label: 'Accesible para sillas de ruedas',
             icon: (
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -116,7 +116,7 @@ export default function FeatureSelector({
             group: 'accessibility'
         },
         {
-            id: 'parking',
+            id: 'Parking', 
             label: 'Parking',
             icon: (
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -197,7 +197,7 @@ export default function FeatureSelector({
                                                 type="checkbox"
                                                 className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
                                                 checked={selectedFeatures.includes(feature.id)}
-                                                onChange={() => {}} // El cambio se maneja en el onClick del div
+                                                onChange={() => {}} 
                                                 onClick={(e) => e.stopPropagation()}
                                             />
                                         </div>
