@@ -58,7 +58,7 @@ export default function Welcome({
                                     href={route("dashboard")}
                                     className="text-white text-base lg:text-lg hover:text-gray-300 transition-colors duration-200"
                                 >
-                                    Dashboard
+                                    Panel de Administración
                                 </Link>
                             ) : (
                                 <>
@@ -113,7 +113,7 @@ export default function Welcome({
                                         href={route("dashboard")}
                                         className="block px-4 py-2 text-white hover:bg-gray-700 transition-colors duration-200"
                                     >
-                                        Dashboard
+                                        Panel de Administración
                                     </Link>
                                 ) : (
                                     <>

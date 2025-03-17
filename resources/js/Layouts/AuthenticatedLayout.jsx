@@ -39,7 +39,7 @@ export default function AuthenticatedLayout({ header, children }) {
                                 href={route("dashboard")}
                                 active={route().current("dashboard")}
                             >
-                                Panel de Control
+                                Panel de Administración
                             </NavLink>
                             {user.role === "admin" && (
                                 <>
@@ -287,7 +287,7 @@ export default function AuthenticatedLayout({ header, children }) {
                             href={route("dashboard")}
                             active={route().current("dashboard")}
                         >
-                            Panel de Control
+                            Panel de Administración
                         </ResponsiveNavLink>
                         {user.role === "admin" && (
                             <>
