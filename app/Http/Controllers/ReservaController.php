@@ -24,28 +24,33 @@ class ReservaController extends Controller
     }
 
     public function index()
-    {
-        $user = Auth::user();
+{
+    $user = Auth::user();
 
-        if ($user->role === 'admin' || $user->role === 'superadmin') {
-            $reservas = Reserva::with(['user', 'espacio', 'escritorio'])
-                ->orderBy('fecha_inicio', 'desc')
-                ->get();
-
-            return Inertia::render('ReservasCrud/ReservasList', [
-                'reservas' => $reservas,
-            ]);
-        }
-
-        $reservas = Reserva::where('user_id', $user->id)
-            ->with(['espacio', 'escritorio'])
+    if ($user->role === 'admin' || $user->role === 'superadmin') {
+        // Cambiamos get() por paginate(10) para administradores
+        $reservas = Reserva::with(['user', 'espacio', 'escritorio'])
             ->orderBy('fecha_inicio', 'desc')
-            ->get();
+            ->paginate(10);
 
-        return Inertia::render('Users/ReservasUser', [
+        return Inertia::render('ReservasCrud/ReservasList', [
             'reservas' => $reservas,
+            'users' => User::all(), // Datos necesarios para filtros
+            'espacios' => Espacio::all(),
+            'escritorios' => Escritorio::all(),
         ]);
     }
+
+    // Para usuarios normales también aplicamos paginación
+    $reservas = Reserva::where('user_id', $user->id)
+        ->with(['espacio', 'escritorio'])
+        ->orderBy('fecha_inicio', 'desc')
+        ->paginate(10);
+
+    return Inertia::render('Users/ReservasUser', [
+        'reservas' => $reservas,
+    ]);
+}
 
     public function create()
     {
