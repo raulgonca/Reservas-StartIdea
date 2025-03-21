@@ -84,6 +84,11 @@ class Espacio extends Model
         return $this->hasMany(Reserva::class);
     }
 
+    public function bloqueos()
+    {
+        return $this->hasMany(Bloqueo::class);
+    }
+
     /**
      * Relación con los escritorios del espacio.
      *

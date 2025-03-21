@@ -2,24 +2,24 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head } from '@inertiajs/react';
 import { useState, useEffect } from 'react';
 import { Link } from '@inertiajs/react';
-import { 
-    ChartBarIcon, 
-    CalendarIcon, 
-    ClockIcon, 
+import {
+    ChartBarIcon,
+    CalendarIcon,
+    ClockIcon,
     UserGroupIcon,
     BuildingOfficeIcon,
     ShieldCheckIcon
 } from '@heroicons/react/24/outline';
-import { 
-    Chart as ChartJS, 
-    CategoryScale, 
-    LinearScale, 
-    PointElement, 
-    LineElement, 
+import {
+    Chart as ChartJS,
+    CategoryScale,
+    LinearScale,
+    PointElement,
+    LineElement,
     BarElement,
     ArcElement,
-    Title, 
-    Tooltip, 
+    Title,
+    Tooltip,
     Legend,
     Filler
 } from 'chart.js';
@@ -27,19 +27,19 @@ import { Bar, Line, Pie, Doughnut } from 'react-chartjs-2';
 
 // Registrar los componentes de Chart.js
 ChartJS.register(
-    CategoryScale, 
-    LinearScale, 
-    PointElement, 
-    LineElement, 
+    CategoryScale,
+    LinearScale,
+    PointElement,
+    LineElement,
     BarElement,
     ArcElement,
-    Title, 
-    Tooltip, 
+    Title,
+    Tooltip,
     Legend,
     Filler
 );
 
-export default function Dashboard({ auth }) {
+export default function Dashboard({ auth, stats: initialStats, chartData: initialChartData }) {
     const [stats, setStats] = useState({
         totalReservas: 0,
         reservasHoy: 0,
@@ -50,144 +50,37 @@ export default function Dashboard({ auth }) {
         totalUsuarios: 0,
         bloqueos: 0
     });
-    
     const [ultimasReservas, setUltimasReservas] = useState([]);
     const [proximasReservas, setProximasReservas] = useState([]);
     const [chartData, setChartData] = useState({
-        reservasPorDia: {},
-        ocupacionPorEspacio: {},
-        reservasPorMes: {},
-        distribucionEspacios: {}
+        reservasPorDia: {
+            labels: [],
+            datasets: []
+        },
+        ocupacionPorEspacio: {
+            labels: [],
+            datasets: []
+        },
+        reservasPorMes: {
+            labels: [],
+            datasets: []
+        },
+        distribucionEspacios: {
+            labels: [],
+            datasets: []
+        }
     });
     const [isLoading, setIsLoading] = useState(true);
-    
     const isAdmin = auth.user.role === 'admin' || auth.user.role === 'superadmin';
     const isSuperAdmin = auth.user.role === 'superadmin';
-    
-    useEffect(() => {
-        // Simulamos la carga de datos mientras se implementan las APIs
-        const loadDemoData = () => {
-            setTimeout(() => {
-                if (isAdmin) {
-                    setStats({
-                        totalReservas: 145,
-                        reservasHoy: 12,
-                        espaciosActivos: 8,
-                        ocupacion: 65,
-                        totalUsuarios: isSuperAdmin ? 42 : 0,
-                        bloqueos: isSuperAdmin ? 3 : 0
-                    });
-                    setUltimasReservas([
-                        { id: 1, usuario: "Carlos Pérez", espacio: "Sala Reuniones A", fecha: "2025-03-17", hora: "10:00" },
-                        { id: 2, usuario: "María López", espacio: "Escritorio 5", fecha: "2025-03-17", hora: "11:30" },
-                        { id: 3, usuario: "Juan Gómez", espacio: "Sala Conferencias", fecha: "2025-03-18", hora: "09:00" },
-                    ]);
-                    
-                    // Datos para gráficas de administradores
-                    setChartData({
-                        reservasPorDia: {
-                            labels: ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes'],
-                            datasets: [
-                                {
-                                    label: 'Reservas esta semana',
-                                    data: [12, 19, 15, 8, 22],
-                                    backgroundColor: 'rgba(54, 162, 235, 0.5)',
-                                    borderColor: 'rgb(54, 162, 235)',
-                                    borderWidth: 1
-                                }
-                            ]
-                        },
-                        ocupacionPorEspacio: {
-                            labels: ['Sala A', 'Sala B', 'Escritorios', 'Sala Conferencias', 'Exterior'],
-                            datasets: [
-                                {
-                                    data: [65, 80, 45, 90, 35],
-                                    backgroundColor: [
-                                        'rgba(54, 162, 235, 0.7)',
-                                        'rgba(75, 192, 192, 0.7)',
-                                        'rgba(255, 206, 86, 0.7)',
-                                        'rgba(153, 102, 255, 0.7)',
-                                        'rgba(255, 99, 132, 0.7)',
-                                    ],
-                                    borderWidth: 1
-                                }
-                            ]
-                        },
-                        tendenciaReservas: {
-                            labels: ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio'],
-                            datasets: [
-                                {
-                                    label: 'Reservas 2025',
-                                    data: [65, 78, 90, 85, 110, 145],
-                                    borderColor: 'rgb(75, 192, 192)',
-                                    backgroundColor: 'rgba(75, 192, 192, 0.2)',
-                                    tension: 0.3,
-                                    fill: true
-                                },
-                                {
-                                    label: 'Reservas 2024',
-                                    data: [55, 60, 72, 68, 90, 120],
-                                    borderColor: 'rgb(153, 102, 255)',
-                                    backgroundColor: 'rgba(153, 102, 255, 0.2)',
-                                    tension: 0.3,
-                                    fill: true
-                                }
-                            ]
-                        }
-                    });
-                } else {
-                    setStats({
-                        misReservas: 8,
-                        proximasReservas: 2,
-                        espaciosActivos: 8,
-                        ocupacion: 65
-                    });
-                    setUltimasReservas([
-                        { id: 1, espacio: "Sala Reuniones A", fecha: "2025-03-10", hora: "14:00", estado: "Completada" },
-                        { id: 2, espacio: "Escritorio 3", fecha: "2025-03-15", hora: "09:30", estado: "Completada" },
-                    ]);
-                    setProximasReservas([
-                        { id: 3, espacio: "Sala Conferencias", fecha: "2025-03-20", hora: "11:00", estado: "Confirmada" },
-                        { id: 4, espacio: "Escritorio 7", fecha: "2025-03-22", hora: "10:00", estado: "Pendiente" },
-                    ]);
-                    
-                    // Datos para gráficas de usuarios normales
-                    setChartData({
-                        reservasPorMes: {
-                            labels: ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio'],
-                            datasets: [
-                                {
-                                    label: 'Mis reservas',
-                                    data: [2, 1, 3, 0, 2, 3],
-                                    backgroundColor: 'rgba(75, 192, 192, 0.5)',
-                                    borderColor: 'rgb(75, 192, 192)',
-                                    borderWidth: 1
-                                }
-                            ]
-                        },
-                        distribucionEspacios: {
-                            labels: ['Salas de Reuniones', 'Escritorios', 'Sala Conferencias', 'Exterior'],
-                            datasets: [
-                                {
-                                    data: [4, 3, 1, 0],
-                                    backgroundColor: [
-                                        'rgba(54, 162, 235, 0.7)',
-                                        'rgba(75, 192, 192, 0.7)',
-                                        'rgba(255, 206, 86, 0.7)',
-                                        'rgba(255, 99, 132, 0.7)',
-                                    ],
-                                    borderWidth: 1
-                                }
-                            ]
-                        }
-                    });
-                }
-                setIsLoading(false);
-            }, 800); // Simula un tiempo de carga para mostrar el estado de carga
-        };
 
-        loadDemoData();
-    }, [isAdmin, isSuperAdmin]);
+    useEffect(() => {
+        if (initialStats && initialChartData) {
+            setStats(initialStats);
+            setChartData(initialChartData);
+            setIsLoading(false);
+        }
+    }, [initialStats, initialChartData, isAdmin, isSuperAdmin]);
 
     const chartOptions = {
         responsive: true,
@@ -201,7 +94,7 @@ export default function Dashboard({ auth }) {
             },
         },
     };
-    
+
     return (
         <AuthenticatedLayout
             header={
@@ -211,7 +104,6 @@ export default function Dashboard({ auth }) {
             }
         >
             <Head title="Dashboard" />
-            
             <div className="py-12">
                 <div className="mx-auto max-w-7xl sm:px-6 lg:px-8">
                     {/* Stats Cards - Diferentes para cada rol */}
@@ -219,28 +111,28 @@ export default function Dashboard({ auth }) {
                         {isAdmin ? (
                             // Cards para admin/superadmin
                             <>
-                                <StatCard 
+                                <StatCard
                                     title="Total Reservas"
                                     value={stats.totalReservas}
                                     icon={<CalendarIcon className="w-8 h-8 text-blue-500" />}
                                     color="bg-blue-100 dark:bg-blue-900"
                                     loading={isLoading}
                                 />
-                                <StatCard 
+                                <StatCard
                                     title="Reservas de Hoy"
                                     value={stats.reservasHoy}
                                     icon={<ClockIcon className="w-8 h-8 text-green-500" />}
                                     color="bg-green-100 dark:bg-green-900"
                                     loading={isLoading}
                                 />
-                                <StatCard 
+                                <StatCard
                                     title="Espacios Activos"
                                     value={stats.espaciosActivos}
                                     icon={<BuildingOfficeIcon className="w-8 h-8 text-purple-500" />}
                                     color="bg-purple-100 dark:bg-purple-900"
                                     loading={isLoading}
                                 />
-                                <StatCard 
+                                <StatCard
                                     title="% Ocupación"
                                     value={`${stats.ocupacion}%`}
                                     icon={<ChartBarIcon className="w-8 h-8 text-amber-500" />}
@@ -249,14 +141,14 @@ export default function Dashboard({ auth }) {
                                 />
                                 {isSuperAdmin && (
                                     <>
-                                        <StatCard 
+                                        <StatCard
                                             title="Total Usuarios"
                                             value={stats.totalUsuarios}
                                             icon={<UserGroupIcon className="w-8 h-8 text-indigo-500" />}
                                             color="bg-indigo-100 dark:bg-indigo-900"
                                             loading={isLoading}
                                         />
-                                        <StatCard 
+                                        <StatCard
                                             title="Bloqueos Activos"
                                             value={stats.bloqueos}
                                             icon={<ShieldCheckIcon className="w-8 h-8 text-red-500" />}
@@ -269,28 +161,28 @@ export default function Dashboard({ auth }) {
                         ) : (
                             // Cards para usuarios normales
                             <>
-                                <StatCard 
+                                <StatCard
                                     title="Mis Reservas"
                                     value={stats.misReservas}
                                     icon={<CalendarIcon className="w-8 h-8 text-blue-500" />}
                                     color="bg-blue-100 dark:bg-blue-900"
                                     loading={isLoading}
                                 />
-                                <StatCard 
+                                <StatCard
                                     title="Próximas Reservas"
                                     value={stats.proximasReservas}
                                     icon={<ClockIcon className="w-8 h-8 text-green-500" />}
                                     color="bg-green-100 dark:bg-green-900"
                                     loading={isLoading}
                                 />
-                                <StatCard 
+                                <StatCard
                                     title="Espacios Disponibles"
                                     value={stats.espaciosActivos}
                                     icon={<BuildingOfficeIcon className="w-8 h-8 text-purple-500" />}
                                     color="bg-purple-100 dark:bg-purple-900"
                                     loading={isLoading}
                                 />
-                                <StatCard 
+                                <StatCard
                                     title="% Ocupación"
                                     value={`${stats.ocupacion}%`}
                                     icon={<ChartBarIcon className="w-8 h-8 text-amber-500" />}
@@ -300,21 +192,19 @@ export default function Dashboard({ auth }) {
                             </>
                         )}
                     </div>
-                    
                     {/* Gráficos - Diferentes según el rol */}
                     <div className="grid grid-cols-1 gap-6 mb-8 lg:grid-cols-2">
                         {isAdmin ? (
                             // Gráficos para administradores
                             <>
-                                <ChartCard 
-                                    title="Reservas por Día (Esta semana)" 
+                                <ChartCard
+                                    title="Reservas por Día (Esta semana)"
                                     loading={isLoading}
                                 >
                                     {!isLoading && <Bar data={chartData.reservasPorDia} options={chartOptions} height={240} />}
                                 </ChartCard>
-                                
-                                <ChartCard 
-                                    title="% Ocupación por Espacio" 
+                                <ChartCard
+                                    title="% Ocupación por Espacio"
                                     loading={isLoading}
                                 >
                                     {!isLoading && <Doughnut data={chartData.ocupacionPorEspacio} options={{
@@ -328,9 +218,8 @@ export default function Dashboard({ auth }) {
                                         }
                                     }} height={240} />}
                                 </ChartCard>
-                                
-                                <ChartCard 
-                                    title="Tendencia de Reservas" 
+                                <ChartCard
+                                    title="Tendencia de Reservas"
                                     loading={isLoading}
                                     className="lg:col-span-2"
                                 >
@@ -340,15 +229,14 @@ export default function Dashboard({ auth }) {
                         ) : (
                             // Gráficos para usuarios normales
                             <>
-                                <ChartCard 
-                                    title="Mis Reservas por Mes" 
+                                <ChartCard
+                                    title="Mis Reservas por Mes"
                                     loading={isLoading}
                                 >
                                     {!isLoading && <Bar data={chartData.reservasPorMes} options={chartOptions} height={240} />}
                                 </ChartCard>
-                                
-                                <ChartCard 
-                                    title="Distribución por Tipo de Espacio" 
+                                <ChartCard
+                                    title="Distribución por Tipo de Espacio"
                                     loading={isLoading}
                                 >
                                     {!isLoading && <Pie data={chartData.distribucionEspacios} options={{
@@ -365,7 +253,6 @@ export default function Dashboard({ auth }) {
                             </>
                         )}
                     </div>
-                    
                     <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
                         {/* Panel principal - Diferente para cada rol */}
                         <div className="col-span-2 overflow-hidden bg-white rounded-lg shadow dark:bg-gray-800">
@@ -373,7 +260,7 @@ export default function Dashboard({ auth }) {
                                 <h2 className="text-lg font-semibold text-gray-800 dark:text-white">
                                     {isAdmin ? "Últimas Reservas" : "Mi Historial de Reservas"}
                                 </h2>
-                                <Link href={isAdmin ? "/reservas" : "/mis-reservas"} 
+                                <Link href={isAdmin ? "/reservas" : "/mis-reservas"}
                                       className="text-sm text-blue-600 hover:underline dark:text-blue-400">
                                     Ver todas
                                 </Link>
@@ -418,7 +305,6 @@ export default function Dashboard({ auth }) {
                                 )}
                             </div>
                         </div>
-                        
                         {/* Panel lateral derecho - Diferente para cada rol */}
                         <div className="overflow-hidden bg-white rounded-lg shadow dark:bg-gray-800">
                             {isAdmin ? (
@@ -431,34 +317,34 @@ export default function Dashboard({ auth }) {
                                     </div>
                                     <div className="p-6">
                                         <div className="grid grid-cols-2 gap-4">
-                                            <QuickActionButton 
+                                            <QuickActionButton
                                                 title="Nueva Reserva"
                                                 href="/reservas/create"
                                                 color="bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800"
                                             />
-                                            <QuickActionButton 
+                                            <QuickActionButton
                                                 title="Gestionar Espacios"
                                                 href="/espacios"
                                                 color="bg-green-600 hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-800"
                                             />
-                                            <QuickActionButton 
+                                            <QuickActionButton
                                                 title="Crear Bloqueo"
                                                 href="/bloqueos/create"
                                                 color="bg-purple-600 hover:bg-purple-700 dark:bg-purple-700 dark:hover:bg-purple-800"
                                             />
-                                            <QuickActionButton 
+                                            <QuickActionButton
                                                 title="Ver Reportes"
                                                 href="/reportes"
                                                 color="bg-amber-600 hover:bg-amber-700 dark:bg-amber-700 dark:hover:bg-amber-800"
                                             />
                                             {isSuperAdmin && (
                                                 <>
-                                                    <QuickActionButton 
+                                                    <QuickActionButton
                                                         title="Gestionar Usuarios"
                                                         href="/usuarios"
                                                         color="bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-700 dark:hover:bg-indigo-800"
                                                     />
-                                                    <QuickActionButton 
+                                                    <QuickActionButton
                                                         title="Configuración"
                                                         href="/configuracion"
                                                         color="bg-gray-600 hover:bg-gray-700 dark:bg-gray-700 dark:hover:bg-gray-800"
@@ -488,7 +374,7 @@ export default function Dashboard({ auth }) {
                                                         <div className="flex items-center justify-between">
                                                             <span className="font-medium text-gray-700 dark:text-gray-300">{reserva.espacio}</span>
                                                             <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                                                                reserva.estado === 'Confirmada' 
+                                                                reserva.estado === 'Confirmada'
                                                                     ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
                                                                     : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
                                                             }`}>
@@ -507,14 +393,13 @@ export default function Dashboard({ auth }) {
                                                 <p>No tienes reservas próximas</p>
                                             </div>
                                         )}
-                                        
                                         <div className="grid grid-cols-2 gap-4 mt-6">
-                                            <QuickActionButton 
+                                            <QuickActionButton
                                                 title="Nueva Reserva"
                                                 href="/reservas/create"
                                                 color="bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800"
                                             />
-                                            <QuickActionButton 
+                                            <QuickActionButton
                                                 title="Ver Disponibilidad"
                                                 href="/disponibilidad"
                                                 color="bg-purple-600 hover:bg-purple-700 dark:bg-purple-700 dark:hover:bg-purple-800"

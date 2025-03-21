@@ -12,6 +12,7 @@ use App\Http\Controllers\EspacioController;
 use App\Http\Controllers\EscritorioController;
 use App\Http\Controllers\ReservaController;
 use App\Http\Controllers\BloqueoController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ReservaRecurrenteController;
 use App\Http\Controllers\UserController; // Cambiado de SuperAdminRegisterController a UserController
 
@@ -19,9 +20,11 @@ use App\Http\Controllers\UserController; // Cambiado de SuperAdminRegisterContro
 Route::get('/', [EspacioController::class, 'index']);
 
 // Ruta para el dashboard, protegida por middleware de autenticación y verificación
-Route::get('/dashboard', function () {
-    return Inertia::render('Dashboard');
-})->middleware(['auth', 'verified'])->name('dashboard');
+Route::middleware(['auth', 'verified'])->group(function () {
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    Route::get('/dashboard/stats', [DashboardController::class, 'getStats'])
+        ->middleware(['auth', 'verified']);
+});
 
 //------------------------------- USUARIOS ----------------------------------//
 Route::prefix('v1/user')->middleware(['auth'])->group(function () {

@@ -33,7 +33,6 @@ class Bloqueo extends Model
         return Carbon::parse($value);
     }
 
-    // Relación con el modelo Espacio
     public function espacio()
     {
         return $this->belongsTo(Espacio::class);
