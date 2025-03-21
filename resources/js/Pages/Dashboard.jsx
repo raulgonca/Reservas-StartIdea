@@ -40,7 +40,7 @@ ChartJS.register(
 );
 
 export default function Dashboard({ auth, stats: initialStats, chartData: initialChartData }) {
-    const [stats, setStats] = useState({
+    const [stats, setStats] = useState(initialStats || {
         totalReservas: 0,
         reservasHoy: 0,
         espaciosActivos: 0,
@@ -50,9 +50,8 @@ export default function Dashboard({ auth, stats: initialStats, chartData: initia
         totalUsuarios: 0,
         bloqueos: 0
     });
-    const [ultimasReservas, setUltimasReservas] = useState([]);
-    const [proximasReservas, setProximasReservas] = useState([]);
-    const [chartData, setChartData] = useState({
+
+    const [chartData, setChartData] = useState(initialChartData || {
         reservasPorDia: {
             labels: [],
             datasets: []
@@ -68,9 +67,17 @@ export default function Dashboard({ auth, stats: initialStats, chartData: initia
         distribucionEspacios: {
             labels: [],
             datasets: []
+        },
+        tendenciaReservas: {
+            labels: [],
+            datasets: []
         }
     });
-    const [isLoading, setIsLoading] = useState(true);
+
+    const [ultimasReservas, setUltimasReservas] = useState(initialStats?.ultimasReservas || []);
+    const [proximasReservas, setProximasReservas] = useState(initialStats?.proximasReservas || []);
+    const [isLoading, setIsLoading] = useState(!initialStats || !initialChartData);
+
     const isAdmin = auth.user.role === 'admin' || auth.user.role === 'superadmin';
     const isSuperAdmin = auth.user.role === 'superadmin';
 
