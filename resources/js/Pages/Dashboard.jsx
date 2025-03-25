@@ -20,7 +20,7 @@ ChartJS.register(
     Filler
 );
 
-export default function Dashboard({ auth, stats: initialStats, chartData: initialChartData, proximasReservas, historialReservas }) {
+export default function Dashboard({ auth, stats: initialStats, chartData: initialChartData, proximasReservas: initialProximasReservas, historialReservas }) {
     const [stats, setStats] = useState(initialStats || {
         totalReservas: 0,
         reservasHoy: 0,
@@ -56,19 +56,33 @@ export default function Dashboard({ auth, stats: initialStats, chartData: initia
     });
 
     const [ultimasReservas, setUltimasReservas] = useState(initialStats?.ultimasReservas || []);
-    const [proximasReservas, setProximasReservas] = useState(initialStats?.proximasReservas || []);
+    const [proximasReservasState, setProximasReservasState] = useState(initialProximasReservas || []); // Cambiado el nombre
     const [isLoading, setIsLoading] = useState(!initialStats || !initialChartData);
-
-    const isAdmin = auth.user.role === 'admin' || auth.user.role === 'superadmin';
-    const isSuperAdmin = auth.user.role === 'superadmin';
 
     useEffect(() => {
         if (initialStats && initialChartData) {
             setStats(initialStats);
             setChartData(initialChartData);
+            setProximasReservasState(initialProximasReservas); // Actualizado
+            setHistorialReservasState(historialReservas);
             setIsLoading(false);
         }
-    }, [initialStats, initialChartData, isAdmin, isSuperAdmin]);
+    }, [initialStats, initialChartData, initialProximasReservas, historialReservas]);
+
+    const isAdmin = auth.user.role === 'admin' || auth.user.role === 'superadmin';
+    const isSuperAdmin = auth.user.role === 'superadmin';
+
+    // Agregar este estado para el historial
+    const [historialReservasState, setHistorialReservasState] = useState(historialReservas || []);
+
+    useEffect(() => {
+        if (initialStats && initialChartData) {
+            setStats(initialStats);
+            setChartData(initialChartData);
+            setHistorialReservasState(historialReservas);
+            setIsLoading(false);
+        }
+    }, [initialStats, initialChartData, historialReservas]);
 
     const chartOptions = {
         responsive: true,
@@ -199,68 +213,76 @@ export default function Dashboard({ auth, stats: initialStats, chartData: initia
                     </div>
 
                     {/* Reservations Lists Section */}
-                    <div className="grid grid-cols-1 gap-6 mt-8 lg:grid-cols-2">
-                        {/* Próximas Reservas */}
-                        <div className="p-6 bg-white rounded-lg shadow-sm dark:bg-gray-800">
-                            <h3 className="mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100">
-                                Próximas Reservas
-                            </h3>
-                            <div className="overflow-hidden">
-                                <table className="min-w-full">
-                                    <thead className="border-b">
-                                        <tr>
-                                            <th className="px-4 py-2 text-left">Fecha</th>
-                                            <th className="px-4 py-2 text-left">Horario</th>
-                                            <th className="px-4 py-2 text-left">Espacio</th>
-                                            <th className="px-4 py-2 text-left">Estado</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {proximasReservas?.map((reserva) => (
-                                            <tr key={reserva.id} className="border-b">
-                                                <td className="px-4 py-2">{new Date(reserva.fecha_inicio).toLocaleDateString()}</td>
-                                                <td className="px-4 py-2">{`${reserva.hora_inicio} - ${reserva.hora_fin}`}</td>
-                                                <td className="px-4 py-2">
-                                                    {reserva.espacio}
-                                                    {reserva.escritorio && ` (Escritorio ${reserva.escritorio})`}
-                                                </td>
-                                                <td className="px-4 py-2">{reserva.estado}</td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
+                    <div className="grid grid-cols-1 gap-6 mt-8">
+                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                            {/* Próximas Reservas */}
+                            <div className="p-6 bg-white rounded-lg shadow-sm dark:bg-gray-800">
+                                <h3 className="mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100">
+                                    Próximas Reservas
+                                </h3>
+                                <div className="overflow-hidden">
+                                    {!proximasReservasState || proximasReservasState.length === 0 ? (
+                                        <p className="text-center text-gray-500 py-4">No hay próximas reservas</p>
+                                    ) : (
+                                        <table className="min-w-full">
+                                            <thead className="border-b">
+                                                <tr>
+                                                    <th className="px-4 py-2 text-left">Fecha</th>
+                                                    <th className="px-4 py-2 text-left">Espacio</th>
+                                                    <th className="px-4 py-2 text-left">Estado</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {proximasReservasState?.map((reserva) => (
+                                                    <tr key={reserva.id} className="border-b">
+                                                        <td className="px-4 py-2">{new Date(reserva.fecha_inicio).toLocaleDateString()}</td>
+                                                        <td className="px-4 py-2">
+                                                            {reserva.espacio}
+                                                            {reserva.escritorio && ` (Escritorio ${reserva.escritorio})`}
+                                                        </td>
+                                                        <td className="px-4 py-2">{reserva.estado}</td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    )}
+                                </div>
                             </div>
-                        </div>
 
-                        {/* Historial de Reservas */}
-                        <div className="p-6 bg-white rounded-lg shadow-sm dark:bg-gray-800">
-                            <h3 className="mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100">
-                                Historial de Reservas
-                            </h3>
-                            <div className="overflow-hidden">
-                                <table className="min-w-full">
-                                    <thead className="border-b">
-                                        <tr>
-                                            <th className="px-4 py-2 text-left">Fecha</th>
-                                            <th className="px-4 py-2 text-left">Horario</th>
-                                            <th className="px-4 py-2 text-left">Espacio</th>
-                                            <th className="px-4 py-2 text-left">Estado</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {historialReservas?.map((reserva) => (
-                                            <tr key={reserva.id} className="border-b">
-                                                <td className="px-4 py-2">{new Date(reserva.fecha_inicio).toLocaleDateString()}</td>
-                                                <td className="px-4 py-2">{`${reserva.hora_inicio} - ${reserva.hora_fin}`}</td>
-                                                <td className="px-4 py-2">
-                                                    {reserva.espacio}
-                                                    {reserva.escritorio && ` (Escritorio ${reserva.escritorio})`}
-                                                </td>
-                                                <td className="px-4 py-2">{reserva.estado}</td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
+                            {/* Historial de Reservas */}
+                            <div className="p-6 bg-white rounded-lg shadow-sm dark:bg-gray-800 lg:col-span-2">
+                                <h3 className="mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100">
+                                    Historial de Reservas
+                                </h3>
+                                <div className="overflow-hidden">
+                                    {!historialReservasState || historialReservasState.length === 0 ? (
+                                        <p className="text-center text-gray-500 py-4">No hay registros en el historial</p>
+                                    ) : (
+                                        <table className="min-w-full">
+                                            <thead className="border-b">
+                                                <tr>
+                                                    <th className="px-4 py-2 text-left">Fecha</th>
+                                                    <th className="px-4 py-2 text-left">Horario</th>
+                                                    <th className="px-4 py-2 text-left">Espacio</th>
+                                                    <th className="px-4 py-2 text-left">Estado</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {historialReservasState.map((reserva) => (
+                                                    <tr key={reserva.id} className="border-b">
+                                                        <td className="px-4 py-2">{new Date(reserva.fecha_inicio).toLocaleDateString()}</td>
+                                                        <td className="px-4 py-2">{`${reserva.hora_inicio} - ${reserva.hora_fin}`}</td>
+                                                        <td className="px-4 py-2">
+                                                            {reserva.espacio}
+                                                            {reserva.escritorio && ` (Escritorio ${reserva.escritorio})`}
+                                                        </td>
+                                                        <td className="px-4 py-2">{reserva.estado}</td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    )}
+                                </div>
                             </div>
                         </div>
                     </div>
