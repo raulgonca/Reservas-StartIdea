@@ -2,27 +2,8 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head } from '@inertiajs/react';
 import { useState, useEffect } from 'react';
 import { Link } from '@inertiajs/react';
-import {
-    ChartBarIcon,
-    CalendarIcon,
-    ClockIcon,
-    UserGroupIcon,
-    BuildingOfficeIcon,
-    ShieldCheckIcon
-} from '@heroicons/react/24/outline';
-import {
-    Chart as ChartJS,
-    CategoryScale,
-    LinearScale,
-    PointElement,
-    LineElement,
-    BarElement,
-    ArcElement,
-    Title,
-    Tooltip,
-    Legend,
-    Filler
-} from 'chart.js';
+import { ChartBarIcon,CalendarIcon,ClockIcon,UserGroupIcon,BuildingOfficeIcon,ShieldCheckIcon } from '@heroicons/react/24/outline';
+import { Chart as ChartJS,CategoryScale,LinearScale,PointElement,LineElement,BarElement,ArcElement,Title,Tooltip,Legend,Filler } from 'chart.js';
 import { Bar, Line, Pie, Doughnut } from 'react-chartjs-2';
 
 // Registrar los componentes de Chart.js
@@ -39,7 +20,7 @@ ChartJS.register(
     Filler
 );
 
-export default function Dashboard({ auth, stats: initialStats, chartData: initialChartData }) {
+export default function Dashboard({ auth, stats: initialStats, chartData: initialChartData, proximasReservas, historialReservas }) {
     const [stats, setStats] = useState(initialStats || {
         totalReservas: 0,
         reservasHoy: 0,
@@ -113,37 +94,52 @@ export default function Dashboard({ auth, stats: initialStats, chartData: initia
             <Head title="Dashboard" />
             <div className="py-12">
                 <div className="mx-auto max-w-7xl sm:px-6 lg:px-8">
-                    {/* Stats Cards - Diferentes para cada rol */}
+                    {/* Base Stats Cards (Common for all users) */}
                     <div className="grid grid-cols-1 gap-4 mb-8 sm:grid-cols-2 lg:grid-cols-4">
-                        {isAdmin ? (
-                            // Cards para admin/superadmin
+                        <StatCard
+                            title="Mis Reservas"
+                            value={stats.misReservas}
+                            icon={<CalendarIcon className="w-8 h-8 text-blue-500" />}
+                            color="bg-blue-100 dark:bg-blue-900"
+                            loading={isLoading}
+                        />
+                        <StatCard
+                            title="Próximas Reservas"
+                            value={stats.proximasReservas}
+                            icon={<ClockIcon className="w-8 h-8 text-green-500" />}
+                            color="bg-green-100 dark:bg-green-900"
+                            loading={isLoading}
+                        />
+                        <StatCard
+                            title="Espacios Disponibles"
+                            value={stats.espaciosActivos}
+                            icon={<BuildingOfficeIcon className="w-8 h-8 text-purple-500" />}
+                            color="bg-purple-100 dark:bg-purple-900"
+                            loading={isLoading}
+                        />
+                        <StatCard
+                            title="% Ocupación"
+                            value={`${stats.ocupacion}%`}
+                            icon={<ChartBarIcon className="w-8 h-8 text-amber-500" />}
+                            color="bg-amber-100 dark:bg-amber-900"
+                            loading={isLoading}
+                        />
+                        
+                        {/* Additional Stats for Admins */}
+                        {isAdmin && (
                             <>
                                 <StatCard
                                     title="Total Reservas"
                                     value={stats.totalReservas}
-                                    icon={<CalendarIcon className="w-8 h-8 text-blue-500" />}
-                                    color="bg-blue-100 dark:bg-blue-900"
+                                    icon={<CalendarIcon className="w-8 h-8 text-indigo-500" />}
+                                    color="bg-indigo-100 dark:bg-indigo-900"
                                     loading={isLoading}
                                 />
                                 <StatCard
                                     title="Reservas de Hoy"
                                     value={stats.reservasHoy}
-                                    icon={<ClockIcon className="w-8 h-8 text-green-500" />}
-                                    color="bg-green-100 dark:bg-green-900"
-                                    loading={isLoading}
-                                />
-                                <StatCard
-                                    title="Espacios Activos"
-                                    value={stats.espaciosActivos}
-                                    icon={<BuildingOfficeIcon className="w-8 h-8 text-purple-500" />}
-                                    color="bg-purple-100 dark:bg-purple-900"
-                                    loading={isLoading}
-                                />
-                                <StatCard
-                                    title="% Ocupación"
-                                    value={`${stats.ocupacion}%`}
-                                    icon={<ChartBarIcon className="w-8 h-8 text-amber-500" />}
-                                    color="bg-amber-100 dark:bg-amber-900"
+                                    icon={<ClockIcon className="w-8 h-8 text-pink-500" />}
+                                    color="bg-pink-100 dark:bg-pink-900"
                                     loading={isLoading}
                                 />
                                 {isSuperAdmin && (
@@ -151,8 +147,8 @@ export default function Dashboard({ auth, stats: initialStats, chartData: initia
                                         <StatCard
                                             title="Total Usuarios"
                                             value={stats.totalUsuarios}
-                                            icon={<UserGroupIcon className="w-8 h-8 text-indigo-500" />}
-                                            color="bg-indigo-100 dark:bg-indigo-900"
+                                            icon={<UserGroupIcon className="w-8 h-8 text-cyan-500" />}
+                                            color="bg-cyan-100 dark:bg-cyan-900"
                                             loading={isLoading}
                                         />
                                         <StatCard
@@ -165,256 +161,107 @@ export default function Dashboard({ auth, stats: initialStats, chartData: initia
                                     </>
                                 )}
                             </>
-                        ) : (
-                            // Cards para usuarios normales
-                            <>
-                                <StatCard
-                                    title="Mis Reservas"
-                                    value={stats.misReservas}
-                                    icon={<CalendarIcon className="w-8 h-8 text-blue-500" />}
-                                    color="bg-blue-100 dark:bg-blue-900"
-                                    loading={isLoading}
-                                />
-                                <StatCard
-                                    title="Próximas Reservas"
-                                    value={stats.proximasReservas}
-                                    icon={<ClockIcon className="w-8 h-8 text-green-500" />}
-                                    color="bg-green-100 dark:bg-green-900"
-                                    loading={isLoading}
-                                />
-                                <StatCard
-                                    title="Espacios Disponibles"
-                                    value={stats.espaciosActivos}
-                                    icon={<BuildingOfficeIcon className="w-8 h-8 text-purple-500" />}
-                                    color="bg-purple-100 dark:bg-purple-900"
-                                    loading={isLoading}
-                                />
-                                <StatCard
-                                    title="% Ocupación"
-                                    value={`${stats.ocupacion}%`}
-                                    icon={<ChartBarIcon className="w-8 h-8 text-amber-500" />}
-                                    color="bg-amber-100 dark:bg-amber-900"
-                                    loading={isLoading}
-                                />
-                            </>
                         )}
                     </div>
-                    {/* Gráficos - Diferentes según el rol */}
+
+                    {/* Charts Section */}
                     <div className="grid grid-cols-1 gap-6 mb-8 lg:grid-cols-2">
-                        {isAdmin ? (
-                            // Gráficos para administradores
+                        <ChartCard title="Mis Reservas por Mes" loading={isLoading}>
+                            {!isLoading && <Bar data={chartData.reservasPorMes} options={chartOptions} height={240} />}
+                        </ChartCard>
+                        <ChartCard title="Distribución por Tipo de Espacio" loading={isLoading}>
+                            {!isLoading && <Pie data={chartData.distribucionEspacios} options={{
+                                ...chartOptions,
+                                plugins: {
+                                    ...chartOptions.plugins,
+                                    legend: { position: 'right' }
+                                }
+                            }} height={240} />}
+                        </ChartCard>
+
+                        {/* Additional Charts for Admins */}
+                        {isAdmin && (
                             <>
-                                <ChartCard
-                                    title="Reservas por Día (Esta semana)"
-                                    loading={isLoading}
-                                >
-                                    {!isLoading && <Bar data={chartData.reservasPorDia} options={chartOptions} height={240} />}
+                                <ChartCard title="Tendencia de Reservas" loading={isLoading} className="lg:col-span-2">
+                                    {!isLoading && <Line data={chartData.tendenciaReservas} options={chartOptions} height={150} />}
                                 </ChartCard>
-                                <ChartCard
-                                    title="% Ocupación por Espacio"
-                                    loading={isLoading}
-                                >
+                                <ChartCard title="Ocupación por Espacio" loading={isLoading}>
                                     {!isLoading && <Doughnut data={chartData.ocupacionPorEspacio} options={{
                                         ...chartOptions,
                                         plugins: {
                                             ...chartOptions.plugins,
-                                            legend: {
-                                                ...chartOptions.plugins.legend,
-                                                position: 'right'
-                                            }
-                                        }
-                                    }} height={240} />}
-                                </ChartCard>
-                                <ChartCard
-                                    title="Tendencia de Reservas"
-                                    loading={isLoading}
-                                    className="lg:col-span-2"
-                                >
-                                    {!isLoading && <Line data={chartData.tendenciaReservas} options={chartOptions} height={150} />}
-                                </ChartCard>
-                            </>
-                        ) : (
-                            // Gráficos para usuarios normales
-                            <>
-                                <ChartCard
-                                    title="Mis Reservas por Mes"
-                                    loading={isLoading}
-                                >
-                                    {!isLoading && <Bar data={chartData.reservasPorMes} options={chartOptions} height={240} />}
-                                </ChartCard>
-                                <ChartCard
-                                    title="Distribución por Tipo de Espacio"
-                                    loading={isLoading}
-                                >
-                                    {!isLoading && <Pie data={chartData.distribucionEspacios} options={{
-                                        ...chartOptions,
-                                        plugins: {
-                                            ...chartOptions.plugins,
-                                            legend: {
-                                                ...chartOptions.plugins.legend,
-                                                position: 'right'
-                                            }
+                                            legend: { position: 'right' }
                                         }
                                     }} height={240} />}
                                 </ChartCard>
                             </>
                         )}
                     </div>
-                    <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-                        {/* Panel principal - Diferente para cada rol */}
-                        <div className="col-span-2 overflow-hidden bg-white rounded-lg shadow dark:bg-gray-800">
-                            <div className="flex items-center justify-between px-6 py-4 border-b dark:border-gray-700">
-                                <h2 className="text-lg font-semibold text-gray-800 dark:text-white">
-                                    {isAdmin ? "Últimas Reservas" : "Mi Historial de Reservas"}
-                                </h2>
-                                <Link href={isAdmin ? "/reservas" : "/mis-reservas"}
-                                      className="text-sm text-blue-600 hover:underline dark:text-blue-400">
-                                    Ver todas
-                                </Link>
-                            </div>
-                            <div className="p-6">
-                                {isLoading ? (
-                                    <div className="flex items-center justify-center h-40">
-                                        <div className="w-8 h-8 border-4 border-blue-500 rounded-full border-t-transparent animate-spin"></div>
-                                    </div>
-                                ) : (
-                                    <div className="overflow-x-auto">
-                                        <table className="w-full">
-                                            <thead>
-                                                <tr className="text-xs font-semibold tracking-wide text-left text-gray-500 uppercase border-b dark:border-gray-700 bg-gray-50 dark:text-gray-400 dark:bg-gray-800">
-                                                    {isAdmin && <th className="px-4 py-3">Usuario</th>}
-                                                    <th className="px-4 py-3">Espacio</th>
-                                                    <th className="px-4 py-3">Fecha</th>
-                                                    <th className="px-4 py-3">Hora</th>
-                                                    {!isAdmin && <th className="px-4 py-3">Estado</th>}
-                                                </tr>
-                                            </thead>
-                                            <tbody className="bg-white divide-y dark:divide-gray-700 dark:bg-gray-800">
-                                                {ultimasReservas.map((reserva) => (
-                                                    <tr key={reserva.id} className="text-gray-700 dark:text-gray-300">
-                                                        {isAdmin && <td className="px-4 py-3">{reserva.usuario}</td>}
-                                                        <td className="px-4 py-3">{reserva.espacio}</td>
-                                                        <td className="px-4 py-3">{reserva.fecha}</td>
-                                                        <td className="px-4 py-3">{reserva.hora}</td>
-                                                        {!isAdmin && <td className="px-4 py-3">{reserva.estado}</td>}
-                                                    </tr>
-                                                ))}
-                                                {ultimasReservas.length === 0 && (
-                                                    <tr className="text-gray-700 dark:text-gray-300">
-                                                        <td colSpan={isAdmin ? 4 : 4} className="px-4 py-8 text-center text-gray-500 dark:text-gray-400">
-                                                            No hay reservas para mostrar
-                                                        </td>
-                                                    </tr>
-                                                )}
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                )}
+
+                    {/* Reservations Lists Section */}
+                    <div className="grid grid-cols-1 gap-6 mt-8 lg:grid-cols-2">
+                        {/* Próximas Reservas */}
+                        <div className="p-6 bg-white rounded-lg shadow-sm dark:bg-gray-800">
+                            <h3 className="mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100">
+                                Próximas Reservas
+                            </h3>
+                            <div className="overflow-hidden">
+                                <table className="min-w-full">
+                                    <thead className="border-b">
+                                        <tr>
+                                            <th className="px-4 py-2 text-left">Fecha</th>
+                                            <th className="px-4 py-2 text-left">Horario</th>
+                                            <th className="px-4 py-2 text-left">Espacio</th>
+                                            <th className="px-4 py-2 text-left">Estado</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {proximasReservas?.map((reserva) => (
+                                            <tr key={reserva.id} className="border-b">
+                                                <td className="px-4 py-2">{new Date(reserva.fecha_inicio).toLocaleDateString()}</td>
+                                                <td className="px-4 py-2">{`${reserva.hora_inicio} - ${reserva.hora_fin}`}</td>
+                                                <td className="px-4 py-2">
+                                                    {reserva.espacio}
+                                                    {reserva.escritorio && ` (Escritorio ${reserva.escritorio})`}
+                                                </td>
+                                                <td className="px-4 py-2">{reserva.estado}</td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
                             </div>
                         </div>
-                        {/* Panel lateral derecho - Diferente para cada rol */}
-                        <div className="overflow-hidden bg-white rounded-lg shadow dark:bg-gray-800">
-                            {isAdmin ? (
-                                // Panel para admin/superadmin
-                                <>
-                                    <div className="px-6 py-4 border-b dark:border-gray-700">
-                                        <h2 className="text-lg font-semibold text-gray-800 dark:text-white">
-                                            Administración
-                                        </h2>
-                                    </div>
-                                    <div className="p-6">
-                                        <div className="grid grid-cols-2 gap-4">
-                                            <QuickActionButton
-                                                title="Nueva Reserva"
-                                                href="/reservas/create"
-                                                color="bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800"
-                                            />
-                                            <QuickActionButton
-                                                title="Gestionar Espacios"
-                                                href="/espacios"
-                                                color="bg-green-600 hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-800"
-                                            />
-                                            <QuickActionButton
-                                                title="Crear Bloqueo"
-                                                href="/bloqueos/create"
-                                                color="bg-purple-600 hover:bg-purple-700 dark:bg-purple-700 dark:hover:bg-purple-800"
-                                            />
-                                            <QuickActionButton
-                                                title="Ver Reportes"
-                                                href="/reportes"
-                                                color="bg-amber-600 hover:bg-amber-700 dark:bg-amber-700 dark:hover:bg-amber-800"
-                                            />
-                                            {isSuperAdmin && (
-                                                <>
-                                                    <QuickActionButton
-                                                        title="Gestionar Usuarios"
-                                                        href="/usuarios"
-                                                        color="bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-700 dark:hover:bg-indigo-800"
-                                                    />
-                                                    <QuickActionButton
-                                                        title="Configuración"
-                                                        href="/configuracion"
-                                                        color="bg-gray-600 hover:bg-gray-700 dark:bg-gray-700 dark:hover:bg-gray-800"
-                                                    />
-                                                </>
-                                            )}
-                                        </div>
-                                    </div>
-                                </>
-                            ) : (
-                                // Panel para usuarios normales
-                                <>
-                                    <div className="px-6 py-4 border-b dark:border-gray-700">
-                                        <h2 className="text-lg font-semibold text-gray-800 dark:text-white">
-                                            Próximas Reservas
-                                        </h2>
-                                    </div>
-                                    <div className="p-6">
-                                        {isLoading ? (
-                                            <div className="flex items-center justify-center h-40">
-                                                <div className="w-6 h-6 border-4 border-blue-500 rounded-full border-t-transparent animate-spin"></div>
-                                            </div>
-                                        ) : proximasReservas.length > 0 ? (
-                                            <div className="space-y-4">
-                                                {proximasReservas.map((reserva) => (
-                                                    <div key={reserva.id} className="p-4 transition-colors border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 dark:border-gray-700">
-                                                        <div className="flex items-center justify-between">
-                                                            <span className="font-medium text-gray-700 dark:text-gray-300">{reserva.espacio}</span>
-                                                            <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                                                                reserva.estado === 'Confirmada'
-                                                                    ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-                                                                    : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
-                                                            }`}>
-                                                                {reserva.estado}
-                                                            </span>
-                                                        </div>
-                                                        <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
-                                                            {reserva.fecha} a las {reserva.hora}
-                                                        </p>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        ) : (
-                                            <div className="flex flex-col items-center justify-center h-40 text-gray-500 dark:text-gray-400">
-                                                <CalendarIcon className="w-10 h-10 mb-2" />
-                                                <p>No tienes reservas próximas</p>
-                                            </div>
-                                        )}
-                                        <div className="grid grid-cols-2 gap-4 mt-6">
-                                            <QuickActionButton
-                                                title="Nueva Reserva"
-                                                href="/reservas/create"
-                                                color="bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800"
-                                            />
-                                            <QuickActionButton
-                                                title="Ver Disponibilidad"
-                                                href="/disponibilidad"
-                                                color="bg-purple-600 hover:bg-purple-700 dark:bg-purple-700 dark:hover:bg-purple-800"
-                                            />
-                                        </div>
-                                    </div>
-                                </>
-                            )}
+
+                        {/* Historial de Reservas */}
+                        <div className="p-6 bg-white rounded-lg shadow-sm dark:bg-gray-800">
+                            <h3 className="mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100">
+                                Historial de Reservas
+                            </h3>
+                            <div className="overflow-hidden">
+                                <table className="min-w-full">
+                                    <thead className="border-b">
+                                        <tr>
+                                            <th className="px-4 py-2 text-left">Fecha</th>
+                                            <th className="px-4 py-2 text-left">Horario</th>
+                                            <th className="px-4 py-2 text-left">Espacio</th>
+                                            <th className="px-4 py-2 text-left">Estado</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {historialReservas?.map((reserva) => (
+                                            <tr key={reserva.id} className="border-b">
+                                                <td className="px-4 py-2">{new Date(reserva.fecha_inicio).toLocaleDateString()}</td>
+                                                <td className="px-4 py-2">{`${reserva.hora_inicio} - ${reserva.hora_fin}`}</td>
+                                                <td className="px-4 py-2">
+                                                    {reserva.espacio}
+                                                    {reserva.escritorio && ` (Escritorio ${reserva.escritorio})`}
+                                                </td>
+                                                <td className="px-4 py-2">{reserva.estado}</td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
                     </div>
                 </div>

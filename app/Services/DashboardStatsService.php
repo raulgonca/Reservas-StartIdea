@@ -11,6 +11,18 @@ use Illuminate\Support\Facades\Log;
 
 class DashboardStatsService
 {
+    public function getUserStats($userId)
+    {
+        return [
+            'misReservas' => Reserva::where('user_id', $userId)->count(),
+            'proximasReservas' => Reserva::where('user_id', $userId)
+                ->where('fecha_inicio', '>=', Carbon::now())
+                ->count(),
+            'espaciosActivos' => Espacio::where('is_active', true)->count(),
+            'ocupacion' => $this->calcularOcupacion(),
+        ];
+    }
+
     public function getAdminStats()
     {
         return [
@@ -23,15 +35,17 @@ class DashboardStatsService
         ];
     }
 
-    public function getUserStats($userId)
+    public function getSuperAdminStats()
     {
         return [
-            'misReservas' => Reserva::where('user_id', $userId)->count(),
-            'proximasReservas' => Reserva::where('user_id', $userId)
-                ->where('fecha_inicio', '>=', Carbon::now())
-                ->count(),
-            'espaciosActivos' => Espacio::where('is_active', true)->count(),
-            'ocupacion' => $this->calcularOcupacion(),
+            'adminUsers' => User::where('role', 'admin')->count(),
+            'superAdminUsers' => User::where('role', 'superadmin')->count(),
+            'totalEspacios' => Espacio::count(),
+            'espaciosInactivos' => Espacio::where('is_active', false)->count(),
+            'reservasCanceladas' => Reserva::where('estado', 'cancelada')->count(),
+            'ultimosUsuariosRegistrados' => User::orderBy('created_at', 'desc')
+                ->take(5)
+                ->get(['id', 'name', 'email', 'role', 'created_at']),
         ];
     }
 
@@ -192,17 +206,45 @@ class DashboardStatsService
         ];
     }
 
-    public function getSuperAdminStats()
+    public function getProximasReservas($userId)
     {
-        return array_merge($this->getAdminStats(), [
-            'adminUsers' => User::where('role', 'admin')->count(),
-            'superAdminUsers' => User::where('role', 'superadmin')->count(),
-            'totalEspacios' => Espacio::count(),
-            'espaciosInactivos' => Espacio::where('is_active', false)->count(),
-            'reservasCanceladas' => Reserva::where('estado', 'cancelada')->count(),
-            'ultimosUsuariosRegistrados' => User::orderBy('created_at', 'desc')
-                ->take(5)
-                ->get(['id', 'name', 'email', 'role', 'created_at']),
-        ]);
+        return Reserva::with(['espacio', 'escritorio'])
+            ->where('user_id', $userId)
+            ->where('fecha_inicio', '>=', Carbon::now())
+            ->orderBy('fecha_inicio', 'asc')
+            ->take(5)
+            ->get()
+            ->map(function ($reserva) {
+                return [
+                    'id' => $reserva->id,
+                    'fecha_inicio' => $reserva->fecha_inicio,
+                    'hora_inicio' => $reserva->hora_inicio,
+                    'hora_fin' => $reserva->hora_fin,
+                    'espacio' => $reserva->espacio->nombre,
+                    'escritorio' => $reserva->escritorio ? $reserva->escritorio->numero : null,
+                    'estado' => $reserva->estado
+                ];
+            });
+    }
+
+    public function getHistorialReservas($userId)
+    {
+        return Reserva::with(['espacio', 'escritorio'])
+            ->where('user_id', $userId)
+            ->where('fecha_inicio', '<', Carbon::now())
+            ->orderBy('fecha_inicio', 'desc')
+            ->take(5)
+            ->get()
+            ->map(function ($reserva) {
+                return [
+                    'id' => $reserva->id,
+                    'fecha_inicio' => $reserva->fecha_inicio,
+                    'hora_inicio' => $reserva->hora_inicio,
+                    'hora_fin' => $reserva->hora_fin,
+                    'espacio' => $reserva->espacio->nombre,
+                    'escritorio' => $reserva->escritorio ? $reserva->escritorio->numero : null,
+                    'estado' => $reserva->estado
+                ];
+            });
     }
 }
