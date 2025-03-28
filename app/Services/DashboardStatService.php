@@ -9,7 +9,7 @@ use App\Models\Bloqueo;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
 
-class DashboardStatsService
+class DashboardStatService
 {
     protected $user;
 
@@ -39,7 +39,7 @@ class DashboardStatsService
             'proximasReservas' => Reserva::where('user_id', $this->user->id)
                                     ->where('fecha_inicio', '>=', now())
                                     ->count(),
-            'espaciosActivos' => Espacio::where('activo', true)->count(),
+            'espaciosActivos' => Espacio::where('is_active', true)->count(), // Corregido: activo -> is_active
             'ocupacion' => $this->calcularOcupacion(),
         ];
         
@@ -101,7 +101,7 @@ class DashboardStatsService
 
     private function calcularOcupacion()
     {
-        $totalEspacios = Espacio::where('activo', true)->count();
+        $totalEspacios = Espacio::where('is_active', true)->count(); // Corregido: activo -> is_active
         if ($totalEspacios === 0) return 0;
         
         $espaciosOcupados = Espacio::whereHas('reservas', function($query) {

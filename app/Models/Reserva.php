@@ -44,14 +44,14 @@ class Reserva extends Model
     }
 
     // Definir la relación con el modelo Espacio
+    // Asegúrate de que tengas estas relaciones
     public function espacio()
     {
-        return $this->belongsTo(Espacio::class);
+        return $this->belongsTo(Espacio::class, 'espacio_id');
     }
 
-    // Definir la relación con el modelo Escritorio
     public function escritorio()
     {
-        return $this->belongsTo(Escritorio::class);
+        return $this->belongsTo(Escritorio::class, 'escritorio_id');
     }
 }

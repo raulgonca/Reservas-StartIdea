@@ -79,9 +79,10 @@ class Espacio extends Model
      *
      * @return \Illuminate\Database\Eloquent\Relations\HasMany
      */
+    // Asegúrate de que tengas esta relación
     public function reservas()
     {
-        return $this->hasMany(Reserva::class);
+        return $this->hasMany(Reserva::class, 'espacio_id');
     }
 
     public function bloqueos()

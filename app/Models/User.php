@@ -52,9 +52,10 @@ class User extends Authenticatable
     /**
      * Get the reservas for the user.
      */
+    // Asegúrate de que tengas esta relación
     public function reservas()
     {
-        return $this->hasMany(Reserva::class);
+        return $this->hasMany(Reserva::class, 'user_id');
     }
 
     public function isAdmin()
