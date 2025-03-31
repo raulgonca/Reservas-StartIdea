@@ -1,7 +1,6 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head } from '@inertiajs/react';
 import { useState, useEffect } from 'react';
-import { Link } from '@inertiajs/react';
 import { ChartBarIcon, CalendarIcon, ClockIcon, UserGroupIcon, BuildingOfficeIcon, ShieldCheckIcon } from '@heroicons/react/24/outline';
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, BarElement, ArcElement, Title, Tooltip, Legend, Filler } from 'chart.js';
 import { Bar, Line, Pie, Doughnut } from 'react-chartjs-2';
