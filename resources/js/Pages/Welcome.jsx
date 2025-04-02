@@ -169,7 +169,7 @@ export default function Welcome({ auth, espacios = [] }) {
                         <div className="absolute inset-0 w-full h-full overflow-hidden">
                             {/* Professional header image with improved styling */}
                             <img
-                                src="/images/portadaHub.jpg"
+                                src="/images/portadaClean.jpg"
                                 alt="Hub de Innovación Social"
                                 className="absolute inset-0 w-full h-full "
                                 style={{
@@ -238,6 +238,13 @@ export default function Welcome({ auth, espacios = [] }) {
                                     <div className="mt-8 flex flex-col sm:flex-row justify-center gap-4 animate-fade-in-up animation-delay-400">
                                         <a 
                                             href="#espacios" 
+                                            onClick={(e) => {
+                                                e.preventDefault();
+                                                document.getElementById('espacios').scrollIntoView({
+                                                    behavior: 'smooth',
+                                                    block: 'start'
+                                                });
+                                            }}
                                             className="px-6 py-3 bg-gradient-to-r from-[#1A237E] to-[#283593] text-white font-semibold rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 hover:translate-y-[-2px] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50"
                                         >
                                             Ver espacios
