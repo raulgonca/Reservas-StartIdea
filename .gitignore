@@ -5,8 +5,6 @@
 /public/storage
 /storage/*.key
 /storage/pail
-/storage/*
-!/storage/app/public
 /vendor
 .env
 .env.backup
@@ -23,3 +21,13 @@ yarn-error.log
 /.nova
 /.vscode
 /.zed
+
+# Ignorar todo el contenido de storage
+/storage/*
+
+# Exceptuar la carpeta app/public dentro de storage
+!/storage/app/
+!/storage/app/public/
+
+# Asegurarse de no ignorar la carpeta public
+!public/
