@@ -1,7 +1,11 @@
 import React from "react";
 import ApplicationLogo from "@/Components/ApplicationLogo";
-// Import icons from React Icons library
-import { FaTwitter, FaInstagram, FaLinkedinIn, FaFacebookF, FaMapMarkerAlt, FaEnvelope, FaPhone, FaChevronRight } from "react-icons/fa";
+import { FaInstagram, FaFacebookF, FaMapMarkerAlt, FaEnvelope, FaPhone, FaChevronRight,  FaWhatsapp } from "react-icons/fa";
+
+// Access environment variables
+const whatsappLink = import.meta.env.VITE_WHATSAPP_URL;
+const instagramLink = import.meta.env.VITE_INSTAGRAM_URL;
+const facebookLink = import.meta.env.VITE_FACEBOOK_URL;
 
 export default function Footer() {
     return (
@@ -10,6 +14,17 @@ export default function Footer() {
             <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-[#90CAF9] to-[#42A5F5]"></div>
             <div className="absolute -top-24 -right-24 w-48 h-48 rounded-full bg-blue-500 opacity-10"></div>
             <div className="absolute -bottom-16 -left-16 w-32 h-32 rounded-full bg-indigo-300 opacity-10"></div>
+            
+            {/* Botón flotante de WhatsApp */}
+            <a 
+                href={whatsappLink} 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                className="fixed bottom-6 left-6 z-50 bg-green-500 hover:bg-green-600 text-white p-4 rounded-full shadow-lg transition-all duration-300 hover:scale-110"
+                aria-label="Contactar por WhatsApp"
+            >
+                <FaWhatsapp className="h-6 w-6" />
+            </a>
             
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
@@ -44,15 +59,9 @@ export default function Footer() {
                                 </a>
                             </li>
                             <li>
-                                <a href="#" className="text-gray-300 hover:text-white transition-all duration-300 flex items-center hover:translate-x-1">
+                                <a href="https://startidea.es/" className="text-gray-300 hover:text-white transition-all duration-300 flex items-center hover:translate-x-1">
                                     <FaChevronRight className="h-3 w-3 mr-2 opacity-0 group-hover:opacity-100 transition-opacity" />
                                     <span>Eventos</span>
-                                </a>
-                            </li>
-                            <li>
-                                <a href="#" className="text-gray-300 hover:text-white transition-all duration-300 flex items-center hover:translate-x-1">
-                                    <FaChevronRight className="h-3 w-3 mr-2 opacity-0 group-hover:opacity-100 transition-opacity" />
-                                    <span>Blog</span>
                                 </a>
                             </li>
                             <li>
@@ -75,7 +84,7 @@ export default function Footer() {
                                 <div className="mr-3 p-2 bg-blue-900/30 rounded-full group-hover:bg-blue-800/50 transition-colors duration-300">
                                     <FaMapMarkerAlt className="h-4 w-4" />
                                 </div>
-                                <span className="group-hover:text-white transition-colors duration-300">Calle Principal 123, Ciudad</span>
+                                <span className="group-hover:text-white transition-colors duration-300">Calle Conde Cifuentes 33, Granada</span>
                             </li>
                             <li className="flex items-center text-gray-300 group">
                                 <div className="mr-3 p-2 bg-blue-900/30 rounded-full group-hover:bg-blue-800/50 transition-colors duration-300">
@@ -87,7 +96,7 @@ export default function Footer() {
                                 <div className="mr-3 p-2 bg-blue-900/30 rounded-full group-hover:bg-blue-800/50 transition-colors duration-300">
                                     <FaPhone className="h-4 w-4" />
                                 </div>
-                                <span className="group-hover:text-white transition-colors duration-300">+34 912 345 678</span>
+                                <span className="group-hover:text-white transition-colors duration-300">958 04 57 89</span>
                             </li>
                         </ul>
                     </div>
@@ -99,16 +108,12 @@ export default function Footer() {
                             <span className="absolute -bottom-1 left-0 w-12 h-0.5 bg-[#90CAF9]"></span>
                         </h3>
                         <div className="flex space-x-3 mb-6">
-                            <a href="#" className="text-gray-300 hover:text-white p-2 bg-blue-900/30 rounded-full hover:bg-blue-800/50 transition-all duration-300 hover:scale-110">
-                                <FaTwitter className="h-5 w-5" />
-                            </a>
-                            <a href="#" className="text-gray-300 hover:text-white p-2 bg-blue-900/30 rounded-full hover:bg-blue-800/50 transition-all duration-300 hover:scale-110">
+                            {/* instagram */}
+                            <a href={instagramLink} className="text-gray-300 hover:text-white p-2 bg-blue-900/30 rounded-full hover:bg-blue-800/50 transition-all duration-300 hover:scale-110">
                                 <FaInstagram className="h-5 w-5" />
                             </a>
-                            <a href="#" className="text-gray-300 hover:text-white p-2 bg-blue-900/30 rounded-full hover:bg-blue-800/50 transition-all duration-300 hover:scale-110">
-                                <FaLinkedinIn className="h-5 w-5" />
-                            </a>
-                            <a href="#" className="text-gray-300 hover:text-white p-2 bg-blue-900/30 rounded-full hover:bg-blue-800/50 transition-all duration-300 hover:scale-110">
+                            {/* facebook */}
+                            <a href={facebookLink} className="text-gray-300 hover:text-white p-2 bg-blue-900/30 rounded-full hover:bg-blue-800/50 transition-all duration-300 hover:scale-110">
                                 <FaFacebookF className="h-5 w-5" />
                             </a>
                         </div>
@@ -123,15 +128,15 @@ export default function Footer() {
                         <span className="ml-2">Todos los derechos reservados.</span>
                     </div>
                     <div className="flex space-x-6">
-                        <a href="#" className="text-gray-300 hover:text-white text-sm transition-colors duration-300 hover:underline decoration-[#90CAF9] underline-offset-4">
+                        <p className="text-gray-300 hover:text-white text-sm transition-colors duration-300 hover:underline decoration-[#90CAF9] underline-offset-4">
                             Política de Privacidad
-                        </a>
-                        <a href="#" className="text-gray-300 hover:text-white text-sm transition-colors duration-300 hover:underline decoration-[#90CAF9] underline-offset-4">
+                        </p>
+                        <p className="text-gray-300 hover:text-white text-sm transition-colors duration-300 hover:underline decoration-[#90CAF9] underline-offset-4">
                             Términos de Servicio
-                        </a>
-                        <a href="#" className="text-gray-300 hover:text-white text-sm transition-colors duration-300 hover:underline decoration-[#90CAF9] underline-offset-4">
+                        </p>
+                        <p className="text-gray-300 hover:text-white text-sm transition-colors duration-300 hover:underline decoration-[#90CAF9] underline-offset-4">
                             Cookies
-                        </a>
+                        </p>
                     </div>
                 </div>
             </div>

@@ -69,7 +69,7 @@ const SpaceModal = ({ isOpen, closeModal, space }) => {
                             >
                                 <Dialog.Panel className="w-full max-w-[95vw] sm:max-w-xl md:max-w-2xl lg:max-w-4xl transform overflow-hidden rounded-2xl bg-white p-4 sm:p-6 shadow-xl transition-all">
                                     {/* Visualizador de media principal */}
-                                    <div className="relative aspect-w-16 aspect-h-9 mb-4 sm:mb-6">
+                                    <div className="relative mb-4 sm:mb-6 h-80 bg-white">
                                         {space.gallery_media?.[currentMediaIndex]?.type === 'video' ? (
                                             <video
                                                 src={space.gallery_media[currentMediaIndex].url}
@@ -93,13 +93,13 @@ const SpaceModal = ({ isOpen, closeModal, space }) => {
                                                 <button
                                                     key={index}
                                                     onClick={() => setCurrentMediaIndex(index)}
-                                                    className={`flex-shrink-0 w-16 h-16 sm:w-20 sm:h-20 rounded-lg overflow-hidden border-2 transition-all
+                                                    className={`flex-shrink-0 w-14 h-14 sm:w-16 sm:h-16 rounded-lg overflow-hidden border-2 transition-all
                                                     ${currentMediaIndex === index ? 'border-blue-500' : 'border-transparent'}`}
                                                 >
                                                     {media.type === 'video' ? (
                                                         <VideoThumbnail 
                                                             videoUrl={media.url} 
-                                                            thumbnailUrl={media.thumbnail} // Añadir esta línea
+                                                            thumbnailUrl={media.thumbnail}
                                                         />
                                                     ) : (
                                                         <img

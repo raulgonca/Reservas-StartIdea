@@ -250,7 +250,7 @@ export default function Welcome({ auth, espacios = [] }) {
                                             Ver espacios
                                         </a>
                                         <a 
-                                            href="#" 
+                                            href="https://startidea.es/" 
                                             className="px-6 py-3 bg-white/10 backdrop-blur-sm text-white font-semibold rounded-lg shadow-lg hover:bg-white/20 transition-all duration-300 hover:translate-y-[-2px] focus:outline-none focus:ring-2 focus:ring-white focus:ring-opacity-50"
                                         >
                                             Conocer más

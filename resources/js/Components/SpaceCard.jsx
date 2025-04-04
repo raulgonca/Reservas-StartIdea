@@ -73,11 +73,24 @@ const SpaceCard = ({ space = {}, onOpenModal }) => {
         }
     })();
 
-    // Procesamiento mejorado de galería
+    // Procesamiento mejorado de galería - AQUÍ ESTÁ EL PROBLEMA
     const gallery = (() => {
-        // Si gallery_media existe y es un array, usarlo directamente
-        if (Array.isArray(space.gallery_media) && space.gallery_media.length > 0) {
-            return space.gallery_media;
+        // Verificar si gallery_media existe y tiene contenido
+        if (space.gallery_media) {
+            // Si es un array, usarlo directamente
+            if (Array.isArray(space.gallery_media) && space.gallery_media.length > 0) {
+                return space.gallery_media;
+            }
+            
+            // Si es un string (JSON), intentar parsearlo
+            if (typeof space.gallery_media === 'string') {
+                try {
+                    const parsed = JSON.parse(space.gallery_media);
+                    return Array.isArray(parsed) ? parsed : [];
+                } catch (error) {
+                    console.error("Error parsing gallery_media:", error);
+                }
+            }
         }
         
         // Si tenemos imagen principal, crear un item de galería con ella
@@ -100,7 +113,7 @@ const SpaceCard = ({ space = {}, onOpenModal }) => {
             onClick={() => onOpenModal(space)}
         >
             {/* Sección de Galería */}
-            <div className="relative aspect-video bg-gray-100">
+            <div className="relative h-64 bg-white">
                 {/* Visualizador principal de imagen/video */}
                 {gallery[currentImageIndex]?.type === 'video' ? (
                     <VideoThumbnail
@@ -126,13 +139,13 @@ const SpaceCard = ({ space = {}, onOpenModal }) => {
                                     e.stopPropagation();
                                     setCurrentImageIndex(index);
                                 }}
-                                className={`w-12 h-12 flex-shrink-0 rounded-md overflow-hidden border-2
+                                className={`w-10 h-10 flex-shrink-0 rounded-md overflow-hidden border-2
                                     ${currentImageIndex === index ? 'border-blue-500' : 'border-white/50'}`}
                             >
                                 {media.type === 'video' ? (
                                     <VideoThumbnail
                                         videoUrl={media.url}
-                                        thumbnailUrl={media.thumbnail} // Añadir esta línea
+                                        thumbnailUrl={media.thumbnail}
                                         className="w-full h-full object-cover"
                                     />
                                 ) : (
