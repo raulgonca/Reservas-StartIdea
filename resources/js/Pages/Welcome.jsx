@@ -167,7 +167,7 @@ export default function Welcome({ auth, espacios = [] }) {
                     <div className="relative min-h-screen flex items-center justify-center">
                         {/* Video de fondo con overlay */}
                         <div className="absolute inset-0 w-full h-full overflow-hidden">
-                            {/* Professional header image with improved styling */}
+                            {/* header image with improved styling */}
                             <img
                                 src="/images/portadaClean.jpg"
                                 alt="Hub de Innovación Social"
@@ -181,7 +181,7 @@ export default function Welcome({ auth, espacios = [] }) {
                                     e.target.src = 'https://images.unsplash.com/photo-1522071820081-009f0129c71c?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80';
                                 }}
                             />
-                            {/* Enhanced gradient overlay for better text visibility and professional look */}
+                            {/* Enhanced gradient overlay for better text visibility */}
                             <div className="absolute inset-0 bg-gradient-to-b from-[#1A237E]/70 via-[#1A237E]/60 to-[#1A237E]/80"></div>
                             <div className="absolute inset-0 bg-[#000]/30"></div>
                             
