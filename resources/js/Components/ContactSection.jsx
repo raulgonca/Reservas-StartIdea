@@ -1,6 +1,28 @@
 import React from 'react';
+import emailjs from 'emailjs-com';
 
 export default function ContactSection() {
+    const handleSubmit = (e) => {
+        e.preventDefault();
+
+        emailjs
+            .sendForm(
+                'your_service_id', // Reemplaza con tu service_id
+                'your_template_id', // Reemplaza con tu template_id
+                e.target,
+                'your_user_id' // Reemplaza con tu user_id
+            )
+            .then(
+                (result) => {
+                    alert('Mensaje enviado con éxito.');
+                },
+                (error) => {
+                    alert('Hubo un error al enviar el mensaje.');
+                    console.error(error);
+                }
+            );
+    };
+
     return (
         <section className="py-16 sm:py-20 lg:py-24 bg-gray-50 relative overflow-hidden">
             <div className="absolute top-0 left-0 w-64 h-64 bg-[#1A237E]/5 rounded-full -translate-x-1/2 -translate-y-1/2"></div>
@@ -21,7 +43,7 @@ export default function ContactSection() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
                     {/* Contact Form */}
                     <div className="bg-white rounded-xl shadow-lg p-8">
-                        <form className="space-y-6">
+                        <form className="space-y-6" onSubmit={handleSubmit}>
                             <div>
                                 <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">Nombre completo</label>
                                 <input
@@ -30,6 +52,7 @@ export default function ContactSection() {
                                     name="name"
                                     className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-[#1A237E] focus:border-[#1A237E] transition-colors duration-200"
                                     placeholder="Tu nombre"
+                                    required
                                 />
                             </div>
                             <div>
@@ -40,6 +63,7 @@ export default function ContactSection() {
                                     name="email"
                                     className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-[#1A237E] focus:border-[#1A237E] transition-colors duration-200"
                                     placeholder="tu@email.com"
+                                    required
                                 />
                             </div>
                             <div>
@@ -50,6 +74,7 @@ export default function ContactSection() {
                                     rows="4"
                                     className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-[#1A237E] focus:border-[#1A237E] transition-colors duration-200"
                                     placeholder="¿En qué podemos ayudarte?"
+                                    required
                                 ></textarea>
                             </div>
                             <div>
