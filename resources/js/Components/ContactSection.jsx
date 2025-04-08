@@ -1,24 +1,51 @@
-import React from 'react';
+import React, { useState, useRef } from 'react';
 import emailjs from 'emailjs-com';
 
 export default function ContactSection() {
+    const [formStatus, setFormStatus] = useState({
+        submitting: false,
+        success: false,
+        error: false,
+        message: ''
+    });
+
+    const form = useRef();
+
     const handleSubmit = (e) => {
         e.preventDefault();
+        setFormStatus({ submitting: true, success: false, error: false, message: '' });
 
+        // Recopilar los datos del formulario
+        const formData = new FormData(form.current);
+        const user_name = formData.get('user_name');
+        const user_email = formData.get('user_email');
+        const message = formData.get('message');
+
+        // Enviar formulario a EmailJS
         emailjs
             .sendForm(
-                'your_service_id', // Reemplaza con tu service_id
-                'your_template_id', // Reemplaza con tu template_id
-                e.target,
-                'your_user_id' // Reemplaza con tu user_id
+                'service_2n2v36r',   // Tu Service ID
+                'template_5xc09wx',    // Tu Template ID
+                form.current,          // El formulario que contiene los datos
+                'wYO_BwXL7pHnI5n9P'    // Tu User ID (generado por EmailJS)
             )
             .then(
                 (result) => {
-                    alert('Mensaje enviado con éxito.');
+                    setFormStatus({
+                        submitting: false,
+                        success: true,
+                        error: false,
+                        message: 'Mensaje enviado con éxito.'
+                    });
+                    form.current.reset();
                 },
                 (error) => {
-                    alert('Hubo un error al enviar el mensaje.');
-                    console.error(error);
+                    setFormStatus({
+                        submitting: false,
+                        success: false,
+                        error: true,
+                        message: `Error: ${error.text || 'Hubo un error al enviar el mensaje'}`
+                    });
                 }
             );
     };
@@ -27,7 +54,7 @@ export default function ContactSection() {
         <section className="py-16 sm:py-20 lg:py-24 bg-gray-50 relative overflow-hidden">
             <div className="absolute top-0 left-0 w-64 h-64 bg-[#1A237E]/5 rounded-full -translate-x-1/2 -translate-y-1/2"></div>
             <div className="absolute bottom-0 right-0 w-80 h-80 bg-[#90CAF9]/5 rounded-full translate-x-1/2 translate-y-1/2"></div>
-            
+
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
                 <div className="text-center mb-12 sm:mb-16">
                     <span className="inline-block px-3 py-1 bg-blue-50 text-[#1A237E] rounded-full text-sm font-semibold mb-4">CONTACTO</span>
@@ -41,29 +68,53 @@ export default function ContactSection() {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
-                    {/* Contact Form */}
+                    {/* Formulario de contacto */}
                     <div className="bg-white rounded-xl shadow-lg p-8">
-                        <form className="space-y-6" onSubmit={handleSubmit}>
+                        {formStatus.success && (
+                            <div className="mb-6 p-4 bg-green-50 border border-green-200 text-green-700 rounded-lg">
+                                <div className="flex items-center">
+                                    <svg className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                    </svg>
+                                    <span>{formStatus.message}</span>
+                                </div>
+                            </div>
+                        )}
+
+                        {formStatus.error && (
+                            <div className="mb-6 p-4 bg-red-50 border border-red-200 text-red-700 rounded-lg">
+                                <div className="flex items-center">
+                                    <svg className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                    <span>{formStatus.message}</span>
+                                </div>
+                            </div>
+                        )}
+
+                        <form className="space-y-6" ref={form} onSubmit={handleSubmit}>
                             <div>
-                                <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">Nombre completo</label>
+                                <label htmlFor="user_name" className="block text-sm font-medium text-gray-700 mb-1">Nombre completo</label>
                                 <input
                                     type="text"
-                                    id="name"
-                                    name="name"
-                                    className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-[#1A237E] focus:border-[#1A237E] transition-colors duration-200"
+                                    id="user_name"
+                                    name="user_name"
+                                    className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-[#1A237E] focus:border-[#1A237E] transition-colors duration-200 text-gray-900"
                                     placeholder="Tu nombre"
                                     required
+                                    disabled={formStatus.submitting}
                                 />
                             </div>
                             <div>
-                                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">Correo electrónico</label>
+                                <label htmlFor="user_email" className="block text-sm font-medium text-gray-700 mb-1">Correo electrónico</label>
                                 <input
                                     type="email"
-                                    id="email"
-                                    name="email"
-                                    className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-[#1A237E] focus:border-[#1A237E] transition-colors duration-200"
+                                    id="user_email"
+                                    name="user_email"
+                                    className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-[#1A237E] focus:border-[#1A237E] transition-colors duration-200 text-gray-900"
                                     placeholder="tu@email.com"
                                     required
+                                    disabled={formStatus.submitting}
                                 />
                             </div>
                             <div>
@@ -72,17 +123,27 @@ export default function ContactSection() {
                                     id="message"
                                     name="message"
                                     rows="4"
-                                    className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-[#1A237E] focus:border-[#1A237E] transition-colors duration-200"
+                                    className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-[#1A237E] focus:border-[#1A237E] transition-colors duration-200 text-gray-900"
                                     placeholder="¿En qué podemos ayudarte?"
                                     required
+                                    disabled={formStatus.submitting}
                                 ></textarea>
                             </div>
                             <div>
                                 <button
                                     type="submit"
-                                    className="w-full bg-gradient-to-r from-[#1A237E] to-[#283593] text-white font-semibold py-3 px-6 rounded-lg shadow-md hover:shadow-lg transition-all duration-300 hover:translate-y-[-2px] focus:outline-none focus:ring-2 focus:ring-[#1A237E] focus:ring-opacity-50"
+                                    className="w-full bg-gradient-to-r from-[#1A237E] to-[#283593] text-white font-semibold py-3 px-6 rounded-lg shadow-md hover:shadow-lg transition-all duration-300 hover:translate-y-[-2px] focus:outline-none focus:ring-2 focus:ring-[#1A237E] focus:ring-opacity-50 disabled:opacity-70"
+                                    disabled={formStatus.submitting}
                                 >
-                                    Enviar mensaje
+                                    {formStatus.submitting ? (
+                                        <span className="flex items-center justify-center">
+                                            <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                            </svg>
+                                            Enviando...
+                                        </span>
+                                    ) : "Enviar mensaje"}
                                 </button>
                             </div>
                         </form>
@@ -107,7 +168,7 @@ export default function ContactSection() {
                     </div>
                     
                     {/* Map Section */}
-                    <div className="bg-white rounded-xl shadow-lg overflow-hidden h-full">
+                    <div className="bg-white rounded-xl shadow-lg overflow-hidden h-full flex flex-col">
                         <div className="p-4 bg-[#1A237E] text-white">
                             <h3 className="font-semibold flex items-center">
                                 <svg className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -117,7 +178,7 @@ export default function ContactSection() {
                                 Calle Conde Cifuentes 33, 18005, Granada
                             </h3>
                         </div>
-                        <div className="h-[400px] w-full">
+                        <div className="flex-grow">
                             {/* Google Maps iframe */}
                             <iframe 
                                 src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3178.4752285869354!2d-3.6026187!3d37.1784913!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0xd71fcb7977fb33d%3A0x5c4be3a4b88d4b76!2sCalle%20Conde%20Cifuentes%2C%2033%2C%2018005%20Granada!5e0!3m2!1ses!2ses!4v1652345678901!5m2!1ses!2ses" 
@@ -128,10 +189,10 @@ export default function ContactSection() {
                                 loading="lazy" 
                                 referrerPolicy="no-referrer-when-downgrade"
                                 title="Ubicación de StartIdea"
-                                className="filter grayscale hover:grayscale-0 transition-all duration-300"
+                                className="filter grayscale hover:grayscale-0 transition-all duration-300 h-full"
                             ></iframe>
                         </div>
-                        <div className="p-4 bg-gray-50">
+                        <div className="p-3 bg-gray-50">
                             <div className="flex items-center justify-between text-sm">
                                 <div className="flex items-center text-gray-700">
                                     <svg className="h-4 w-4 text-[#1A237E] mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
